@@ -231,6 +231,26 @@ builds/                 saída dos exports (ignorado pelo git)
   descartando o nosso. `README.md` reescrito com o conteúdo completo (agora já
   refletindo as instruções corretas do Gatekeeper) e as instruções de abrir no Mac.
   Build macOS regenerado e tudo commitado/enviado pro GitHub de novo.
+- **2026-08-02** — Usuário testou de novo e o app *ainda* não abria (mesmo já assinado
+  ad-hoc, mesmo local, sem quarentena nenhuma). Dessa vez rodei o **executável dentro
+  do `.app` exportado diretamente pelo terminal** (em vez de testar via
+  `godot --path . scenes/main/Main.tscn`, que é modo desenvolvedor e ignora o
+  `export_filter`/`exclude_filter`) e achei o bug de verdade: o `exclude_filter` em
+  `export_presets.cfg` tinha o padrão `assets/kenney/*/*.png`, pensado pra cortar só as
+  imagens de preview de cada pacote (`Preview.png`, `Sample.png` etc na raiz), mas o
+  glob do Godot trata `*` como abrangendo qualquer subpasta — então ele também cortou
+  `Textures/colormap.png`, a textura de verdade usada pelos modelos GLB (carros e
+  pedestres). Resultado: o `.pck` exportado carregava os modelos sem textura/dependência
+  e todo o `res://assets/kenney/...` falhava ao carregar — isso quebrava o carregamento
+  de `Town.tscn` inteiro na inicialização, então o jogo nunca chegava a abrir uma janela
+  (por isso não aparecia nem erro visível pro usuário, só "não abre"). Removido o padrão
+  `*.png` do `exclude_filter` (fica só FBX/OBJ/Previews/html/url, que não têm esse
+  conflito). Reexportei os dois presets e, dessa vez, **rodei o binário exportado
+  diretamente** (não o modo dev) pra confirmar de verdade — carros e pedestres
+  aparecem com textura, zero erro no log. **Lição pra próximas rodadas**: sempre que
+  mexer no `export_filter`/`exclude_filter`, testar rodando o `.app`/`.exe` exportado
+  de verdade, não só o modo desenvolvedor — os dois podem divergir exatamente por causa
+  desse filtro.
 
 ## Roadmap (fora de escopo desta vertical slice)
 
