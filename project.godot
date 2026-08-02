@@ -10,6 +10,7 @@ config/name="Jegues Mecanicos"
 config/description="Jogo 3D sandbox de humor: oficina/concessionaria duvidosa, fisica caotica e gambiarras."
 run/main_scene="res://scenes/ui/MainMenu.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
+config/icon="res://assets/icon/icon_1024.png"
 
 [autoload]
 
