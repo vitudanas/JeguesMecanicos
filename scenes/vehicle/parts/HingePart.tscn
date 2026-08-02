@@ -1,0 +1,29 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scenes/vehicle/GambiarraPart.gd" id="1"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1"]
+size = Vector3(0.35, 0.35, 0.35)
+
+[sub_resource type="BoxMesh" id="BoxMesh_1"]
+size = Vector3(0.35, 0.35, 0.35)
+
+[sub_resource type="StandardMaterial3D" id="Mat_1"]
+albedo_color = Color(0.65, 0.65, 0.7, 1)
+metallic = 0.6
+roughness = 0.3
+
+[node name="HingePart" type="RigidBody3D"]
+mass = 3.0
+script = ExtResource("1")
+part_id = "hinge_hood"
+display_name = "Dobradica de Porta"
+resistance = 1.0
+break_threshold = 7.0
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_1")
+surface_material_override/0 = SubResource("Mat_1")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_1")

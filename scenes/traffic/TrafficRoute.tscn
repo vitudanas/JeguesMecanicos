@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/traffic/TrafficRoute.gd" id="1"]
+
+[node name="TrafficRoute" type="Path3D"]
+script = ExtResource("1")
+car_count = 3
+car_speed_min = 3.0
+car_speed_max = 5.0

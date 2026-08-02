@@ -1,0 +1,173 @@
+[gd_scene load_steps=19 format=3]
+
+[ext_resource type="Script" path="res://scenes/vehicle/Vehicle.gd" id="1"]
+[ext_resource type="Script" path="res://scenes/vehicle/AttachSpot.gd" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/vehicle/parts/HingePart.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/vehicle/parts/HosePart.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/vehicle/parts/TapePart.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/vehicle/parts/PlasticPart.tscn" id="6"]
+
+[sub_resource type="BoxShape3D" id="BodyShape"]
+size = Vector3(1.8, 1.0, 4.0)
+
+[sub_resource type="BoxMesh" id="BodyMesh"]
+size = Vector3(1.8, 1.0, 4.0)
+
+[sub_resource type="StandardMaterial3D" id="BodyMat"]
+albedo_color = Color(0.75, 0.25, 0.15, 1)
+metallic = 0.2
+roughness = 0.5
+
+[sub_resource type="SphereShape3D" id="AttachShape"]
+radius = 0.3
+
+[sub_resource type="SphereMesh" id="MarkerMesh"]
+radius = 0.16
+height = 0.32
+
+[sub_resource type="StandardMaterial3D" id="MarkerMatHood"]
+shading_mode = 0
+albedo_color = Color(0.8, 0.8, 0.85, 1)
+emission_enabled = true
+emission = Color(0.8, 0.8, 0.85, 1)
+emission_energy_multiplier = 1.5
+
+[sub_resource type="StandardMaterial3D" id="MarkerMatRadiator"]
+shading_mode = 0
+albedo_color = Color(0.2, 0.9, 0.3, 1)
+emission_enabled = true
+emission = Color(0.2, 0.9, 0.3, 1)
+emission_energy_multiplier = 1.5
+
+[sub_resource type="StandardMaterial3D" id="MarkerMatMirror"]
+shading_mode = 0
+albedo_color = Color(0.95, 0.2, 0.2, 1)
+emission_enabled = true
+emission = Color(0.95, 0.2, 0.2, 1)
+emission_energy_multiplier = 1.5
+
+[sub_resource type="StandardMaterial3D" id="MarkerMatBumper"]
+shading_mode = 0
+albedo_color = Color(0.95, 0.85, 0.15, 1)
+emission_enabled = true
+emission = Color(0.95, 0.85, 0.15, 1)
+emission_energy_multiplier = 1.5
+
+[sub_resource type="SphereMesh" id="SmokeMesh"]
+radius = 0.12
+height = 0.24
+
+[sub_resource type="ParticleProcessMaterial" id="SmokePPM"]
+direction = Vector3(0, 1, 0)
+spread = 20.0
+initial_velocity_min = 0.4
+initial_velocity_max = 1.0
+gravity = Vector3(0, 0.4, 0)
+scale_min = 0.5
+scale_max = 1.2
+color = Color(0.3, 0.3, 0.3, 0.55)
+
+[node name="Vehicle" type="RigidBody3D"]
+mass = 950.0
+script = ExtResource("1")
+is_wrecked = true
+
+[node name="Body" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+mesh = SubResource("BodyMesh")
+surface_material_override/0 = SubResource("BodyMat")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+shape = SubResource("BodyShape")
+
+[node name="WheelFL" type="RayCast3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9, 0.3, -1.3)
+target_position = Vector3(0, -0.7, 0)
+
+[node name="WheelFR" type="RayCast3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9, 0.3, -1.3)
+target_position = Vector3(0, -0.7, 0)
+
+[node name="WheelRL" type="RayCast3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.9, 0.3, 1.3)
+target_position = Vector3(0, -0.7, 0)
+
+[node name="WheelRR" type="RayCast3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.9, 0.3, 1.3)
+target_position = Vector3(0, -0.7, 0)
+
+[node name="AttachPoints" type="Node3D" parent="."]
+
+[node name="Hood" type="Area3D" parent="AttachPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, -1.9)
+script = ExtResource("2")
+point_name = "hood"
+display_name = "Capo"
+part_scene = ExtResource("3")
+
+[node name="Collision" type="CollisionShape3D" parent="AttachPoints/Hood"]
+shape = SubResource("AttachShape")
+
+[node name="Marker" type="MeshInstance3D" parent="AttachPoints/Hood"]
+mesh = SubResource("MarkerMesh")
+surface_material_override/0 = SubResource("MarkerMatHood")
+
+[node name="Radiator" type="Area3D" parent="AttachPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, -2.0)
+script = ExtResource("2")
+point_name = "radiator"
+display_name = "Radiador"
+part_scene = ExtResource("4")
+
+[node name="Collision" type="CollisionShape3D" parent="AttachPoints/Radiator"]
+shape = SubResource("AttachShape")
+
+[node name="Marker" type="MeshInstance3D" parent="AttachPoints/Radiator"]
+mesh = SubResource("MarkerMesh")
+surface_material_override/0 = SubResource("MarkerMatRadiator")
+
+[node name="Mirror" type="Area3D" parent="AttachPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.0, 0.7, -0.6)
+script = ExtResource("2")
+point_name = "mirror"
+display_name = "Retrovisor"
+part_scene = ExtResource("5")
+
+[node name="Collision" type="CollisionShape3D" parent="AttachPoints/Mirror"]
+shape = SubResource("AttachShape")
+
+[node name="Marker" type="MeshInstance3D" parent="AttachPoints/Mirror"]
+mesh = SubResource("MarkerMesh")
+surface_material_override/0 = SubResource("MarkerMatMirror")
+
+[node name="Bumper" type="Area3D" parent="AttachPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 2.05)
+script = ExtResource("2")
+point_name = "bumper"
+display_name = "Parachoque"
+part_scene = ExtResource("6")
+
+[node name="Collision" type="CollisionShape3D" parent="AttachPoints/Bumper"]
+shape = SubResource("AttachShape")
+
+[node name="Marker" type="MeshInstance3D" parent="AttachPoints/Bumper"]
+mesh = SubResource("MarkerMesh")
+surface_material_override/0 = SubResource("MarkerMatBumper")
+
+[node name="ChaseCameraRig" type="SpringArm3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.9659258, 0.258819, 0, -0.258819, 0.9659258, 0, 2.2, 1.5)
+spring_length = 6.5
+rotation_degrees = Vector3(-15, 0, 0)
+
+[node name="ChaseCamera" type="Camera3D" parent="ChaseCameraRig"]
+current = false
+fov = 70.0
+
+[node name="SmokeFX" type="GPUParticles3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, -1.9)
+emitting = false
+amount = 18
+lifetime = 1.3
+process_material = SubResource("SmokePPM")
+draw_pass_1 = SubResource("SmokeMesh")

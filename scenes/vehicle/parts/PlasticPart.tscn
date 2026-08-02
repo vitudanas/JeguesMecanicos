@@ -1,0 +1,28 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scenes/vehicle/GambiarraPart.gd" id="1"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1"]
+size = Vector3(0.4, 0.25, 0.3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_1"]
+size = Vector3(0.4, 0.25, 0.3)
+
+[sub_resource type="StandardMaterial3D" id="Mat_1"]
+albedo_color = Color(0.9, 0.85, 0.2, 1)
+roughness = 0.6
+
+[node name="PlasticPart" type="RigidBody3D"]
+mass = 1.0
+script = ExtResource("1")
+part_id = "plastic_bumper"
+display_name = "Placa de Plastico"
+resistance = 0.9
+break_threshold = 7.0
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_1")
+surface_material_override/0 = SubResource("Mat_1")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_1")

@@ -1,0 +1,58 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/vehicle/Vehicle.tscn" id="1"]
+
+[sub_resource type="BoxShape3D" id="CrateShape"]
+size = Vector3(1, 1, 1)
+
+[sub_resource type="BoxMesh" id="CrateMesh"]
+size = Vector3(1, 1, 1)
+
+[sub_resource type="StandardMaterial3D" id="CrateMat"]
+albedo_color = Color(0.5, 0.35, 0.2, 1)
+
+[node name="Junkyard" type="Node3D"]
+
+[node name="SignLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 5.5, 0)
+billboard = 1
+no_depth_test = true
+pixel_size = 0.012
+outline_size = 10
+modulate = Color(1, 0.55, 0.1, 1)
+font_size = 56
+text = "FERRO-VELHO
+(reboque o carro daqui)"
+
+[node name="WreckedCar" parent="." instance=ExtResource("1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 0)
+
+[node name="Crate1" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3, 0.5, -2)
+
+[node name="Mesh" type="MeshInstance3D" parent="Crate1"]
+mesh = SubResource("CrateMesh")
+surface_material_override/0 = SubResource("CrateMat")
+
+[node name="Shape" type="CollisionShape3D" parent="Crate1"]
+shape = SubResource("CrateShape")
+
+[node name="Crate2" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3, 0.5, 2.2)
+
+[node name="Mesh" type="MeshInstance3D" parent="Crate2"]
+mesh = SubResource("CrateMesh")
+surface_material_override/0 = SubResource("CrateMat")
+
+[node name="Shape" type="CollisionShape3D" parent="Crate2"]
+shape = SubResource("CrateShape")
+
+[node name="Crate3" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.5, 0.5, 2.5)
+
+[node name="Mesh" type="MeshInstance3D" parent="Crate3"]
+mesh = SubResource("CrateMesh")
+surface_material_override/0 = SubResource("CrateMat")
+
+[node name="Shape" type="CollisionShape3D" parent="Crate3"]
+shape = SubResource("CrateShape")

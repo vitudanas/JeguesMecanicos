@@ -1,0 +1,20 @@
+# Godot 4+ specific ignores
+.godot/
+.import/
+export.cfg
+export_credentials.cfg
+
+# Builds
+builds/
+*.exe
+*.app
+*.dmg
+*.zip
+*.pck
+
+# macOS
+.DS_Store
+
+# Editor/OS
+*.tmp
+*~
