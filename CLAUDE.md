@@ -346,9 +346,23 @@ builds/                 saída dos exports (ignorado pelo git)
   rodado antes (procurando o executável do Godot) disparou um popup do macOS pedindo
   acesso do app "claude" à pasta Desktop — não cliquei em nada (não tenho ferramenta
   pra mexer em diálogo real do sistema, e não é algo que a IA deveria decidir sozinha);
-  fica pra você decidir Allow/Don't Allow da próxima vez que aparecer. Curvas diagonais
-  fora da grade ortogonal (o outro item desse mesmo tópico de roadmap) ainda não foram
-  feitas — ver Roadmap.
+  fica pra você decidir Allow/Don't Allow da próxima vez que aparecer.
+- **2026-08-02** — Usuário pediu pra continuar (segundo item do mesmo tópico de
+  roadmap): curvas diagonais fora da grade ortogonal. `CityStreets.gd` ganhou
+  `_build_diagonal()`/`diagonal_starts`/`diagonal_ends` (arrays paralelos de
+  início/fim), reaproveitando as mesmas peças retas/ponta/luz/meio-fio já usadas na
+  grade — só calcula o ângulo de rotação a partir da direção do segmento
+  (`atan2(-dir.z, dir.x)`) em vez de usar 0°/90° fixos. Extraído `_side_offset()` como
+  helper comum (antes só existia dentro de `_place_curb_pair`) pra também poder
+  deslocar os postes de luz perpendicular a uma direção arbitrária, não só nos eixos
+  X/Z. Adicionado um trecho de teste em `Town.tscn` (29,-21) → (46,-4), dentro de um
+  quarteirão vazio da grade (entre as ruas em x=25/50 e z=-25/0) escolhido de propósito
+  pra não cruzar nenhuma rua ortogonal — não existe peça de cruzamento
+  diagonal-com-ortogonal no kit, então por enquanto essa feature só serve pra trechos
+  que cabem inteiros dentro de um quarteirão, sem cruzar outras ruas (ver Roadmap).
+  Testado headless (zero erros) e confirmado visualmente com câmera de debug aérea
+  temporária + `screencapture`: a rua diagonal aparece certinha, com as duas pontas
+  arredondadas, sem sobrepor a malha ortogonal.
 
 ## Roadmap (fora de escopo desta vertical slice)
 
@@ -356,10 +370,15 @@ builds/                 saída dos exports (ignorado pelo git)
   evita estado local hard-coded onde possível, mas a replicação de rede não foi
   implementada.
 - **Malha viária — polimento restante**: as pontas das ruas já têm acabamento
-  arredondado, postes de luz e agora meio-fio/calçada elevada de verdade (com colisão
-  própria — ver changelog 2026-08-02); ainda falta: calçada não contorna os
-  cruzamentos (só as retas têm guia, o cruzamento fica sem meio-fio nos quatro cantos)
-  e não há curvas diagonais fora da grade ortogonal (só retas + cruzamentos em grade).
+  arredondado, postes de luz, meio-fio/calçada elevada de verdade (com colisão própria)
+  e agora um exemplo de trecho diagonal fora da grade ortogonal (ver changelog
+  2026-08-02, `CityStreets.gd:_build_diagonal()`). Ainda falta: (1) calçada não
+  contorna os cruzamentos (só as retas/diagonais têm guia, o cruzamento fica sem
+  meio-fio nos quatro cantos); (2) não existe peça de cruzamento diagonal-com-
+  ortogonal — o trecho diagonal atual só funciona por caber inteiro dentro de um
+  quarteirão vazio, sem cruzar nenhuma rua da grade; pra virar uma avenida diagonal de
+  verdade cortando o mapa (tipo Broadway em Manhattan) precisaria resolver esses
+  cruzamentos em ângulo, o que não foi tentado ainda.
 - Sistema de crafting mais rico (mais tipos de gambiarra, escolha de item por
   inventário em vez de item fixo por ponto de fixação).
 - Economia mais profunda (preços variáveis, múltiplos compradores com personalidades

@@ -305,3 +305,5 @@ light_every_n_tiles = 3
 light_offset = 2.6
 exclude_points = Array[Vector3]([Vector3(0, 0, 0), Vector3(-25, 0, -20), Vector3(26, 0, 26)])
 exclude_radius = 11.0
+diagonal_starts = Array[Vector3]([Vector3(29, 0, -21)])
+diagonal_ends = Array[Vector3]([Vector3(46, 0, -4)])

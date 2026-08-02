@@ -24,6 +24,13 @@ extends Node3D
 @export var exclude_points: Array[Vector3] = []  ## nao coloca tile perto desses pontos (ex: oficina, comprador)
 @export var exclude_radius := 10.0
 
+## Trechos de rua diagonal (fora da grade ortogonal acima), cada um definido por um
+## par inicio/fim nas mesmas duas listas (indices correspondentes). Pensados pra
+## caber dentro de um quarteirao vazio da grade, sem cruzar ruas existentes — nao ha
+## peca de cruzamento diagonal-ortogonal, entao evitar sobrepor as duas malhas.
+@export var diagonal_starts: Array[Vector3] = []
+@export var diagonal_ends: Array[Vector3] = []
+
 ## O kit de rua do Kenney usado aqui e de rodovia (sem pecas de calcada/meio-fio
 ## de verdade), entao a calcada elevada e gerada por codigo: uma caixa rasa dos
 ## dois lados de cada trecho reto/ponta, com colisao propria (o carro sobe nela
@@ -58,6 +65,38 @@ func _build() -> void:
 	var max_z: float = streets_x[streets_x.size() - 1] + extent
 	for col_x in streets_z:
 		_build_run(min_z, max_z, streets_x, func(p): return Vector3(col_x, 0.03, p), 90.0, func(p, side): return Vector3(col_x + side * light_offset, 0.03, p))
+
+	for i in range(min(diagonal_starts.size(), diagonal_ends.size())):
+		_build_diagonal(diagonal_starts[i], diagonal_ends[i])
+
+func _build_diagonal(start: Vector3, end: Vector3) -> void:
+	var delta := end - start
+	var length := Vector2(delta.x, delta.z).length()
+	if length < tile_size * 2.0:
+		return
+	var dir := Vector3(delta.x, 0.0, delta.z).normalized()
+	var rot_y_deg := rad_to_deg(atan2(-dir.z, dir.x))
+	var tile_count := int(length / tile_size)
+	var last_index := tile_count - 1
+	var lights_placed := 0
+	for i in range(tile_count):
+		var dist := tile_size * 0.5 + i * tile_size
+		var center: Vector3 = start + dir * dist
+		center.y = 0.03
+		if i == 0:
+			_place(end_scene, center, rot_y_deg + end_rotation_offset_degrees)
+		elif i == last_index:
+			_place(end_scene, center, rot_y_deg)
+		else:
+			_place(straight_scene, center, rot_y_deg)
+			lights_placed += 1
+			if lights_placed % light_every_n_tiles == 0:
+				_place(light_scene, center + _side_offset(rot_y_deg, 1.0, light_offset), rot_y_deg, tile_size * 0.5)
+				_place(light_scene, center + _side_offset(rot_y_deg, -1.0, light_offset), rot_y_deg + 180.0, tile_size * 0.5)
+		_place_curb_pair(center, rot_y_deg)
+
+func _side_offset(rot_y_deg: float, side: float, dist: float) -> Vector3:
+	return Vector3(0.0, 0.0, side * dist).rotated(Vector3.UP, deg_to_rad(rot_y_deg))
 
 func _build_run(min_v: float, max_v: float, cross_values: Array[float], pos_fn: Callable, rot: float, light_pos_fn: Callable) -> void:
 	var positions: Array[float] = []
@@ -122,11 +161,10 @@ func _place_curb_pair(center: Vector3, rot_y_deg: float) -> void:
 		return
 	var offset := road_half_width + sidewalk_width * 0.5
 	for side in [1.0, -1.0]:
-		var local_offset := Vector3(0.0, curb_height * 0.5, side * offset)
-		var world_offset: Vector3 = local_offset.rotated(Vector3.UP, deg_to_rad(rot_y_deg))
+		var world_offset := _side_offset(rot_y_deg, side, offset)
 		var body := StaticBody3D.new()
 		add_child(body)
-		body.position = Vector3(center.x, 0.0, center.z) + world_offset
+		body.position = Vector3(center.x, curb_height * 0.5, center.z) + world_offset
 		body.rotation_degrees.y = rot_y_deg
 
 		var mesh_inst := MeshInstance3D.new()
