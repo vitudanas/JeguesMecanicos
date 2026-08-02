@@ -26,6 +26,11 @@ signal ragdolled
 @export var walk_anim_scene: PackedScene = preload("res://assets/kenney/animated-characters-protagonists/Animations/run.fbx")
 @export var idle_anim_name := "Root|Idle"
 @export var walk_anim_name := "Root|Run"
+## Cena de roupa (ex: Quaternius Modular Character Outfits) que compartilha o
+## MESMO esqueleto do character_model — as malhas de roupa sao transplantadas
+## pro Skeleton3D do personagem (troca de "skeleton" de cada MeshInstance3D)
+## e o corpo nu original some, deixando so cabeca/olhos/sobrancelhas a mostra.
+@export var outfit_scene: PackedScene
 
 static var _anim_cache: Dictionary = {}
 
@@ -57,9 +62,38 @@ func _load_visual() -> void:
 			var mat := StandardMaterial3D.new()
 			mat.albedo_texture = skin_texture
 			mesh_instance.set_surface_override_material(0, mat)
+	if outfit_scene:
+		_attach_outfit(visual)
 	if fallback_mesh:
 		fallback_mesh.visible = false
 	_setup_animation(visual)
+
+func _attach_outfit(visual: Node) -> void:
+	var base_skel := _find_skeleton(visual)
+	if base_skel == null:
+		return
+	# Nao esconde a malha nua base: o corpo do personagem Quaternius vem com
+	# cabeca/rosto fundidos na MESMA malha (sem "Head" separado), entao a
+	# roupa e modelada pra cobrir por cima (braco/torso/perna), deixando so
+	# cabeca/pescoco/maos a mostra igual roupa de verdade cobrindo um corpo.
+	var outfit_temp := outfit_scene.instantiate()
+	var outfit_skel := _find_skeleton(outfit_temp)
+	if outfit_skel:
+		for child in outfit_skel.get_children().duplicate():
+			if child is MeshInstance3D:
+				outfit_skel.remove_child(child)
+				base_skel.add_child(child)
+				child.skeleton = NodePath("..")
+	outfit_temp.queue_free()
+
+func _find_skeleton(node: Node) -> Skeleton3D:
+	if node is Skeleton3D:
+		return node
+	for child in node.get_children():
+		var found := _find_skeleton(child)
+		if found:
+			return found
+	return null
 
 func _setup_animation(visual: Node) -> void:
 	var idle_anim := _get_cached_animation(idle_anim_scene, idle_anim_name)

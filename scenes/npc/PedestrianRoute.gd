@@ -13,6 +13,8 @@ extends Path3D
 ## (personagens Quaternius, por exemplo), um por indice de pedestre. Se
 ## preenchido, tem prioridade sobre character_model/skin_textures.
 @export var character_models: Array[PackedScene] = []
+## Roupa pra cada character_models[i] (mesmo indice). Ver Pedestrian.gd:_attach_outfit().
+@export var outfit_scenes: Array[PackedScene] = []
 @export var visual_scale := 1.0
 @export var idle_anim_scene: PackedScene
 @export var walk_anim_scene: PackedScene
@@ -40,6 +42,8 @@ func _spawn_pedestrians() -> void:
 		pedestrian.speed = randf_range(speed_min, speed_max)
 		if character_models.size() > 0:
 			pedestrian.character_model = character_models[i % character_models.size()]
+			if outfit_scenes.size() > 0:
+				pedestrian.outfit_scene = outfit_scenes[i % outfit_scenes.size()]
 		else:
 			pedestrian.character_model = character_model
 			if skin_textures.size() > 0:
