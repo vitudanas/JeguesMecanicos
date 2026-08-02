@@ -545,16 +545,49 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
 - Sons, música, efeitos de UI/menu (menu principal e de pause já existem — ver
   changelog 2026-08-02 —, mas ainda sem áudio nenhum no jogo).
 - **NPCs com personagens diferentes de verdade**: `Superhero_Male/Female_FullBody`
-  (Quaternius, CC0) já baixados em `assets/quaternius/universal-base-characters/`,
-  junto com `UAL2_Standard.glb` (43 animações na versão free, não 130+ como o
-  pacote pago). O retargeting **não é necessário** (mesmo esqueleto do
-  `UAL2_Standard.glb`, ver changelog 2026-08-02) e `Pedestrian.gd`/
-  `PedestrianRoute.gd` já têm suporte pronto (`character_models`,
-  `idle_anim_scene`/`walk_anim_scene`). O que falta de verdade: os personagens
-  base vêm **sem roupa nenhuma** na versão gratuita — precisaria de um pacote de
-  roupa/outfit (Quaternius vende separado, ou outro CC0 equivalente) antes de
-  usar isso nos pedestres. `Pedestrian.gd` continua usando o personagem do
-  Kenney (`characterMedium.fbx`) por enquanto.
+  (Quaternius, CC0, em `assets/quaternius/universal-base-characters/Characters/`)
+  + roupa Peasant (`assets/quaternius/outfits-fantasy/Outfits/`) + cabelo
+  (`assets/quaternius/universal-base-characters/Hairstyles/`) + animação
+  (`UAL2_Standard.glb`, 43 animações na versão free). Retargeting **não é
+  necessário** (mesmo esqueleto de 65 ossos nos 3 pacotes) e `Pedestrian.gd`/
+  `PedestrianRoute.gd` já têm todo o suporte pronto (`character_models`,
+  `outfit_scene`/`outfit_scenes`, `hair_scene`/`hair_scenes`,
+  `idle_anim_scene`/`walk_anim_scene`). O cabelo prende limpo. **O que falta**:
+  a roupa tem um resíduo de clipping (pele nua aparecendo no torso/coxa) porque
+  o corpo base e a roupa foram exportados separadamente com uma diferença sutil
+  de *bind pose* — testei vários valores de `BODY_SHRINK_UNDER_CLOTHES` em
+  `Pedestrian.gd` (0.7 a 0.93) e nenhum resolve 100% sem quebrar outra parte
+  (pescoço, cabeça, pé). Usuário pediu o tutorial de como resolver isso na mão
+  no Blender — ver caixa abaixo. `Pedestrian.gd` continua usando o personagem
+  do Kenney (`characterMedium.fbx`) em `Town.tscn` até esse combinado ficar
+  pronto.
+
+  > #### Tutorial: combinar corpo + roupa no Blender (pendente do usuário)
+  > Arquivos envolvidos (já estão no repo):
+  > - Corpo: `assets/quaternius/universal-base-characters/Characters/Superhero_Male_FullBody.gltf`
+  > - Roupa: `assets/quaternius/outfits-fantasy/Outfits/Male_Peasant.gltf`
+  >
+  > Passo a passo (Blender, gratuito, blender.org):
+  > 1. Cena vazia → `File → Import → glTF 2.0` → importe o `Superhero_Male_FullBody.gltf`.
+  > 2. Importe também o `Male_Peasant.gltf` na mesma cena (fica com 2 Armatures).
+  > 3. Selecione as malhas da roupa (`Male_Peasant_Arms`/`_Body`/`_Feet`/`_Legs`),
+  >    abra o modificador **Armature** de cada uma e troque o "Object" pro
+  >    Armature do **corpo** (não o da roupa).
+  > 4. Delete o Armature duplicado que veio junto da roupa.
+  > 5. Aqui aparece o problema de verdade: se a roupa não encaixar direito na
+  >    pose de descanso do corpo, ajuste manualmente (mover/rotacionar, ou
+  >    "snap" pra mesma posição) até cobrir certinho — deve ser só um pequeno
+  >    offset.
+  > 6. Com tudo encaixado, selecione corpo + roupa (Armature único) →
+  >    `File → Export → glTF 2.0`, exporte como um arquivo novo único (ex:
+  >    `Male_Peasant_Combined.gltf`).
+  > 7. Repetir pra versão Female (`Superhero_Female_FullBody.gltf` +
+  >    `Female_Peasant.gltf`) se quiser os dois sexos.
+  > 8. Assim que tiver o(s) arquivo(s) combinado(s), é só colocar em
+  >    `assets/quaternius/` e pedir pra trocar o `character_model` das rotas de
+  >    pedestre em `Town.tscn` pra apontar direto pra esse combinado — fica bem
+  >    mais simples que o esquema atual de "colar duas malhas em runtime" no
+  >    `Pedestrian.gd`.
 - **Mais prédios prontos do Quaternius**: só 2 dos 3 prédios prontos do Downtown
   City MegaKit foram usados (`Building_Medium_2_001` tem um bug visual, ver
   changelog 2026-08-02). O pacote também trouxe ~150 peças modulares soltas
