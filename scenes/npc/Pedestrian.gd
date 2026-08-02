@@ -3,23 +3,18 @@ extends RigidBody3D
 ## de um PathFollow3D, congelado/kinematic enquanto anda). Ao levar um
 ## impacto forte (carro do jogador, destroco de gambiarra voando etc.)
 ## vira ragdoll de verdade (RigidBody3D solto) por alguns segundos e
-## depois volta sozinho pra rota. Visual: modelo do Kenney Animated
-## Characters Protagonists (proporcao humana normal, nao chibi), com a
-## textura de skin aplicada por cima (o FBX vem sem textura propria —
-## Kenney separa a malha da skin pra poder trocar de personagem) e
-## fallback pra uma capsula colorida se o modelo nao carregar. A
-## animacao de andar/parado vem de idle.fbx/run.fbx (arquivos separados
-## do modelo — Kenney exporta a malha e as animacoes em FBX distintos
-## que compartilham o mesmo esqueleto "Root/Skeleton3D", entao a gente
-## extrai o Animation de cada um e monta um AnimationPlayer na hora.
+## depois volta sozinho pra rota. Visual: modelo configuravel (character_model)
+## com fallback pra uma capsula colorida se nao carregar. A animacao de
+## andar/parado vem de duas cenas externas (idle_anim_scene/walk_anim_scene)
+## que compartilham o MESMO esqueleto do character_model — a gente extrai o
+## Animation de cada uma e monta um AnimationPlayer na hora, em vez de
+## depender de retargeting (so funciona quando mesh+animacao vem do mesmo
+## esqueleto; ver CLAUDE.md sobre os personagens Quaternius x Kenney).
+## skin_texture e opcional: só usado pelo Kenney (mesh sem textura propria,
+## separada pra poder trocar de personagem) — os personagens Quaternius ja
+## vem texturizados, entao ficam sem skin_texture.
 
 signal ragdolled
-
-const IDLE_ANIM_SCENE := preload("res://assets/kenney/animated-characters-protagonists/Animations/idle.fbx")
-const RUN_ANIM_SCENE := preload("res://assets/kenney/animated-characters-protagonists/Animations/run.fbx")
-
-static var _cached_idle_anim: Animation = null
-static var _cached_run_anim: Animation = null
 
 @export var speed := 1.4
 @export var character_model: PackedScene
@@ -27,6 +22,12 @@ static var _cached_run_anim: Animation = null
 @export var visual_scale := 1.0
 @export var ragdoll_impact_threshold := 4.0
 @export var ragdoll_recover_time := 4.0
+@export var idle_anim_scene: PackedScene = preload("res://assets/kenney/animated-characters-protagonists/Animations/idle.fbx")
+@export var walk_anim_scene: PackedScene = preload("res://assets/kenney/animated-characters-protagonists/Animations/run.fbx")
+@export var idle_anim_name := "Root|Idle"
+@export var walk_anim_name := "Root|Run"
+
+static var _anim_cache: Dictionary = {}
 
 @onready var fallback_mesh: MeshInstance3D = $FallbackMesh
 
@@ -61,24 +62,30 @@ func _load_visual() -> void:
 	_setup_animation(visual)
 
 func _setup_animation(visual: Node) -> void:
-	if _cached_idle_anim == null:
-		_cached_idle_anim = _extract_animation(IDLE_ANIM_SCENE, "Root|Idle")
-	if _cached_run_anim == null:
-		_cached_run_anim = _extract_animation(RUN_ANIM_SCENE, "Root|Run")
-	if _cached_idle_anim == null and _cached_run_anim == null:
+	var idle_anim := _get_cached_animation(idle_anim_scene, idle_anim_name)
+	var walk_anim := _get_cached_animation(walk_anim_scene, walk_anim_name)
+	if idle_anim == null and walk_anim == null:
 		return
 	var lib := AnimationLibrary.new()
-	if _cached_idle_anim:
-		lib.add_animation("idle", _cached_idle_anim)
-	if _cached_run_anim:
-		lib.add_animation("run", _cached_run_anim)
+	if idle_anim:
+		lib.add_animation("idle", idle_anim)
+	if walk_anim:
+		lib.add_animation("run", walk_anim)
 	_anim_player = AnimationPlayer.new()
 	visual.add_child(_anim_player)
 	_anim_player.add_animation_library("", lib)
-	if _cached_run_anim:
+	if walk_anim:
 		_anim_player.play("run")
-	elif _cached_idle_anim:
+	elif idle_anim:
 		_anim_player.play("idle")
+
+static func _get_cached_animation(scene: PackedScene, anim_name: String) -> Animation:
+	if scene == null:
+		return null
+	var key := scene.resource_path + "|" + anim_name
+	if not _anim_cache.has(key):
+		_anim_cache[key] = _extract_animation(scene, anim_name)
+	return _anim_cache[key]
 
 static func _extract_animation(scene: PackedScene, anim_name: String) -> Animation:
 	var temp := scene.instantiate()

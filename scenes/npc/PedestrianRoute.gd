@@ -9,7 +9,15 @@ extends Path3D
 @export var speed_max := 1.8
 @export var character_model: PackedScene
 @export var skin_textures: Array[Texture2D] = []
+## Alternativa a character_model+skin_textures: varios modelos ja texturizados
+## (personagens Quaternius, por exemplo), um por indice de pedestre. Se
+## preenchido, tem prioridade sobre character_model/skin_textures.
+@export var character_models: Array[PackedScene] = []
 @export var visual_scale := 1.0
+@export var idle_anim_scene: PackedScene
+@export var walk_anim_scene: PackedScene
+@export var idle_anim_name := ""
+@export var walk_anim_name := ""
 
 const PEDESTRIAN_SCENE := preload("res://scenes/npc/Pedestrian.tscn")
 
@@ -30,8 +38,19 @@ func _spawn_pedestrians() -> void:
 
 		var pedestrian := PEDESTRIAN_SCENE.instantiate()
 		pedestrian.speed = randf_range(speed_min, speed_max)
-		pedestrian.character_model = character_model
+		if character_models.size() > 0:
+			pedestrian.character_model = character_models[i % character_models.size()]
+		else:
+			pedestrian.character_model = character_model
+			if skin_textures.size() > 0:
+				pedestrian.skin_texture = skin_textures[i % skin_textures.size()]
 		pedestrian.visual_scale = visual_scale
-		if skin_textures.size() > 0:
-			pedestrian.skin_texture = skin_textures[i % skin_textures.size()]
+		if idle_anim_scene:
+			pedestrian.idle_anim_scene = idle_anim_scene
+		if walk_anim_scene:
+			pedestrian.walk_anim_scene = walk_anim_scene
+		if idle_anim_name != "":
+			pedestrian.idle_anim_name = idle_anim_name
+		if walk_anim_name != "":
+			pedestrian.walk_anim_name = walk_anim_name
 		path_follow.add_child(pedestrian)
