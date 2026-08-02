@@ -1,4 +1,4 @@
-[gd_scene load_steps=51 format=3]
+[gd_scene load_steps=52 format=3]
 
 [ext_resource type="Script" path="res://scripts/Pothole.gd" id="1"]
 [ext_resource type="Script" path="res://scenes/world/Town.gd" id="5"]
@@ -38,6 +38,7 @@
 [ext_resource type="PackedScene" path="res://assets/kenney/city-kit-roads/Models/GLB format/road-crossroad.glb" id="32"]
 [ext_resource type="PackedScene" path="res://assets/kenney/city-kit-roads/Models/GLB format/light-square.glb" id="33"]
 [ext_resource type="Script" path="res://scripts/CityStreets.gd" id="38"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-roads/Models/GLB format/road-end-round.glb" id="39"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
 sky_top_color = Color(0.35, 0.55, 0.85, 1)
@@ -294,9 +295,13 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.5, 40)
 script = ExtResource("38")
 streets_x = Array[float]([-50.0, -25.0, 0.0, 25.0, 50.0])
 streets_z = Array[float]([-50.0, -25.0, 0.0, 25.0, 50.0])
-extent = 65.0
+extent = 18.0
 tile_size = 6.0
 crossroad_scene = ExtResource("32")
 straight_scene = ExtResource("30")
+end_scene = ExtResource("39")
+light_scene = ExtResource("33")
+light_every_n_tiles = 3
+light_offset = 2.6
 exclude_points = Array[Vector3]([Vector3(0, 0, 0), Vector3(-25, 0, -20), Vector3(26, 0, 26)])
 exclude_radius = 11.0

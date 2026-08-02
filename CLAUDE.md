@@ -304,17 +304,26 @@ builds/                 saída dos exports (ignorado pelo git)
   no nível do jogador — rua com faixa de pedestre, prédios dos dois lados, tudo
   conectado. A decoração diagonal antiga (potholes/mud zones) continua por cima, sem
   conflito.
+- **2026-08-02** — Usuário pediu pra continuar aprimorando. Fechei as pontas soltas das
+  ruas (antes cortavam abrupto no meio do nada) com `road-end-round.glb`
+  (`CityStreets.gd:_build_run()` agora trata a primeira e a última posição de cada
+  trecho como ponta, não reta comum; a rotação de 180° de uma ponta pra outra acertou
+  de primeira, confirmado visualmente de cima). Reduzi `extent` de 65 pra 18 (as pontas
+  ficam a uma distância razoável da última rua em vez de sumirem longe do mapa
+  jogável). Também adicionei postes de luz automáticos (`light-square.glb`) a cada 3
+  tiles retos, alternando os dois lados da rua — pequenos demais pra aparecer na vista
+  de cima, mas confirmados no nível do jogador (poste ao lado da faixa de pedestre).
 
 ## Roadmap (fora de escopo desta vertical slice)
 
 - Multiplayer real (cooperativo na oficina / competitivo pelas ruas). Arquitetura atual
   evita estado local hard-coded onde possível, mas a replicação de rede não foi
   implementada.
-- **Malha viária — polimento**: já existe uma grade de ruas conectando o mapa inteiro
-  (`scripts/CityStreets.gd`), mas é só retas + cruzamentos (sem curvas nas bordas do
-  mapa, sem meio-fio/calçada elevada de verdade — os pedestres andam por cima do chão
-  físico comum, a "rua" é só decoração visual). Dava pra usar as pecas `road-bend*`/
-  `road-curve*` já baixadas em `city-kit-roads` pra fechar os cantos.
+- **Malha viária — polimento restante**: as pontas das ruas já têm acabamento
+  arredondado e postes de luz, mas ainda é só retas + cruzamentos em grade — sem
+  meio-fio/calçada elevada de verdade (os pedestres andam por cima do chão físico
+  comum, a "rua" é só decoração visual por cima) e sem curvas diagonais fora da grade
+  ortogonal.
 - Sistema de crafting mais rico (mais tipos de gambiarra, escolha de item por
   inventário em vez de item fixo por ponto de fixação).
 - Economia mais profunda (preços variáveis, múltiplos compradores com personalidades
