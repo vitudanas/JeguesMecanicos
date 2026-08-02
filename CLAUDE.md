@@ -470,6 +470,26 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
   arquivo temporário em `debug_tmp/` (apagado depois, não faz parte do jogo) —
   se for útil de novo no futuro, vale recriar algo parecido antes de mexer na
   posição de prédios/rotas.
+- **2026-08-02** — Usuário pediu pra integrar os personagens Quaternius nos NPCs
+  ("pode fazer"). Descoberta boa: `Superhero_Male/Female_FullBody` e
+  `UAL2_Standard.glb` compartilham o mesmo esqueleto (65 ossos, nomes idênticos)
+  — não precisa do retargeting via BoneMap/SkeletonProfileHumanoid que o
+  `Godot_Setup.png` do pacote sugere (isso só seria necessário misturando
+  personagem+animação de fontes diferentes); dá pra aplicar a animação direto,
+  igual já fazíamos com o Kenney. Generalizei `Pedestrian.gd`
+  (`idle_anim_scene`/`walk_anim_scene`/nomes configuráveis em vez de hard-coded
+  pro Kenney) e `PedestrianRoute.gd` (`character_models` como lista) —
+  100% compatível com o uso atual, headless sem regressão. **Mas não troquei os
+  NPCs de verdade**: testei visualmente e a versão gratuita do
+  `Superhero_Male/Female_FullBody` é só um corpo base **sem roupa nenhuma** (nem
+  a textura "_Dark" é roupa, é só um tom de pele mais escuro com a mesma
+  cueca/biquíni pintados) — não tem peça de roupa nenhuma na versão free do
+  pacote. Colocar isso como pedestre normal andando pela cidade ficaria com
+  gente de cueca/biquíni na rua, o que não parece uma escolha de design
+  intencional (é diferente do humor de "gambiarra" do carro). Revertido o
+  `Town.tscn` de volta pro personagem Kenney (clothed) nos pedestres; o código
+  generalizado continua no repo, pronto pra usar assim que tiver um jeito de
+  vestir esses personagens (outro pacote de roupa, ou eles vestidos à mão).
 
 ## Roadmap (fora de escopo desta vertical slice)
 
@@ -492,10 +512,14 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
   changelog 2026-08-02 —, mas ainda sem áudio nenhum no jogo).
 - **NPCs com personagens diferentes de verdade**: `Superhero_Male/Female_FullBody`
   (Quaternius, CC0) já baixados em `assets/quaternius/universal-base-characters/`,
-  junto com `UAL2_Standard.glb` (130+ animações). Falta o retargeting (BoneMap +
-  SkeletonProfileHumanoid do Godot 4) pra aplicar as animações da biblioteca no
-  esqueleto desses personagens — ver `Godot_Setup.png` dentro do pacote de animação
-  pra o passo a passo oficial. `Pedestrian.gd` continua usando o personagem do
+  junto com `UAL2_Standard.glb` (43 animações na versão free, não 130+ como o
+  pacote pago). O retargeting **não é necessário** (mesmo esqueleto do
+  `UAL2_Standard.glb`, ver changelog 2026-08-02) e `Pedestrian.gd`/
+  `PedestrianRoute.gd` já têm suporte pronto (`character_models`,
+  `idle_anim_scene`/`walk_anim_scene`). O que falta de verdade: os personagens
+  base vêm **sem roupa nenhuma** na versão gratuita — precisaria de um pacote de
+  roupa/outfit (Quaternius vende separado, ou outro CC0 equivalente) antes de
+  usar isso nos pedestres. `Pedestrian.gd` continua usando o personagem do
   Kenney (`characterMedium.fbx`) por enquanto.
 - **Mais prédios prontos do Quaternius**: só 2 dos 3 prédios prontos do Downtown
   City MegaKit foram usados (`Building_Medium_2_001` tem um bug visual, ver
