@@ -156,7 +156,7 @@ script = ExtResource("1")
 shape = SubResource("PotholeShape")
 
 [node name="Building1" parent="." instance=ExtResource("17")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0, 12)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -85, 0, 15)
 visual_scene = ExtResource("40")
 visual_scale = 1.0
 visual_rotation_y_degrees = 30.0
@@ -192,7 +192,7 @@ visual_scale = 7.0
 visual_rotation_y_degrees = 45.0
 
 [node name="Building7" parent="." instance=ExtResource("17")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 0, 25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 78, 0, 20)
 visual_scene = ExtResource("41")
 visual_scale = 1.0
 visual_rotation_y_degrees = 200.0
@@ -226,6 +226,18 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -50, 0, 5)
 visual_scene = ExtResource("29")
 visual_scale = 7.0
 visual_rotation_y_degrees = 330.0
+
+[node name="Building13" parent="." instance=ExtResource("17")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, -88)
+visual_scene = ExtResource("40")
+visual_scale = 1.0
+visual_rotation_y_degrees = 110.0
+
+[node name="Building14" parent="." instance=ExtResource("17")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0, 80)
+visual_scene = ExtResource("41")
+visual_scale = 1.0
+visual_rotation_y_degrees = 250.0
 
 [node name="RoadTile1" parent="." instance=ExtResource("30")]
 transform = Transform3D(4.243, 0, 4.243, 0, 6, 0, -4.243, 0, 4.243, 8, 0.03, 8)
