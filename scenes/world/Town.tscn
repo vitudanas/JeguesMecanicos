@@ -39,6 +39,8 @@
 [ext_resource type="PackedScene" path="res://assets/kenney/city-kit-roads/Models/GLB format/light-square.glb" id="33"]
 [ext_resource type="Script" path="res://scripts/CityStreets.gd" id="38"]
 [ext_resource type="PackedScene" path="res://assets/kenney/city-kit-roads/Models/GLB format/road-end-round.glb" id="39"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/downtown-city-megakit/Buildings/Building_Large_2.gltf" id="40"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/downtown-city-megakit/Buildings/Building_Small_1.gltf" id="41"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
 sky_top_color = Color(0.35, 0.55, 0.85, 1)
@@ -155,8 +157,8 @@ shape = SubResource("PotholeShape")
 
 [node name="Building1" parent="." instance=ExtResource("17")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0, 12)
-visual_scene = ExtResource("18")
-visual_scale = 6.0
+visual_scene = ExtResource("40")
+visual_scale = 1.0
 visual_rotation_y_degrees = 30.0
 
 [node name="Building2" parent="." instance=ExtResource("17")]
@@ -191,8 +193,8 @@ visual_rotation_y_degrees = 45.0
 
 [node name="Building7" parent="." instance=ExtResource("17")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 0, 25)
-visual_scene = ExtResource("24")
-visual_scale = 6.0
+visual_scene = ExtResource("41")
+visual_scale = 1.0
 visual_rotation_y_degrees = 200.0
 
 [node name="Building8" parent="." instance=ExtResource("17")]
