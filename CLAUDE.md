@@ -215,6 +215,22 @@ builds/                 saída dos exports (ignorado pelo git)
   **geração procedural de eventos** (`autoload/EventManager.gd`, spawna ferros-velhos
   extra em pontos aleatórios do mapa). Testado visualmente (pedestre andando de
   verdade perto da oficina). Builds regenerados e tudo commitado/enviado pro GitHub.
+- **2026-08-02** — Usuário reportou que o jogo não abria no Mac. Reproduzi o problema
+  de propósito (extraí o `.zip`, marquei com o atributo de quarentena que o macOS
+  aplica em downloads reais) e confirmei: o app dava **"'Jegues Mecanicos' is damaged
+  and can't be opened"** — mensagem que o Gatekeeper mostra pra apps sem *nenhuma*
+  assinatura, sem opção de abrir mesmo assim. Corrigido ativando assinatura **ad-hoc**
+  (`codesign/codesign=1` em `export_presets.cfg`, preset macOS — gratuita, não exige
+  conta de desenvolvedor Apple). Reexportei e testei de novo com quarentena simulada:
+  agora aparece o diálogo padrão do Gatekeeper ("Apple could not verify...") que **é**
+  contornável (clique direito → Abrir, ou Ajustes do Sistema → Privacidade e Segurança
+  → "Abrir Mesmo Assim"). Também encontrei e corrigi um erro meu: durante o rebase pro
+  GitHub (ver 2026-08-01), usei `git checkout --ours README.md` achando que ia manter
+  nossa versão — mas no `git rebase` (diferente de um merge normal) o `--ours`/
+  `--theirs` fica invertido, então acabei mantendo o README mínimo padrão do GitHub e
+  descartando o nosso. `README.md` reescrito com o conteúdo completo (agora já
+  refletindo as instruções corretas do Gatekeeper) e as instruções de abrir no Mac.
+  Build macOS regenerado e tudo commitado/enviado pro GitHub de novo.
 
 ## Roadmap (fora de escopo desta vertical slice)
 
