@@ -490,6 +490,21 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
   `Town.tscn` de volta pro personagem Kenney (clothed) nos pedestres; o código
   generalizado continua no repo, pronto pra usar assim que tiver um jeito de
   vestir esses personagens (outro pacote de roupa, ou eles vestidos à mão).
+- **2026-08-02** — Usuário pediu pra buscar um pacote de roupa (opção 1 da pergunta
+  anterior). Baixado `Modular Character Outfits - Fantasy` (Quaternius, CC0) —
+  compatível de propósito com o `Universal Base Characters` (mesmo esqueleto de 65
+  ossos, confirmado). Só as roupas "Peasant" (camisa/colete simples, calça, botas —
+  as mais neutras/menos fantasy da versão gratuita) foram mantidas no repo em
+  `assets/quaternius/outfits-fantasy/`. `Pedestrian.gd:_attach_outfit()` transplanta
+  as malhas de roupa pro `Skeleton3D` do personagem base sem precisar de retarget —
+  testado e a animação da UAL2 continua funcionando normal com a roupa por cima.
+  **Achado real que impede de usar em produção ainda**: apareceu um artefato de
+  clipping visual (pedaços de pele nua aparecendo por cima da roupa no torso e na
+  coxa — provável diferença sutil de bind pose entre os dois arquivos `.gltf`
+  exportados separadamente por fontes distintas) e o personagem fica careca (a
+  malha de cabelo é um anexo à parte que não baixamos ainda). Não liguei isso no
+  `Town.tscn` — fica pendente mais investigação (ou aceitar o clipping) antes de
+  usar de verdade nos pedestres.
 
 ## Roadmap (fora de escopo desta vertical slice)
 
