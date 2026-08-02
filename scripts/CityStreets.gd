@@ -42,6 +42,7 @@ extends Node3D
 @export var curb_color := Color(0.72, 0.7, 0.65)
 
 var _curb_mesh: BoxMesh
+var _curb_corner_mesh: BoxMesh
 var _curb_material: StandardMaterial3D
 
 func _ready() -> void:
@@ -55,6 +56,7 @@ func _build() -> void:
 	for row_z in streets_x:
 		for col_x in streets_z:
 			_place(crossroad_scene, Vector3(col_x, 0.03, row_z), 0.0)
+			_place_intersection_curbs(Vector3(col_x, 0.03, row_z))
 
 	var min_x: float = streets_z[0] - extent
 	var max_x: float = streets_z[streets_z.size() - 1] + extent
@@ -152,6 +154,8 @@ func _is_excluded(pos: Vector3) -> bool:
 func _ensure_curb_resources() -> void:
 	_curb_mesh = BoxMesh.new()
 	_curb_mesh.size = Vector3(tile_size, curb_height, sidewalk_width)
+	_curb_corner_mesh = BoxMesh.new()
+	_curb_corner_mesh.size = Vector3(sidewalk_width, curb_height, sidewalk_width)
 	_curb_material = StandardMaterial3D.new()
 	_curb_material.albedo_color = curb_color
 	_curb_material.roughness = 0.9
@@ -162,18 +166,34 @@ func _place_curb_pair(center: Vector3, rot_y_deg: float) -> void:
 	var offset := road_half_width + sidewalk_width * 0.5
 	for side in [1.0, -1.0]:
 		var world_offset := _side_offset(rot_y_deg, side, offset)
-		var body := StaticBody3D.new()
-		add_child(body)
-		body.position = Vector3(center.x, curb_height * 0.5, center.z) + world_offset
-		body.rotation_degrees.y = rot_y_deg
+		_spawn_curb_box(Vector3(center.x, 0.0, center.z) + world_offset, rot_y_deg, _curb_mesh)
 
-		var mesh_inst := MeshInstance3D.new()
-		mesh_inst.mesh = _curb_mesh
-		mesh_inst.set_surface_override_material(0, _curb_material)
-		body.add_child(mesh_inst)
+## Preenche os 4 cantos de cada cruzamento com um bloco de calcada, fechando
+## visualmente o "anel" que as guias das retas/diagonais deixam em aberto perto
+## dos cruzamentos (_near_any em _build_run/_build_diagonal pula as guias bem
+## perto do centro do cruzamento).
+func _place_intersection_curbs(center: Vector3) -> void:
+	if not curb_enabled or _is_excluded(center):
+		return
+	var offset := road_half_width + sidewalk_width * 0.5
+	for side_x in [1.0, -1.0]:
+		for side_z in [1.0, -1.0]:
+			var corner := Vector3(center.x + side_x * offset, 0.0, center.z + side_z * offset)
+			_spawn_curb_box(corner, 0.0, _curb_corner_mesh)
 
-		var shape := CollisionShape3D.new()
-		var box := BoxShape3D.new()
-		box.size = _curb_mesh.size
-		shape.shape = box
-		body.add_child(shape)
+func _spawn_curb_box(pos: Vector3, rot_y_deg: float, mesh: BoxMesh) -> void:
+	var body := StaticBody3D.new()
+	add_child(body)
+	body.position = Vector3(pos.x, curb_height * 0.5, pos.z)
+	body.rotation_degrees.y = rot_y_deg
+
+	var mesh_inst := MeshInstance3D.new()
+	mesh_inst.mesh = mesh
+	mesh_inst.set_surface_override_material(0, _curb_material)
+	body.add_child(mesh_inst)
+
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = mesh.size
+	shape.shape = box
+	body.add_child(shape)

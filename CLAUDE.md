@@ -363,6 +363,19 @@ builds/                 saída dos exports (ignorado pelo git)
   Testado headless (zero erros) e confirmado visualmente com câmera de debug aérea
   temporária + `screencapture`: a rua diagonal aparece certinha, com as duas pontas
   arredondadas, sem sobrepor a malha ortogonal.
+- **2026-08-02** — Usuário pediu pra continuar (terceiro item do mesmo tópico):
+  calçada não contornava os cruzamentos. Adicionado `_place_intersection_curbs()` em
+  `CityStreets.gd`, chamado junto de cada `crossroad_scene` — preenche os 4 cantos do
+  cruzamento com um bloco de calçada (mesmo material/altura do meio-fio das retas),
+  fechando o "anel" que ficava em aberto perto do centro da grade. Extraído
+  `_spawn_curb_box()` como helper comum (antes a criação de `StaticBody3D` +
+  `MeshInstance3D` + `CollisionShape3D` só existia dentro de `_place_curb_pair`,
+  agora reaproveitada pelos dois). Verificado por contagem de nós rodando headless
+  (print temporário, removido depois) que os 22 cruzamentos válidos da grade 5×5
+  geram os 4 cantos cada (os 3 que faltam são os excluídos perto da
+  oficina/ferro-velho/comprador, como esperado). Confirmado visualmente com câmera
+  aérea + `screencapture` num cruzamento sem sombra de prédio por perto: os cantos
+  aparecem conectando suavemente com as guias das retas, sem buraco visível.
 
 ## Roadmap (fora de escopo desta vertical slice)
 
@@ -370,15 +383,13 @@ builds/                 saída dos exports (ignorado pelo git)
   evita estado local hard-coded onde possível, mas a replicação de rede não foi
   implementada.
 - **Malha viária — polimento restante**: as pontas das ruas já têm acabamento
-  arredondado, postes de luz, meio-fio/calçada elevada de verdade (com colisão própria)
-  e agora um exemplo de trecho diagonal fora da grade ortogonal (ver changelog
-  2026-08-02, `CityStreets.gd:_build_diagonal()`). Ainda falta: (1) calçada não
-  contorna os cruzamentos (só as retas/diagonais têm guia, o cruzamento fica sem
-  meio-fio nos quatro cantos); (2) não existe peça de cruzamento diagonal-com-
-  ortogonal — o trecho diagonal atual só funciona por caber inteiro dentro de um
-  quarteirão vazio, sem cruzar nenhuma rua da grade; pra virar uma avenida diagonal de
-  verdade cortando o mapa (tipo Broadway em Manhattan) precisaria resolver esses
-  cruzamentos em ângulo, o que não foi tentado ainda.
+  arredondado, postes de luz, meio-fio/calçada elevada de verdade (com colisão própria,
+  já fechando nos 4 cantos de cada cruzamento) e um exemplo de trecho diagonal fora da
+  grade ortogonal (ver changelog 2026-08-02, `CityStreets.gd`). Ainda falta: não existe
+  peça de cruzamento diagonal-com-ortogonal — o trecho diagonal atual só funciona por
+  caber inteiro dentro de um quarteirão vazio, sem cruzar nenhuma rua da grade; pra
+  virar uma avenida diagonal de verdade cortando o mapa (tipo Broadway em Manhattan)
+  precisaria resolver esses cruzamentos em ângulo, o que não foi tentado ainda.
 - Sistema de crafting mais rico (mais tipos de gambiarra, escolha de item por
   inventário em vez de item fixo por ponto de fixação).
 - Economia mais profunda (preços variáveis, múltiplos compradores com personalidades
