@@ -3,13 +3,18 @@ extends RigidBody3D
 ## de um PathFollow3D, congelado/kinematic enquanto anda). Ao levar um
 ## impacto forte (carro do jogador, destroco de gambiarra voando etc.)
 ## vira ragdoll de verdade (RigidBody3D solto) por alguns segundos e
-## depois volta sozinho pra rota. Visual: modelo do Kenney Mini
-## Characters, com fallback pra uma capsula colorida.
+## depois volta sozinho pra rota. Visual: modelo do Kenney Animated
+## Characters Protagonists (proporcao humana normal, nao chibi), com a
+## textura de skin aplicada por cima (o FBX vem sem textura propria —
+## Kenney separa a malha da skin pra poder trocar de personagem) e
+## fallback pra uma capsula colorida se o modelo nao carregar.
 
 signal ragdolled
 
 @export var speed := 1.4
 @export var character_model: PackedScene
+@export var skin_texture: Texture2D
+@export var visual_scale := 1.0
 @export var ragdoll_impact_threshold := 4.0
 @export var ragdoll_recover_time := 4.0
 
@@ -32,8 +37,25 @@ func _load_visual() -> void:
 		return
 	var visual := character_model.instantiate()
 	add_child(visual)
+	if visual is Node3D:
+		visual.scale = Vector3.ONE * visual_scale
+	if skin_texture:
+		var mesh_instance := _find_mesh_instance(visual)
+		if mesh_instance:
+			var mat := StandardMaterial3D.new()
+			mat.albedo_texture = skin_texture
+			mesh_instance.set_surface_override_material(0, mat)
 	if fallback_mesh:
 		fallback_mesh.visible = false
+
+func _find_mesh_instance(node: Node) -> MeshInstance3D:
+	if node is MeshInstance3D:
+		return node
+	for child in node.get_children():
+		var found := _find_mesh_instance(child)
+		if found:
+			return found
+	return null
 
 func _freeze_to_path() -> void:
 	freeze = true

@@ -1,4 +1,4 @@
-[gd_scene load_steps=28 format=3]
+[gd_scene load_steps=50 format=3]
 
 [ext_resource type="Script" path="res://scripts/Pothole.gd" id="1"]
 [ext_resource type="Script" path="res://scenes/world/Town.gd" id="5"]
@@ -10,11 +10,33 @@
 [ext_resource type="PackedScene" path="res://assets/kenney/car-kit/Models/GLB format/sedan.glb" id="8"]
 [ext_resource type="PackedScene" path="res://assets/kenney/car-kit/Models/GLB format/taxi.glb" id="9"]
 [ext_resource type="PackedScene" path="res://assets/kenney/car-kit/Models/GLB format/van.glb" id="10"]
+[ext_resource type="PackedScene" path="res://assets/kenney/car-kit/Models/GLB format/sedan-sports.glb" id="34"]
+[ext_resource type="PackedScene" path="res://assets/kenney/car-kit/Models/GLB format/suv-luxury.glb" id="35"]
+[ext_resource type="PackedScene" path="res://assets/kenney/car-kit/Models/GLB format/race.glb" id="36"]
+[ext_resource type="PackedScene" path="res://assets/kenney/car-kit/Models/GLB format/police.glb" id="37"]
 [ext_resource type="PackedScene" path="res://scenes/npc/PedestrianRoute.tscn" id="11"]
-[ext_resource type="PackedScene" path="res://assets/kenney/mini-characters/Models/GLB format/character-male-a.glb" id="12"]
-[ext_resource type="PackedScene" path="res://assets/kenney/mini-characters/Models/GLB format/character-female-a.glb" id="13"]
-[ext_resource type="PackedScene" path="res://assets/kenney/mini-characters/Models/GLB format/character-male-c.glb" id="14"]
-[ext_resource type="PackedScene" path="res://assets/kenney/mini-characters/Models/GLB format/character-female-c.glb" id="15"]
+[ext_resource type="PackedScene" path="res://assets/kenney/animated-characters-protagonists/Model/characterMedium.fbx" id="12"]
+[ext_resource type="Texture2D" path="res://assets/kenney/animated-characters-protagonists/Skins/skaterMaleA.png" id="13"]
+[ext_resource type="Texture2D" path="res://assets/kenney/animated-characters-protagonists/Skins/skaterFemaleA.png" id="14"]
+[ext_resource type="Texture2D" path="res://assets/kenney/animated-characters-protagonists/Skins/criminalMaleA.png" id="15"]
+[ext_resource type="Texture2D" path="res://assets/kenney/animated-characters-protagonists/Skins/cyborgFemaleA.png" id="16"]
+[ext_resource type="PackedScene" path="res://scenes/world/CityBuilding.tscn" id="17"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-e.glb" id="18"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-skyscraper-b.glb" id="19"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/low-detail-building-c.glb" id="20"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-skyscraper-a.glb" id="21"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-h.glb" id="22"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-skyscraper-d.glb" id="23"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-j.glb" id="24"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-skyscraper-c.glb" id="25"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-b.glb" id="26"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/low-detail-building-g.glb" id="27"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-skyscraper-e.glb" id="28"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-n.glb" id="29"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-roads/Models/GLB format/road-straight.glb" id="30"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-roads/Models/GLB format/road-bend.glb" id="31"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-roads/Models/GLB format/road-crossroad.glb" id="32"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-roads/Models/GLB format/light-square.glb" id="33"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
 sky_top_color = Color(0.35, 0.55, 0.85, 1)
@@ -29,7 +51,15 @@ sky_material = SubResource("SkyMat")
 background_mode = 2
 sky = SubResource("Sky_1")
 ambient_light_source = 3
-ambient_light_energy = 0.6
+ambient_light_energy = 0.9
+tonemap_mode = 2
+glow_enabled = true
+glow_intensity = 0.5
+glow_bloom = 0.05
+glow_hdr_threshold = 1.2
+ssao_enabled = true
+ssao_radius = 2.0
+ssao_intensity = 1.5
 
 [sub_resource type="BoxShape3D" id="GroundShape"]
 size = Vector3(300, 1, 300)
@@ -68,7 +98,8 @@ environment = SubResource("Env_1")
 [node name="Sun" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.8, -0.3, 0.5, 0, 0.86, 0.5, -0.6, -0.4, 0.68, 0, 12, 0)
 shadow_enabled = true
-light_energy = 1.1
+light_energy = 1.3
+light_color = Color(1, 0.97, 0.9, 1)
 
 [node name="Ground" type="StaticBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
@@ -120,74 +151,107 @@ script = ExtResource("1")
 [node name="Shape" type="CollisionShape3D" parent="Pothole4"]
 shape = SubResource("PotholeShape")
 
-[node name="Building1" type="StaticBody3D" parent="."]
-transform = Transform3D(6, 0, 0, 0, 10, 0, 0, 0, 6, -16, 5, 12)
+[node name="Building1" parent="." instance=ExtResource("17")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -16, 0, 12)
+visual_scene = ExtResource("18")
+visual_scale = 6.0
+visual_rotation_y_degrees = 30.0
 
-[node name="Mesh" type="MeshInstance3D" parent="Building1"]
-mesh = SubResource("UnitBoxMesh")
-surface_material_override/0 = SubResource("BuildingMatA")
+[node name="Building2" parent="." instance=ExtResource("17")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0, -12)
+visual_scene = ExtResource("19")
+visual_scale = 4.5
+visual_rotation_y_degrees = 0.0
 
-[node name="Shape" type="CollisionShape3D" parent="Building1"]
-shape = SubResource("UnitBoxShape")
+[node name="Building3" parent="." instance=ExtResource("17")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 0, 18)
+visual_scene = ExtResource("20")
+visual_scale = 6.0
+visual_rotation_y_degrees = 60.0
 
-[node name="Building2" type="StaticBody3D" parent="."]
-transform = Transform3D(5, 0, 0, 0, 14, 0, 0, 0, 5, 18, 7, -12)
+[node name="Building4" parent="." instance=ExtResource("17")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32, 0, 8)
+visual_scene = ExtResource("21")
+visual_scale = 6.0
+visual_rotation_y_degrees = 90.0
 
-[node name="Mesh" type="MeshInstance3D" parent="Building2"]
-mesh = SubResource("UnitBoxMesh")
-surface_material_override/0 = SubResource("BuildingMatB")
+[node name="Building5" parent="." instance=ExtResource("17")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, -35)
+visual_scene = ExtResource("22")
+visual_scale = 5.0
+visual_rotation_y_degrees = 15.0
 
-[node name="Shape" type="CollisionShape3D" parent="Building2"]
-shape = SubResource("UnitBoxShape")
+[node name="Building6" parent="." instance=ExtResource("17")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -40)
+visual_scene = ExtResource("23")
+visual_scale = 7.0
+visual_rotation_y_degrees = 45.0
 
-[node name="Building3" type="StaticBody3D" parent="."]
-transform = Transform3D(7, 0, 0, 0, 8, 0, 0, 0, 7, -30, 4, 18)
+[node name="Building7" parent="." instance=ExtResource("17")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 45, 0, 25)
+visual_scene = ExtResource("24")
+visual_scale = 6.0
+visual_rotation_y_degrees = 200.0
 
-[node name="Mesh" type="MeshInstance3D" parent="Building3"]
-mesh = SubResource("UnitBoxMesh")
-surface_material_override/0 = SubResource("BuildingMatC")
+[node name="Building8" parent="." instance=ExtResource("17")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45, 0, -25)
+visual_scene = ExtResource("25")
+visual_scale = 5.5
+visual_rotation_y_degrees = 100.0
 
-[node name="Shape" type="CollisionShape3D" parent="Building3"]
-shape = SubResource("UnitBoxShape")
+[node name="Building9" parent="." instance=ExtResource("17")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0, 45)
+visual_scene = ExtResource("26")
+visual_scale = 6.5
+visual_rotation_y_degrees = 250.0
 
-[node name="Building4" type="StaticBody3D" parent="."]
-transform = Transform3D(6, 0, 0, 0, 18, 0, 0, 0, 6, 32, 9, 8)
+[node name="Building10" parent="." instance=ExtResource("17")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 0, -45)
+visual_scene = ExtResource("27")
+visual_scale = 6.0
+visual_rotation_y_degrees = 300.0
 
-[node name="Mesh" type="MeshInstance3D" parent="Building4"]
-mesh = SubResource("UnitBoxMesh")
-surface_material_override/0 = SubResource("BuildingMatA")
+[node name="Building11" parent="." instance=ExtResource("17")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 50, 0, -5)
+visual_scene = ExtResource("28")
+visual_scale = 6.0
+visual_rotation_y_degrees = 150.0
 
-[node name="Shape" type="CollisionShape3D" parent="Building4"]
-shape = SubResource("UnitBoxShape")
+[node name="Building12" parent="." instance=ExtResource("17")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -50, 0, 5)
+visual_scene = ExtResource("29")
+visual_scale = 7.0
+visual_rotation_y_degrees = 330.0
 
-[node name="Building5" type="StaticBody3D" parent="."]
-transform = Transform3D(8, 0, 0, 0, 6, 0, 0, 0, 8, 10, 3, -35)
+[node name="RoadTile1" parent="." instance=ExtResource("30")]
+transform = Transform3D(4.243, 0, 4.243, 0, 6, 0, -4.243, 0, 4.243, 8, 0.03, 8)
 
-[node name="Mesh" type="MeshInstance3D" parent="Building5"]
-mesh = SubResource("UnitBoxMesh")
-surface_material_override/0 = SubResource("BuildingMatB")
+[node name="RoadTile2" parent="." instance=ExtResource("30")]
+transform = Transform3D(4.243, 0, 4.243, 0, 6, 0, -4.243, 0, 4.243, 15, 0.03, 15)
 
-[node name="Shape" type="CollisionShape3D" parent="Building5"]
-shape = SubResource("UnitBoxShape")
+[node name="RoadTile3" parent="." instance=ExtResource("30")]
+transform = Transform3D(4.243, 0, 4.243, 0, 6, 0, -4.243, 0, 4.243, 21, 0.03, 21)
 
-[node name="Building6" type="StaticBody3D" parent="."]
-transform = Transform3D(5, 0, 0, 0, 22, 0, 0, 0, 5, -8, 11, -40)
+[node name="RoadCrossroad1" parent="." instance=ExtResource("32")]
+transform = Transform3D(6, 0, 0, 0, 6, 0, 0, 0, 6, 0, 0.03, 0)
 
-[node name="Mesh" type="MeshInstance3D" parent="Building6"]
-mesh = SubResource("UnitBoxMesh")
-surface_material_override/0 = SubResource("BuildingMatC")
+[node name="StreetLight1" parent="." instance=ExtResource("33")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 6, 0, 10)
 
-[node name="Shape" type="CollisionShape3D" parent="Building6"]
-shape = SubResource("UnitBoxShape")
+[node name="StreetLight2" parent="." instance=ExtResource("33")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 18, 0, 22)
+
+[node name="StreetLight3" parent="." instance=ExtResource("33")]
+transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -3, 0, -3)
 
 [node name="TrafficRouteWorkshop" parent="." instance=ExtResource("6")]
 route_points = Array[Vector3]([Vector3(5, 0.4, 5), Vector3(29, 0.4, 5), Vector3(29, 0.4, 29), Vector3(5, 0.4, 29)])
-car_models = Array[PackedScene]([ExtResource("8"), ExtResource("9"), ExtResource("10")])
+car_models = Array[PackedScene]([ExtResource("34"), ExtResource("35"), ExtResource("36")])
 
 [node name="TrafficRouteJunkyard" parent="." instance=ExtResource("6")]
 route_points = Array[Vector3]([Vector3(-36, 0.4, -32), Vector3(-14, 0.4, -32), Vector3(-14, 0.4, -12), Vector3(-36, 0.4, -12)])
 car_count = 2
-car_models = Array[PackedScene]([ExtResource("9"), ExtResource("10")])
+car_models = Array[PackedScene]([ExtResource("37"), ExtResource("35")])
 
 [node name="MudZone1" parent="." instance=ExtResource("7")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 8)
@@ -203,11 +267,15 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 0, 20)
 
 [node name="PedestrianRouteWorkshop" parent="." instance=ExtResource("11")]
 route_points = Array[Vector3]([Vector3(-6, 0.1, -6), Vector3(6, 0.1, -6), Vector3(6, 0.1, 6), Vector3(-6, 0.1, 6)])
-character_models = Array[PackedScene]([ExtResource("12"), ExtResource("13")])
+character_model = ExtResource("12")
+skin_textures = Array[Texture2D]([ExtResource("13"), ExtResource("14")])
+visual_scale = 1.0
 
 [node name="PedestrianRouteBuyer" parent="." instance=ExtResource("11")]
 route_points = Array[Vector3]([Vector3(20, 0.1, 20), Vector3(32, 0.1, 20), Vector3(32, 0.1, 32), Vector3(20, 0.1, 32)])
-character_models = Array[PackedScene]([ExtResource("14"), ExtResource("15")])
+character_model = ExtResource("12")
+skin_textures = Array[Texture2D]([ExtResource("15"), ExtResource("16")])
+visual_scale = 1.0
 
 [node name="EventSpawnPoint1" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0.5, -15)

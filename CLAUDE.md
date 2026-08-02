@@ -251,23 +251,56 @@ builds/                 saída dos exports (ignorado pelo git)
   mexer no `export_filter`/`exclude_filter`, testar rodando o `.app`/`.exe` exportado
   de verdade, não só o modo desenvolvedor — os dois podem divergir exatamente por causa
   desse filtro.
+- **2026-08-02** — Usuário achou os assets atuais feios (pedestres chibi/miniatura do
+  Mini Characters, resto do mapa ainda em blockout) e pediu um visual "desenhado mas
+  nem tanto" pro mapa inteiro, com pedestres do tamanho do jogador e carros mais
+  estilosos. Baixado o pacote CC0
+  [Animated Characters Protagonists](https://kenney.nl/assets/animated-characters-protagonists)
+  (proporção humana normal, formato FBX — diferente dos outros pacotes que vinham em
+  GLB, esse só tem FBX + texturas de skin separadas). Trocado `Pedestrian.gd`: agora
+  instancia o FBX e aplica a textura de skin escolhida via
+  `set_surface_override_material()` num `MeshInstance3D` achado recursivamente (o
+  modelo vem sem skin própria — Kenney separa malha e textura pra poder trocar de
+  personagem). Escala 1:1 já bateu certinho com a altura do jogador, sem precisar
+  ajustar. Criado `scripts/AutoCollisionBody.gd` (utilitário genérico: instancia uma
+  cena visual e gera sozinho uma `CollisionShape3D` do tamanho exato do mesh, calculando
+  a AABB local recursivamente — evita ter que calcular na mão pra cada modelo) e
+  `scenes/world/CityBuilding.tscn` em cima dele. Trocados os 6 prédios-caixa de
+  `Town.tscn` por modelos reais de `city-kit-commercial` (prédios + skyscrapers) e
+  adicionados mais 6 novos espalhados pelo mapa (12 no total). Adicionada decoração de
+  rua (`city-kit-roads`: tiles de asfalto com faixa de pedestre, cruzamento, postes de
+  luz) ao longo da rota principal. Trocados os carros de tráfego pra variantes mais
+  estilosas do Car Kit (`sedan-sports`, `suv-luxury`, `race`, `police`). Melhorada a
+  `Environment` de `Town.tscn` (mais luz ambiente, glow leve, SSAO, tonemap) pra tirar o
+  aspecto "chapado". Confirmado visualmente rodando o jogo de verdade: cidade com
+  prédios/ruas reais, pedestre do tamanho do jogador com textura, carros melhores.
+  **Limitação conhecida**: os pedestres ficam parados em pose T (braços esticados) — o
+  modelo é rigged e tem animações (`idle`/`run`/`jump`) mas não implementei o
+  `AnimationPlayer` ainda (fica no roadmap). Builds regenerados — dessa vez já testando
+  o `.app` exportado de verdade antes de dar como pronto (lição da rodada anterior) — e
+  tudo commitado/enviado pro GitHub.
 
 ## Roadmap (fora de escopo desta vertical slice)
 
 - Multiplayer real (cooperativo na oficina / competitivo pelas ruas). Arquitetura atual
   evita estado local hard-coded onde possível, mas a replicação de rede não foi
   implementada.
-- **Reconstruir `Town.tscn` com assets reais**: já baixamos `city-kit-roads` e
-  `city-kit-commercial` (Kenney) em `assets/kenney/`, mas a cidade ainda usa só
-  primitivas/blockout — trocar por uma cidade grande de verdade com esses modelos é a
-  próxima rodada de level design (a maior pendência do roadmap agora).
+- **Malha viária conectada de verdade**: os prédios já são modelos reais de
+  `city-kit-commercial` e há decoração de rua (`city-kit-roads`) na rota principal, mas
+  ainda não é uma malha viária 100% "encaixada" tipo tilemap (curvas/cruzamentos se
+  conectando perfeitamente em todo o mapa, calçadas com meio-fio contínuas). O que tem
+  hoje é decoração pontual por cima do chão físico existente.
+- **Animação dos pedestres**: o modelo (Animated Characters Protagonists) já vem
+  rigged com animações `idle`/`run`/`jump` em FBX separados, mas ainda não montei o
+  `AnimationPlayer` — por enquanto os pedestres andam na pose T parada.
 - Sistema de crafting mais rico (mais tipos de gambiarra, escolha de item por
   inventário em vez de item fixo por ponto de fixação).
 - Economia mais profunda (preços variáveis, múltiplos compradores com personalidades
   diferentes, negociação).
 - Sons, música, efeitos de UI/menu, tela de menu principal e de pause.
-- Ícone do jogo e assinatura de código (o preset macOS está sem `codesign`/notarização;
-  hoje quem baixar vai precisar liberar o app manualmente no Gatekeeper — ver README).
+- Ícone do jogo e notarização (o preset macOS já usa assinatura ad-hoc, gratuita — ver
+  changelog 2026-08-02 — mas não é notarizado pela Apple; hoje quem baixar ainda
+  precisa clicar em "Abrir" uma vez, ver README).
 
 ## Limitações conhecidas da vertical slice
 

@@ -7,7 +7,9 @@ extends Path3D
 @export var pedestrian_count := 3
 @export var speed_min := 1.0
 @export var speed_max := 1.8
-@export var character_models: Array[PackedScene] = []
+@export var character_model: PackedScene
+@export var skin_textures: Array[Texture2D] = []
+@export var visual_scale := 1.0
 
 const PEDESTRIAN_SCENE := preload("res://scenes/npc/Pedestrian.tscn")
 
@@ -28,6 +30,8 @@ func _spawn_pedestrians() -> void:
 
 		var pedestrian := PEDESTRIAN_SCENE.instantiate()
 		pedestrian.speed = randf_range(speed_min, speed_max)
-		if character_models.size() > 0:
-			pedestrian.character_model = character_models[i % character_models.size()]
+		pedestrian.character_model = character_model
+		pedestrian.visual_scale = visual_scale
+		if skin_textures.size() > 0:
+			pedestrian.skin_texture = skin_textures[i % skin_textures.size()]
 		path_follow.add_child(pedestrian)
