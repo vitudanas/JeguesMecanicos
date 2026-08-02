@@ -505,6 +505,25 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
   malha de cabelo é um anexo à parte que não baixamos ainda). Não liguei isso no
   `Town.tscn` — fica pendente mais investigação (ou aceitar o clipping) antes de
   usar de verdade nos pedestres.
+- **2026-08-02** — Usuário pediu pra continuar tentando (opção 1: cabelo + corrigir
+  clipping). Baixado o cabelo (`Hair_SimpleParted`/`Hair_Long`, "Rigged to Head
+  Bone", mesmo esqueleto) e generalizada `_attach_external_meshes()` em
+  `Pedestrian.gd` pra aceitar `hair_scene` com a mesma técnica do `outfit_scene` —
+  cabelo prende certinho, sem clipping (é uma malha pequena e independente, não
+  tem o problema do corpo). Pro clipping da roupa, testei sistematicamente vários
+  valores de encolhimento do corpo nu por baixo da roupa
+  (`BODY_SHRINK_UNDER_CLOTHES`): **nenhum valor único resolve 100%** — a 0.7 o
+  clipping some mas a cabeça encolhe visivelmente e sobra um pé descalço; a 0.85
+  conserta torso/perna mas abre uma folga entre pescoço e gola da camisa; a 0.93
+  o pescoço encaixa mas o meio do torso volta a vazar pele. Fixei em 0.9 (o
+  meio-termo menos ruim, mas ainda com um resíduo pequeno de clipping no
+  torso/coxa — ver screenshot que mandei pro usuário). Isso indica uma diferença
+  real de *bind pose* entre os dois `.gltf` (personagem base x roupa),
+  exportados separadamente — resolver de verdade exigiria reexportar/realinhar
+  no Blender, fora do alcance de scripting em Godot. `Town.tscn` continua com o
+  personagem do Kenney nos pedestres; fica pra decidir se o resultado atual
+  (com o resíduo de clipping) já é bom o suficiente pra usar, ou se vale
+  investir em Blender/outra fonte de assets.
 
 ## Roadmap (fora de escopo desta vertical slice)
 
