@@ -4,6 +4,15 @@ Documento vivo do projeto. Aqui ficam registrados o pitch do jogo, decisões té
 o histórico de ordens/mudanças pedidas pelo usuário e o roadmap. Atualizar sempre que
 uma decisão relevante for tomada ou o escopo mudar.
 
+## Notas de fluxo de trabalho
+
+- **Rodar `/clear` entre sessões/tarefas grandes.** Pedido do usuário em 2026-08-02: a
+  conversa fica muito longa depois de várias rodadas seguidas (cada exportação de
+  build, cada teste visual etc. consome bastante contexto) — vale limpar o histórico
+  do chat com `/clear` de vez em quando, já que este `CLAUDE.md` guarda o essencial do
+  progresso e decisões, então uma sessão nova consegue retomar o projeto lendo este
+  arquivo sem precisar do histórico completo da conversa anterior.
+
 ## Pitch
 
 Jogo 3D de mundo aberto (sandbox), humor absurdo e física caótica, inspirado na vibe de
@@ -313,6 +322,8 @@ builds/                 saída dos exports (ignorado pelo git)
   jogável). Também adicionei postes de luz automáticos (`light-square.glb`) a cada 3
   tiles retos, alternando os dois lados da rua — pequenos demais pra aparecer na vista
   de cima, mas confirmados no nível do jogador (poste ao lado da faixa de pedestre).
+- **2026-08-02** — Usuário pediu pra anotar um lembrete de rodar `/clear` entre sessões
+  longas (ver "Notas de fluxo de trabalho" no topo do arquivo).
 
 ## Roadmap (fora de escopo desta vertical slice)
 
