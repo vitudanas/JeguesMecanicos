@@ -174,7 +174,7 @@ visual_scale = 6.0
 visual_rotation_y_degrees = 60.0
 
 [node name="Building4" parent="." instance=ExtResource("17")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 32, 0, 8)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 38, 0, 14)
 visual_scene = ExtResource("21")
 visual_scale = 6.0
 visual_rotation_y_degrees = 90.0
@@ -186,7 +186,7 @@ visual_scale = 5.0
 visual_rotation_y_degrees = 15.0
 
 [node name="Building6" parent="." instance=ExtResource("17")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -40)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -41)
 visual_scene = ExtResource("23")
 visual_scale = 7.0
 visual_rotation_y_degrees = 45.0
