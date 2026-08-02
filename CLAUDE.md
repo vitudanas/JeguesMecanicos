@@ -288,17 +288,33 @@ builds/                 saída dos exports (ignorado pelo git)
   enquanto anda e parando durante o ragdoll (volta a tocar ao recuperar). Os `Animation`
   extraídos ficam em cache estático (`static var`) — só extrai uma vez, todo pedestre
   reaproveita. Confirmado visualmente: pedestres correndo de verdade, sem pose T.
+- **2026-08-02** — Usuário perguntou "cadê as ruas?" — a decoração de rua até então só
+  cobria a rota diagonal principal; o resto da cidade era só prédios soltos no chão sem
+  nenhuma rua de verdade. Cheguei a pesquisar se existia uma cidade 3D pronta pra baixar
+  (o usuário sugeriu), mas não achei nada de graça que fosse "baixar e encaixar" —
+  todas as opções (Kenney, KayKit etc.) são kits modulares iguais ao que já tínhamos, só
+  trocando as peças. Em vez disso, criei `scripts/CityStreets.gd`: gera uma malha
+  viária em grade (tipo Manhattan) por código a partir de duas listas de posições de
+  rua (`streets_x`/`streets_z`), preenchendo cruzamentos (`road-crossroad.glb`) e
+  trechos retos (`road-straight.glb`) entre eles, com um raio de exclusão
+  (`exclude_points`/`exclude_radius`) pra não desenhar rua em cima da oficina, do
+  ferro-velho e do comprador. Instanciado em `Town.tscn` com ruas em X/Z =
+  {-50,-25,0,25,50}, cobrindo o mapa inteiro e conectando os 12 prédios em quarteirões
+  de verdade. Confirmado visualmente de cima (bird's eye, câmera de teste temporária) e
+  no nível do jogador — rua com faixa de pedestre, prédios dos dois lados, tudo
+  conectado. A decoração diagonal antiga (potholes/mud zones) continua por cima, sem
+  conflito.
 
 ## Roadmap (fora de escopo desta vertical slice)
 
 - Multiplayer real (cooperativo na oficina / competitivo pelas ruas). Arquitetura atual
   evita estado local hard-coded onde possível, mas a replicação de rede não foi
   implementada.
-- **Malha viária conectada de verdade**: os prédios já são modelos reais de
-  `city-kit-commercial` e há decoração de rua (`city-kit-roads`) na rota principal, mas
-  ainda não é uma malha viária 100% "encaixada" tipo tilemap (curvas/cruzamentos se
-  conectando perfeitamente em todo o mapa, calçadas com meio-fio contínuas). O que tem
-  hoje é decoração pontual por cima do chão físico existente.
+- **Malha viária — polimento**: já existe uma grade de ruas conectando o mapa inteiro
+  (`scripts/CityStreets.gd`), mas é só retas + cruzamentos (sem curvas nas bordas do
+  mapa, sem meio-fio/calçada elevada de verdade — os pedestres andam por cima do chão
+  físico comum, a "rua" é só decoração visual). Dava pra usar as pecas `road-bend*`/
+  `road-curve*` já baixadas em `city-kit-roads` pra fechar os cantos.
 - Sistema de crafting mais rico (mais tipos de gambiarra, escolha de item por
   inventário em vez de item fixo por ponto de fixação).
 - Economia mais profunda (preços variáveis, múltiplos compradores com personalidades
