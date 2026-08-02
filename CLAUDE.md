@@ -125,9 +125,11 @@ local hard-coded sempre que possível.
 ## Controles (vertical slice atual)
 
 - **A pé:** W/A/S/D anda, Shift corre, Space pula, E interage (olhando para o alvo),
-  Esc solta/recaptura o mouse.
+  Esc abre/fecha o menu de pause.
 - **Dirigindo:** W/S acelera/ré, A/D vira, Space freio de mão, F sai do carro.
 - **Venda:** segurar E perto do comprador enche a barra de lábia.
+- **Menus:** o jogo abre num menu principal (Jogar/Sair); Esc a qualquer momento
+  dentro da partida pausa e abre Continuar/Sair para o Menu/Sair do Jogo.
 
 ## Estrutura do projeto
 
@@ -144,7 +146,9 @@ scenes/world/           Town.tscn (cidade sandbox), Junkyard.tscn, Workshop.tscn
                         MudZone.tscn/gd, RainFX.tscn/gd
 scenes/traffic/         TrafficCar.tscn/gd, TrafficRoute.tscn/gd — carros de IA
 scenes/npc/             BuyerNPC.tscn/gd, Pedestrian.tscn/gd, PedestrianRoute.tscn/gd
-scenes/ui/              HUD.tscn/gd — dinheiro, prompt de interação, barra de lábia
+scenes/ui/              HUD.tscn/gd — dinheiro, prompt de interação, barra de lábia;
+                        MainMenu.tscn/gd (tela inicial, cena de entrada do jogo);
+                        PauseMenu.tscn/gd (Esc pausa a árvore, some com o mouse)
 assets/kenney/          pacotes CC0 do Kenney.nl (roads, commercial, car-kit,
                         mini-characters) — ver "Sistemas de Mundo Aberto"
 builds/                 saída dos exports (ignorado pelo git)
@@ -376,6 +380,24 @@ builds/                 saída dos exports (ignorado pelo git)
   oficina/ferro-velho/comprador, como esperado). Confirmado visualmente com câmera
   aérea + `screencapture` num cruzamento sem sombra de prédio por perto: os cantos
   aparecem conectando suavemente com as guias das retas, sem buraco visível.
+- **2026-08-02** — Usuário pediu pra continuar; mudei de tópico (malha viária já
+  estava fechada) pro item "sem menu principal/pause" do Roadmap. Criado
+  `scenes/ui/MainMenu.tscn`/`.gd` (tela inicial — título, subtítulo, Jogar/Sair) e
+  `scenes/ui/PauseMenu.tscn`/`.gd` (Esc abre/fecha de qualquer lugar da partida,
+  `get_tree().paused = true` + solta o mouse; botões Continuar/Sair para o
+  Menu/Sair do Jogo). `project.godot:run/main_scene` agora aponta pro `MainMenu`
+  em vez do `Main.tscn` direto. O toggle de mouse antigo em `Player.gd` (Esc
+  soltava/recapturava sem pausar nada) foi removido — o `PauseMenu` agora é o
+  único dono do Esc e já cuida do mouse ao pausar/continuar. Testado headless nas
+  três cenas (`MainMenu.tscn`, `Main.tscn` e a cena padrão do projeto), zero erros.
+  Confirmado visualmente com janela real que o `MainMenu` renderiza certo (título,
+  botões). **Não consegui confirmar visualmente o fluxo completo** (clicar Jogar →
+  jogo → Esc → pause → Continuar): a tela do Mac apagou (deu tempo/protetor de
+  tela) bem no meio do teste, e depois disso `screencapture` só voltou preto —
+  não tentei "acordar" a tela mexendo no seu teclado/mouse de verdade sozinho, já
+  que isso não é algo que a IA deveria decidir por conta própria. Vale você
+  conferir esse fluxo (Jogar, Esc, Continuar, Sair para o Menu) na próxima vez que
+  abrir o jogo.
 
 ## Roadmap (fora de escopo desta vertical slice)
 
@@ -394,7 +416,8 @@ builds/                 saída dos exports (ignorado pelo git)
   inventário em vez de item fixo por ponto de fixação).
 - Economia mais profunda (preços variáveis, múltiplos compradores com personalidades
   diferentes, negociação).
-- Sons, música, efeitos de UI/menu, tela de menu principal e de pause.
+- Sons, música, efeitos de UI/menu (menu principal e de pause já existem — ver
+  changelog 2026-08-02 —, mas ainda sem áudio nenhum no jogo).
 - Ícone do jogo e notarização (o preset macOS já usa assinatura ad-hoc, gratuita — ver
   changelog 2026-08-02 — mas não é notarizado pela Apple; hoje quem baixar ainda
   precisa clicar em "Abrir" uma vez, ver README).
@@ -405,4 +428,3 @@ builds/                 saída dos exports (ignorado pelo git)
   ainda está incompleto, o prompt volta a mostrar "Rebocar [E]" mesmo já estando na
   oficina — inofensivo, só reengancha o TowHook.
 - Só existe um comprador (BuyerNPC) e uma rota fixa de potholes na Town.tscn.
-- Sem menu principal — o jogo começa direto na cena `Main.tscn`.

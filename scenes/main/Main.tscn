@@ -4,6 +4,7 @@
 [ext_resource type="PackedScene" path="res://scenes/player/Player.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/ui/HUD.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/world/RainFX.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/ui/PauseMenu.tscn" id="5"]
 
 [node name="Main" type="Node3D"]
 
@@ -15,3 +16,5 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 6)
 [node name="HUD" parent="." instance=ExtResource("3")]
 
 [node name="RainFX" parent="." instance=ExtResource("4")]
+
+[node name="PauseMenu" parent="." instance=ExtResource("5")]
