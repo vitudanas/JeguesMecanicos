@@ -449,6 +449,27 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
   ([v0.1.0](https://github.com/vitudanas/joguinho2/releases/tag/v0.1.0)) em vez de
   commitar os binários direto no repo (`builds/` continua fora do git, evita inchar
   o histórico com arquivos grandes/regeneráveis).
+- **2026-08-02** — Usuário pediu explicitamente pra sempre verificar tudo antes de
+  considerar pronto (ruas sem buraco, rota de carros/NPCs, "pense em tudo que pode
+  ocorrer numa gameplay"). Escrevi um script de verificação temporário (compara a
+  caixa de colisão real de cada `Building*` — a mesma gerada por
+  `AutoCollisionBody.gd` — contra as linhas da malha viária e contra os retângulos
+  de `TrafficRoute`/`PedestrianRoute` definidos em `Town.tscn`) e achei dois tipos
+  de bug: (1) os 4 prédios do Quaternius adicionados nesta sessão (ver changelog
+  anterior) tinham colisão muito maior que os prédios do Kenney que substituíram
+  (~20x16m contra ~8-10m) — nas posições originais isso fazia um prédio (Large_2)
+  ficar literalmente em cima de um cruzamento (confirmado num screenshot real, o
+  telhado cobrindo a faixa de pedestre) e outro sobrepor o prédio vizinho; movidos
+  todos os 4 pra fora da extensão da malha viária (além de x/z=±68), com folga de
+  sobra. (2) Dois prédios **antigos** do Kenney (`Building4`, `Building6`, já
+  existiam antes desta sessão) encostavam bem perto do canto de
+  `TrafficRouteWorkshop`/`TrafficRouteJunkyard` — um carro de IA fazendo a curva
+  naquele canto arriscava clipar pra dentro do prédio; reposicionados com folga.
+  Reverificado (script + headless + screenshot real) até zerar toda sobreposição
+  predio-rua, prédio-prédio e prédio-rota. O script de verificação foi só um
+  arquivo temporário em `debug_tmp/` (apagado depois, não faz parte do jogo) —
+  se for útil de novo no futuro, vale recriar algo parecido antes de mexer na
+  posição de prédios/rotas.
 
 ## Roadmap (fora de escopo desta vertical slice)
 
