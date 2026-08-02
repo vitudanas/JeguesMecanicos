@@ -15,6 +15,9 @@ builds/
 # macOS
 .DS_Store
 
+# Ferramentas locais (nao faz parte do jogo)
+.claude/
+
 # Editor/OS
 *.tmp
 *~

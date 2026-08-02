@@ -57,7 +57,7 @@ local hard-coded sempre que possível.
 - **CLAUDE.md pedido explicitamente pelo usuário** (01/08/2026) para registrar ordens,
   decisões e objetivos do jogo.
 
-## Sistemas de Mundo Aberto (Tráfego + Clima)
+## Sistemas de Mundo Aberto
 
 - **Assets externos**: baixamos 4 pacotes CC0 (domínio público, sem exigir atribuição)
   do [Kenney.nl](https://kenney.nl), extraídos em `assets/kenney/`:
@@ -67,8 +67,8 @@ local hard-coded sempre que possível.
     fica pra próxima rodada, ver Roadmap).
   - [Car Kit](https://kenney.nl/assets/car-kit) — usamos `sedan.glb`, `taxi.glb` e
     `van.glb` (formato GLB) como visual dos carros de tráfego.
-  - [Mini Characters](https://kenney.nl/assets/mini-characters) — baixado, será usado
-    pros pedestres na próxima rodada.
+  - [Mini Characters](https://kenney.nl/assets/mini-characters) — usamos
+    `character-male-a/c.glb` e `character-female-a/c.glb` como visual dos pedestres.
   - `export_presets.cfg` tem um `exclude_filter` cortando os formatos FBX/OBJ e
     previews/docs de cada pacote (só o GLB + texturas usados vão pro build final).
 - **Tráfego de IA** (`scenes/traffic/`): `TrafficCar.gd` é um `RigidBody3D`
@@ -91,6 +91,27 @@ local hard-coded sempre que possível.
   chovendo — é o `Vehicle.gd` quem decide isso (`_current_traction()`), multiplicando a
   aderência lateral (`grip_mult`) e a força do motor em `_apply_suspension_and_drive()`;
   na lama o carro derrapa nas curvas e acelera pior.
+- **Pedestres com ragdoll** (`scenes/npc/Pedestrian.gd` + `PedestrianRoute.gd`): mesmo
+  esquema do tráfego (filho de `PathFollow3D`, congelado/kinematic andando pela
+  calçada), com visual do Kenney Mini Characters. `contact_monitor` ligado: ao detectar
+  `body_entered` com velocidade de impacto acima de `ragdoll_impact_threshold` (carro do
+  jogador, carro de tráfego ou destroço de gambiarra voando — qualquer `RigidBody3D`
+  rápido o suficiente), o pedestre descongela (`freeze = false`), leva um impulso na
+  direção oposta ao impacto + torque aleatório (vira ragdoll de verdade por alguns
+  segundos) e depois se teleporta de volta pro `PathFollow3D` e recongela sozinho
+  (`_recover()`), mesmo truque de "congela/descongela" que já usamos em
+  `GambiarraPart.gd`. Validado visualmente que os pedestres spawnam e andam nas rotas;
+  o gatilho de ragdoll por colisão usa o mesmo mecanismo de `contact_monitor`/
+  `body_entered` já comprovado com `TrafficCar`↔`Vehicle`, mas o teste de dirigir contra
+  um pedestre de propósito fica pra você confirmar jogando (não dá pra simular
+  input de direção nesta sessão automatizada).
+- **Eventos procedurais** (`autoload/EventManager.gd`, novo autoload): um `Timer`
+  interno, em intervalos aleatórios (45-90s), spawna um carro sucateado extra
+  (`Vehicle.tscn`, `is_wrecked = true` por padrão) num ponto aleatório do grupo
+  `"event_spawn_point"` — `Marker3D` chamados `EventSpawnPoint*` em `Town.tscn`,
+  registrados no grupo via `Town.gd:_register_event_spawn_points()`. Limite de
+  `max_concurrent_events` carros extras simultâneos (filtra instâncias já destruídas/
+  vendidas a cada spawn) pra não lotar o mapa.
 
 ## Controles (vertical slice atual)
 
@@ -104,7 +125,8 @@ local hard-coded sempre que possível.
 ```
 project.godot          # config do Godot, autoloads, display/fullscreen
 export_presets.cfg     # presets Windows Desktop + macOS (testados e funcionando)
-autoload/               GameManager.gd, Economy.gd, WeatherManager.gd (clima/chuva)
+autoload/               GameManager.gd, Economy.gd, WeatherManager.gd (clima/chuva),
+                        EventManager.gd (eventos procedurais)
 scripts/                Interactable.gd, TowHook.gd, PersuasionMinigame.gd, Pothole.gd
 scenes/main/            Main.tscn — cena de entrada (Town + Player + HUD + RainFX)
 scenes/player/          Player.tscn/gd — controller 1ª pessoa
@@ -112,7 +134,7 @@ scenes/vehicle/         Vehicle.tscn/gd, AttachSpot.gd, GambiarraPart.gd, parts/
 scenes/world/           Town.tscn (cidade sandbox), Junkyard.tscn, Workshop.tscn,
                         MudZone.tscn/gd, RainFX.tscn/gd
 scenes/traffic/         TrafficCar.tscn/gd, TrafficRoute.tscn/gd — carros de IA
-scenes/npc/             BuyerNPC.tscn/gd — comprador + minigame de persuasão
+scenes/npc/             BuyerNPC.tscn/gd, Pedestrian.tscn/gd, PedestrianRoute.tscn/gd
 scenes/ui/              HUD.tscn/gd — dinheiro, prompt de interação, barra de lábia
 assets/kenney/          pacotes CC0 do Kenney.nl (roads, commercial, car-kit,
                         mini-characters) — ver "Sistemas de Mundo Aberto"
@@ -183,6 +205,16 @@ builds/                 saída dos exports (ignorado pelo git)
   ativei `window/size/mode=3` (fullscreen) + `stretch/mode="canvas_items"` +
   `stretch/aspect="expand"` em `project.godot` a pedido do usuário, pra conferir
   proporção da UI — confirmado que HUD/mira/texto escalam certo. Builds regenerados.
+- **2026-08-01** — Usuário pediu pra subir o projeto pro GitHub. Instalado GitHub CLI
+  (`gh`), autenticado via device code, repo git inicializado localmente e enviado pro
+  repositório privado `vitudanas/joguinho2` (rebase em cima do commit inicial do
+  GitHub pra não perder nada). Pasta `builds/` continua fora do git (binários grandes,
+  regeneráveis). Em seguida, usuário pediu pra continuar o roadmap e manter tudo
+  sincronizado no git: implementados **pedestres com ragdoll**
+  (`scenes/npc/Pedestrian.gd`/`PedestrianRoute.gd`, visual do Kenney Mini Characters) e
+  **geração procedural de eventos** (`autoload/EventManager.gd`, spawna ferros-velhos
+  extra em pontos aleatórios do mapa). Testado visualmente (pedestre andando de
+  verdade perto da oficina). Builds regenerados e tudo commitado/enviado pro GitHub.
 
 ## Roadmap (fora de escopo desta vertical slice)
 
@@ -192,13 +224,7 @@ builds/                 saída dos exports (ignorado pelo git)
 - **Reconstruir `Town.tscn` com assets reais**: já baixamos `city-kit-roads` e
   `city-kit-commercial` (Kenney) em `assets/kenney/`, mas a cidade ainda usa só
   primitivas/blockout — trocar por uma cidade grande de verdade com esses modelos é a
-  próxima rodada de level design.
-- **Pedestres com ragdoll**: usar `assets/kenney/mini-characters/` pra NPCs andando nas
-  calçadas (mesmo padrão de `TrafficRoute`/`PathFollow3D`), que reagem/caem (ragdoll
-  simples, RigidBody solto — mesmo truque de `GambiarraPart.gd`) se atingidos pelo carro
-  do jogador ou por destroços de gambiarra voando.
-- **Geração procedural de eventos**: novos ferros-velhos ou eventos aleatórios
-  aparecendo pelo mapa (mais que o único `Junkyard.tscn` fixo de hoje).
+  próxima rodada de level design (a maior pendência do roadmap agora).
 - Sistema de crafting mais rico (mais tipos de gambiarra, escolha de item por
   inventário em vez de item fixo por ponto de fixação).
 - Economia mais profunda (preços variáveis, múltiplos compradores com personalidades
