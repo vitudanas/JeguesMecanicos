@@ -279,6 +279,15 @@ builds/                 saída dos exports (ignorado pelo git)
   `AnimationPlayer` ainda (fica no roadmap). Builds regenerados — dessa vez já testando
   o `.app` exportado de verdade antes de dar como pronto (lição da rodada anterior) — e
   tudo commitado/enviado pro GitHub.
+- **2026-08-02** — Usuário pediu pra resolver a pose T dos pedestres. `idle.fbx` e
+  `run.fbx` são arquivos separados do modelo, mas compartilham o mesmo esqueleto
+  (`Root/Skeleton3D`) — extraí o `Animation` de cada um (`_extract_animation()`,
+  instancia a cena da animação, pega o `Animation` do `AnimationPlayer` dela via
+  `AnimationLibrary`, e descarta a cena) e montei um `AnimationLibrary`/
+  `AnimationPlayer` na hora em `Pedestrian.gd:_setup_animation()`, tocando "run"
+  enquanto anda e parando durante o ragdoll (volta a tocar ao recuperar). Os `Animation`
+  extraídos ficam em cache estático (`static var`) — só extrai uma vez, todo pedestre
+  reaproveita. Confirmado visualmente: pedestres correndo de verdade, sem pose T.
 
 ## Roadmap (fora de escopo desta vertical slice)
 
@@ -290,9 +299,6 @@ builds/                 saída dos exports (ignorado pelo git)
   ainda não é uma malha viária 100% "encaixada" tipo tilemap (curvas/cruzamentos se
   conectando perfeitamente em todo o mapa, calçadas com meio-fio contínuas). O que tem
   hoje é decoração pontual por cima do chão físico existente.
-- **Animação dos pedestres**: o modelo (Animated Characters Protagonists) já vem
-  rigged com animações `idle`/`run`/`jump` em FBX separados, mas ainda não montei o
-  `AnimationPlayer` — por enquanto os pedestres andam na pose T parada.
 - Sistema de crafting mais rico (mais tipos de gambiarra, escolha de item por
   inventário em vez de item fixo por ponto de fixação).
 - Economia mais profunda (preços variáveis, múltiplos compradores com personalidades
