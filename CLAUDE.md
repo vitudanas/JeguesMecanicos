@@ -151,7 +151,12 @@ scenes/ui/              HUD.tscn/gd — dinheiro, prompt de interação, barra d
                         PauseMenu.tscn/gd (Esc pausa a árvore, some com o mouse)
 assets/kenney/          pacotes CC0 do Kenney.nl (roads, commercial, car-kit,
                         mini-characters) — ver "Sistemas de Mundo Aberto"
-builds/                 saída dos exports (ignorado pelo git)
+assets/quaternius/      prédios CC0 do Quaternius Downtown City MegaKit (2 usados
+                        em Town.tscn) + Universal Base Characters/Animation
+                        Library (baixados, ainda não integrados nos NPCs)
+assets/icon/            ícone do jogo (gerado por código, PIL) + .ico/.icns
+builds/                 saída dos exports (ignorado pelo git; publicado como
+                        GitHub Release em vez de commitado)
 ```
 
 ## Changelog / ordens do usuário
@@ -398,6 +403,52 @@ builds/                 saída dos exports (ignorado pelo git)
   que isso não é algo que a IA deveria decidir por conta própria. Vale você
   conferir esse fluxo (Jogar, Esc, Continuar, Sair para o Menu) na próxima vez que
   abrir o jogo.
+- **2026-08-02** — Ícone do jogo: desenhado por código com PIL (sem asset externo),
+  um carrinho low-poly com uma fita adesiva amarela na diagonal (tema gambiarra).
+  Gerado `icon_1024.png` (config/icon do Godot), `icon.ico` (Windows) e `icon.icns`
+  (macOS), ligados nos dois `export_presets`.
+- **2026-08-02** — Usuário achou o visual "muito feio" e pediu pra baixar um "mundo
+  aberto pronto" e também NPCs diferentes. Pesquisei bastante (WebSearch): **não
+  existe** um mundo aberto completo gratuito pra simplesmente baixar e encaixar —
+  toda opção CC0 free (Kenney, Quaternius, KayKit) vem em kits modulares. Escolhemos
+  (pergunta ao usuário, respondeu "opção 2 se não der certo a 1" pra cidade e
+  "personagens de verdade diferentes" pros NPCs): baixar o **Downtown City MegaKit**
+  (Quaternius, CC0) pra cidade e **Universal Base Characters + Universal Animation
+  Library 2** (Quaternius, CC0) pros NPCs. Baixados via itch.io (o fluxo de download
+  deles é via JS — descobri por engenharia reversa das chamadas de rede do próprio
+  itch.io, replicadas com `curl`+cookie jar, já que as ferramentas de browser
+  automatizado disponíveis nesta sessão não conseguiram completar o clique real; o
+  download em si é 100% gratuito/CC0, sem burlar paywall nenhum).
+  - **Prédios**: o pacote é majoritariamente peças modulares soltas (tijolos,
+    cornijas, janelas — ~150 peças, pensadas pra montar fachada na mão, um trabalho
+    de "level design" de verdade). Só 3 prédios vêm prontos na versão gratuita.
+    Troquei `Building1`/`Building7` em `Town.tscn` pelos 2 que renderizaram sem bug
+    visual (`Building_Large_2`, `Building_Small_1`) — fachada de tijolo/vidro bem
+    mais detalhada que o Kenney, reaproveitando o `CityBuilding.tscn`/
+    `AutoCollisionBody.gd` existente (só troquei `visual_scene`/`visual_scale`, zero
+    mudança de código). O terceiro prédio pronto (`Building_Medium_2_001`) tem um
+    artefato visual (faixa vermelha estranha no topo/base da fachada, provável bug
+    de material na exportação do pacote pra Godot) — não foi usado, fica pra
+    investigar depois. Só os arquivos realmente usados (~96MB de ~440MB baixados)
+    foram mantidos no repo, em `assets/quaternius/`.
+  - **NPCs**: baixados os 2 personagens-base (`Superhero_Male/Female_FullBody`,
+    texturizados, CC0) e a biblioteca de animação (`UAL2_Standard.glb`, 130+
+    animações). **Ainda não integrados** — a documentação oficial do Quaternius
+    (`Godot_Setup.png` dentro do pacote de animação) mostra que o processo exige o
+    sistema de retargeting humanóide do Godot 4 (BoneMap + SkeletonProfileHumanoid),
+    um fluxo de editor com vários passos manuais (não é só trocar o modelo/FBX como
+    fizemos com o Kenney, cujo mesh+animação já compartilhavam o mesmo esqueleto
+    nativamente). Fica pendente uma decisão: tentar automatizar esse retargeting,
+    fazer na mão no editor seguindo o guia oficial, ou manter os pedestres com o
+    personagem Kenney atual por enquanto.
+- **2026-08-02** — Usuário pediu pra exportar as builds e publicar no GitHub pra
+  poder baixar e rodar no Windows também. Exportado Windows (.exe, ~177MB) e macOS
+  (.zip, ~127MB) via `godot --headless --export-release`, testado o macOS de
+  verdade (abri o `.app` exportado, não só modo dev — confirma que carrega e mostra
+  o menu principal certinho). Publicados como GitHub Release
+  ([v0.1.0](https://github.com/vitudanas/joguinho2/releases/tag/v0.1.0)) em vez de
+  commitar os binários direto no repo (`builds/` continua fora do git, evita inchar
+  o histórico com arquivos grandes/regeneráveis).
 
 ## Roadmap (fora de escopo desta vertical slice)
 
@@ -418,6 +469,18 @@ builds/                 saída dos exports (ignorado pelo git)
   diferentes, negociação).
 - Sons, música, efeitos de UI/menu (menu principal e de pause já existem — ver
   changelog 2026-08-02 —, mas ainda sem áudio nenhum no jogo).
+- **NPCs com personagens diferentes de verdade**: `Superhero_Male/Female_FullBody`
+  (Quaternius, CC0) já baixados em `assets/quaternius/universal-base-characters/`,
+  junto com `UAL2_Standard.glb` (130+ animações). Falta o retargeting (BoneMap +
+  SkeletonProfileHumanoid do Godot 4) pra aplicar as animações da biblioteca no
+  esqueleto desses personagens — ver `Godot_Setup.png` dentro do pacote de animação
+  pra o passo a passo oficial. `Pedestrian.gd` continua usando o personagem do
+  Kenney (`characterMedium.fbx`) por enquanto.
+- **Mais prédios prontos do Quaternius**: só 2 dos 3 prédios prontos do Downtown
+  City MegaKit foram usados (`Building_Medium_2_001` tem um bug visual, ver
+  changelog 2026-08-02). O pacote também trouxe ~150 peças modulares soltas
+  (tijolos, cornijas, janelas, sacadas) que dariam pra montar fachadas customizadas
+  à mão — não tentado ainda, é um trabalho de "level design" separado.
 - Ícone do jogo e notarização (o preset macOS já usa assinatura ad-hoc, gratuita — ver
   changelog 2026-08-02 — mas não é notarizado pela Apple; hoje quem baixar ainda
   precisa clicar em "Abrir" uma vez, ver README).
