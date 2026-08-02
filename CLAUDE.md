@@ -324,6 +324,31 @@ builds/                 saída dos exports (ignorado pelo git)
   de cima, mas confirmados no nível do jogador (poste ao lado da faixa de pedestre).
 - **2026-08-02** — Usuário pediu pra anotar um lembrete de rodar `/clear` entre sessões
   longas (ver "Notas de fluxo de trabalho" no topo do arquivo).
+- **2026-08-02** — Usuário pediu pra continuar ("vai fazendo tudo sempre verificando
+  bugs e talz"). Item de "polimento restante" da malha viária: meio-fio/calçada
+  elevada. Descoberto que o `city-kit-roads` do Kenney usado aqui é um kit de rodovia
+  (confirmado olhando o `Sample.png` do pacote — sinalização de rodovia, sem nenhuma
+  calçada/pedestre à vista), não tem peça de calçada real; a peça `road-side.glb` que
+  parecia promissora pelo nome é acostamento de rodovia, não calçada. Em vez de forçar
+  um asset errado, `CityStreets.gd:_place_curb_pair()` gera por código uma caixa rasa
+  elevada (0.18m, com colisão própria via `StaticBody3D`) dos dois lados de cada trecho
+  reto/ponta da malha (mesmo padrão de "gerar em código" já usado no resto do projeto).
+  Fica de fora dos cruzamentos (mesma lógica de exclusão de `_near_any` já usada pros
+  tiles) e some perto dos pontos excluídos (oficina/ferro-velho/comprador), então não
+  interfere com nada que já existia ali. Verificado que as rotas de pedestres
+  (`PedestrianRouteWorkshop`/`PedestrianRouteBuyer`) e o clearance das rotas de tráfego
+  não cruzam essas novas guias, sem conflito. Testado carregamento headless (zero
+  erros) e depois confirmado visualmente de verdade: abri o Godot em janela real
+  (não headless, cena de debug temporária só pra câmera aérea, apagada depois) e usei
+  `screencapture` do macOS pra printar a tela de verdade — dá pra ver as faixas da
+  calçada elevada projetando sombra própria ao lado das ruas, confirmando que é
+  geometria de verdade (não só cor). **Nota**: nesse processo um `find /` que eu tinha
+  rodado antes (procurando o executável do Godot) disparou um popup do macOS pedindo
+  acesso do app "claude" à pasta Desktop — não cliquei em nada (não tenho ferramenta
+  pra mexer em diálogo real do sistema, e não é algo que a IA deveria decidir sozinha);
+  fica pra você decidir Allow/Don't Allow da próxima vez que aparecer. Curvas diagonais
+  fora da grade ortogonal (o outro item desse mesmo tópico de roadmap) ainda não foram
+  feitas — ver Roadmap.
 
 ## Roadmap (fora de escopo desta vertical slice)
 
@@ -331,10 +356,10 @@ builds/                 saída dos exports (ignorado pelo git)
   evita estado local hard-coded onde possível, mas a replicação de rede não foi
   implementada.
 - **Malha viária — polimento restante**: as pontas das ruas já têm acabamento
-  arredondado e postes de luz, mas ainda é só retas + cruzamentos em grade — sem
-  meio-fio/calçada elevada de verdade (os pedestres andam por cima do chão físico
-  comum, a "rua" é só decoração visual por cima) e sem curvas diagonais fora da grade
-  ortogonal.
+  arredondado, postes de luz e agora meio-fio/calçada elevada de verdade (com colisão
+  própria — ver changelog 2026-08-02); ainda falta: calçada não contorna os
+  cruzamentos (só as retas têm guia, o cruzamento fica sem meio-fio nos quatro cantos)
+  e não há curvas diagonais fora da grade ortogonal (só retas + cruzamentos em grade).
 - Sistema de crafting mais rico (mais tipos de gambiarra, escolha de item por
   inventário em vez de item fixo por ponto de fixação).
 - Economia mais profunda (preços variáveis, múltiplos compradores com personalidades
