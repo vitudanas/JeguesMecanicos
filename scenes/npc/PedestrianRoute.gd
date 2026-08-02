@@ -15,6 +15,8 @@ extends Path3D
 @export var character_models: Array[PackedScene] = []
 ## Roupa pra cada character_models[i] (mesmo indice). Ver Pedestrian.gd:_attach_outfit().
 @export var outfit_scenes: Array[PackedScene] = []
+## Cabelo pra cada character_models[i] (mesmo indice). Ver Pedestrian.gd:hair_scene.
+@export var hair_scenes: Array[PackedScene] = []
 @export var visual_scale := 1.0
 @export var idle_anim_scene: PackedScene
 @export var walk_anim_scene: PackedScene
@@ -44,6 +46,8 @@ func _spawn_pedestrians() -> void:
 			pedestrian.character_model = character_models[i % character_models.size()]
 			if outfit_scenes.size() > 0:
 				pedestrian.outfit_scene = outfit_scenes[i % outfit_scenes.size()]
+			if hair_scenes.size() > 0:
+				pedestrian.hair_scene = hair_scenes[i % hair_scenes.size()]
 		else:
 			pedestrian.character_model = character_model
 			if skin_textures.size() > 0:

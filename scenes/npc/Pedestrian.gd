@@ -31,6 +31,9 @@ signal ragdolled
 ## pro Skeleton3D do personagem (troca de "skeleton" de cada MeshInstance3D)
 ## e o corpo nu original some, deixando so cabeca/olhos/sobrancelhas a mostra.
 @export var outfit_scene: PackedScene
+## Cena de cabelo (Quaternius Hairstyles, "Rigged to Head Bone") — mesma tecnica
+## de anexacao do outfit_scene (malha ja skinada no mesmo esqueleto de 65 ossos).
+@export var hair_scene: PackedScene
 
 static var _anim_cache: Dictionary = {}
 
@@ -64,27 +67,49 @@ func _load_visual() -> void:
 			mesh_instance.set_surface_override_material(0, mat)
 	if outfit_scene:
 		_attach_outfit(visual)
+	if hair_scene:
+		var base_skel := _find_skeleton(visual)
+		if base_skel:
+			_attach_external_meshes(base_skel, hair_scene)
 	if fallback_mesh:
 		fallback_mesh.visible = false
 	_setup_animation(visual)
+
+## A roupa e o corpo nu vem de dois arquivos .gltf exportados separadamente e
+## nao ficam perfeitamente coincidentes por baixo da roupa (bind pose com
+## diferencas sutis entre os dois exports) — em vez de z-fighting uniforme,
+## aparecem pedacos de pele por cima do tecido em pontos diferentes (torso,
+## coxa) dependendo da pose. Encolher o corpo nu (nao a roupa) reduz bastante
+## o problema, mas NAO resolve 100%: em valores de encolhimento mais fortes
+## (~0.85) sobra uma folga entre pescoco e gola da camisa; em valores mais
+## fracos (~0.93) ainda sobra um pedaco de pele no meio do tronco. 0.9 abaixo
+## e o meio-termo menos ruim encontrado, mas ainda tem um residuo pequeno de
+## clipping — resolver de verdade exigiria reexportar/realinhar o bind pose
+## no Blender, fora do alcance de scripting.
+const BODY_SHRINK_UNDER_CLOTHES := 0.9
 
 func _attach_outfit(visual: Node) -> void:
 	var base_skel := _find_skeleton(visual)
 	if base_skel == null:
 		return
-	# Nao esconde a malha nua base: o corpo do personagem Quaternius vem com
-	# cabeca/rosto fundidos na MESMA malha (sem "Head" separado), entao a
-	# roupa e modelada pra cobrir por cima (braco/torso/perna), deixando so
-	# cabeca/pescoco/maos a mostra igual roupa de verdade cobrindo um corpo.
-	var outfit_temp := outfit_scene.instantiate()
-	var outfit_skel := _find_skeleton(outfit_temp)
-	if outfit_skel:
-		for child in outfit_skel.get_children().duplicate():
+	for child in base_skel.get_children():
+		if child is MeshInstance3D and child.name != "Eyes" and child.name != "Eyebrows":
+			child.scale = Vector3.ONE * BODY_SHRINK_UNDER_CLOTHES
+	_attach_external_meshes(base_skel, outfit_scene)
+
+## Instancia scene, extrai suas MeshInstance3D (ja skinadas no mesmo esqueleto
+## de 65 ossos do character_model) e as transplanta pro Skeleton3D base,
+## descartando o resto (Armature/Skeleton3D proprios de scene).
+func _attach_external_meshes(base_skel: Skeleton3D, scene: PackedScene) -> void:
+	var temp := scene.instantiate()
+	var temp_skel := _find_skeleton(temp)
+	if temp_skel:
+		for child in temp_skel.get_children().duplicate():
 			if child is MeshInstance3D:
-				outfit_skel.remove_child(child)
+				temp_skel.remove_child(child)
 				base_skel.add_child(child)
 				child.skeleton = NodePath("..")
-	outfit_temp.queue_free()
+	temp.queue_free()
 
 func _find_skeleton(node: Node) -> Skeleton3D:
 	if node is Skeleton3D:
