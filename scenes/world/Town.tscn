@@ -1,4 +1,4 @@
-[gd_scene load_steps=50 format=3]
+[gd_scene load_steps=85 format=3]
 
 [ext_resource type="Script" path="res://scripts/Pothole.gd" id="1"]
 [ext_resource type="Script" path="res://scenes/world/Town.gd" id="2"]
@@ -42,6 +42,41 @@
 [ext_resource type="PackedScene" path="res://assets/kenney/city-kit-roads/Models/GLB format/light-square.glb" id="40"]
 [ext_resource type="Script" path="res://scripts/CityStreets.gd" id="41"]
 [ext_resource type="PackedScene" path="res://assets/kenney/city-kit-roads/Models/GLB format/road-end-round.glb" id="42"]
+[ext_resource type="PackedScene" path="res://scenes/world/FarmCluster.tscn" id="43"]
+[ext_resource type="PackedScene" path="res://scenes/world/ScrapyardCluster.tscn" id="44"]
+[ext_resource type="PackedScene" path="res://scenes/world/RuralScatter.tscn" id="45"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/farm-buildings/fence-a.glb" id="46"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/farm-buildings/fence-b.glb" id="47"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/farm-buildings/silo.glb" id="48"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/farm-buildings/open-barn.glb" id="49"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/farm-buildings/chicken-coop.glb" id="50"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/farm-buildings/barn.glb" id="51"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/farm-buildings/silo-house.glb" id="52"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/farm-buildings/small-barn.glb" id="53"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/farm-buildings/big-barn.glb" id="54"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/farm-buildings/tower-windmill.glb" id="55"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/tree-a.glb" id="56"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/tree-b.glb" id="57"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/pine-a.glb" id="58"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/pine-b.glb" id="59"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/dead-tree.glb" id="60"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/twisted-tree.glb" id="61"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/bush.glb" id="62"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/bush-flowers.glb" id="63"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/grass.glb" id="64"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/grass-wispy.glb" id="65"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/tall-grass.glb" id="66"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/flower-petal.glb" id="67"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/flower-group.glb" id="68"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/flower-single.glb" id="69"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/mushroom.glb" id="70"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/fern.glb" id="71"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/rock-medium-a.glb" id="72"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/rock-medium-b.glb" id="73"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/rock-medium-c.glb" id="74"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/pebble-round.glb" id="75"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/pebble-square.glb" id="76"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/plant-big.glb" id="77"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
 sky_top_color = Color(0.35, 0.55, 0.85, 1)
@@ -67,10 +102,10 @@ ssao_radius = 2.0
 ssao_intensity = 1.5
 
 [sub_resource type="BoxShape3D" id="GroundShape"]
-size = Vector3(300, 1, 300)
+size = Vector3(600, 1, 600)
 
 [sub_resource type="BoxMesh" id="GroundMesh"]
-size = Vector3(300, 1, 300)
+size = Vector3(600, 1, 600)
 
 [sub_resource type="StandardMaterial3D" id="GroundMat"]
 albedo_color = Color(0.42, 0.42, 0.45, 1)
@@ -296,3 +331,143 @@ light_every_n_tiles = 3
 light_offset = 2.6
 exclude_points = Array[Vector3]([Vector3(0, 0, 0), Vector3(-25, 0, -20), Vector3(26, 0, 26)])
 exclude_radius = 11.0
+
+[node name="Farm1" parent="." instance=ExtResource("43")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 130, 0, 90)
+main_building = ExtResource("48")
+main_building_rotation_degrees = 0.0
+coop_scene = ExtResource("50")
+include_coop = true
+coop_offset = Vector2(6, 5)
+fence_scenes = Array[PackedScene]([ExtResource("46"), ExtResource("47")])
+fence_half_size = Vector2(9, 8)
+crop_scene = ExtResource("66")
+crop_rows = 4
+crop_cols = 6
+crop_offset = Vector2(0, -17)
+tree_scenes = Array[PackedScene]([ExtResource("56"), ExtResource("57"), ExtResource("62")])
+tree_count = 9
+tree_min_radius = 13.0
+tree_max_radius = 21.0
+rng_seed = 101
+
+[node name="Farm2" parent="." instance=ExtResource("43")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -110, 0, 130)
+main_building = ExtResource("51")
+main_building_rotation_degrees = 90.0
+coop_scene = ExtResource("55")
+include_coop = true
+coop_offset = Vector2(14, -2)
+fence_scenes = Array[PackedScene]([ExtResource("46"), ExtResource("47")])
+fence_half_size = Vector2(10, 9)
+crop_scene = ExtResource("77")
+crop_rows = 4
+crop_cols = 6
+crop_offset = Vector2(0, -18)
+tree_scenes = Array[PackedScene]([ExtResource("58"), ExtResource("59"), ExtResource("56")])
+tree_count = 10
+tree_min_radius = 14.0
+tree_max_radius = 22.0
+rng_seed = 202
+
+[node name="Farm3" parent="." instance=ExtResource("43")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 150, 0, -80)
+main_building = ExtResource("52")
+main_building_rotation_degrees = 180.0
+include_coop = false
+fence_scenes = Array[PackedScene]([ExtResource("46"), ExtResource("47")])
+fence_half_size = Vector2(8, 7)
+crop_scene = ExtResource("66")
+crop_rows = 4
+crop_cols = 5
+crop_offset = Vector2(0, -15)
+tree_scenes = Array[PackedScene]([ExtResource("57"), ExtResource("63"), ExtResource("60")])
+tree_count = 8
+tree_min_radius = 12.0
+tree_max_radius = 19.0
+rng_seed = 303
+
+[node name="Farm4" parent="." instance=ExtResource("43")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -140, 0, -110)
+main_building = ExtResource("54")
+main_building_rotation_degrees = 270.0
+coop_scene = ExtResource("48")
+include_coop = true
+coop_offset = Vector2(-15, 6)
+fence_scenes = Array[PackedScene]([ExtResource("46"), ExtResource("47")])
+fence_half_size = Vector2(11, 9)
+crop_scene = ExtResource("77")
+crop_rows = 5
+crop_cols = 7
+crop_offset = Vector2(0, -19)
+tree_scenes = Array[PackedScene]([ExtResource("56"), ExtResource("59"), ExtResource("62")])
+tree_count = 10
+tree_min_radius = 15.0
+tree_max_radius = 23.0
+rng_seed = 404
+
+[node name="Farm5" parent="." instance=ExtResource("43")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0, 170)
+main_building = ExtResource("53")
+main_building_rotation_degrees = 45.0
+coop_scene = ExtResource("50")
+include_coop = true
+coop_offset = Vector2(6, 5)
+fence_scenes = Array[PackedScene]([ExtResource("46"), ExtResource("47")])
+fence_half_size = Vector2(8, 7)
+crop_scene = ExtResource("66")
+crop_rows = 4
+crop_cols = 6
+crop_offset = Vector2(0, -16)
+tree_scenes = Array[PackedScene]([ExtResource("57"), ExtResource("63"), ExtResource("58")])
+tree_count = 9
+tree_min_radius = 13.0
+tree_max_radius = 20.0
+rng_seed = 505
+
+[node name="Scrapyard1" parent="." instance=ExtResource("44")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -160, 0, -40)
+wreck_count = 3
+decor_scenes = Array[PackedScene]([ExtResource("60"), ExtResource("62"), ExtResource("66")])
+decor_count = 6
+rng_seed = 601
+
+[node name="Scrapyard2" parent="." instance=ExtResource("44")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 60, 0, -160)
+wreck_count = 4
+decor_scenes = Array[PackedScene]([ExtResource("60"), ExtResource("62"), ExtResource("66")])
+decor_count = 7
+rng_seed = 602
+
+[node name="Scrapyard3" parent="." instance=ExtResource("44")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 170, 0, 60)
+wreck_count = 3
+decor_scenes = Array[PackedScene]([ExtResource("60"), ExtResource("62"), ExtResource("66")])
+decor_count = 6
+rng_seed = 603
+
+[node name="NatureScatter" parent="." instance=ExtResource("45")]
+decor_scenes = Array[PackedScene]([ExtResource("64"), ExtResource("65"), ExtResource("66"), ExtResource("67"), ExtResource("68"), ExtResource("69"), ExtResource("70"), ExtResource("71"), ExtResource("75"), ExtResource("76")])
+decor_count = 560
+decor_scale_min = 0.8
+decor_scale_max = 1.5
+solid_scenes = Array[PackedScene]([ExtResource("56"), ExtResource("57"), ExtResource("58"), ExtResource("59"), ExtResource("60"), ExtResource("61"), ExtResource("62"), ExtResource("63"), ExtResource("72"), ExtResource("73"), ExtResource("74")])
+solid_count = 170
+solid_scale_min = 0.8
+solid_scale_max = 1.6
+inner_extent = 78.0
+outer_radius = 225.0
+exclude_points = Array[Vector3]([Vector3(130, 0, 90), Vector3(-110, 0, 130), Vector3(150, 0, -80), Vector3(-140, 0, -110), Vector3(30, 0, 170), Vector3(-160, 0, -40), Vector3(60, 0, -160), Vector3(170, 0, 60)])
+exclude_radius = 30.0
+rng_seed = 20260803
+
+[node name="MountainRange" parent="." instance=ExtResource("45")]
+solid_scenes = Array[PackedScene]([ExtResource("72"), ExtResource("73"), ExtResource("74")])
+solid_count = 95
+solid_scale_min = 9.0
+solid_scale_max = 18.0
+inner_radius = 190.0
+outer_radius = 230.0
+exclude_points = Array[Vector3]([Vector3(130, 0, 90), Vector3(-110, 0, 130), Vector3(150, 0, -80), Vector3(-140, 0, -110), Vector3(30, 0, 170), Vector3(-160, 0, -40), Vector3(60, 0, -160), Vector3(170, 0, 60)])
+exclude_radius = 30.0
+rng_seed = 20260888
