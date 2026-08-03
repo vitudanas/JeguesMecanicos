@@ -60,8 +60,7 @@ func _load_visual() -> void:
 		return
 	# Corpo + roupa + cabelo sao montados por CharacterVisual (compartilhado com
 	# BuyerNPC.gd, pra pedestre e cliente terem a mesma aparencia).
-	var visual := CharacterVisual.build(self, character_model, outfit_scene, hair_scene,
-		visual_scale, visual_rotation_y_degrees)
+	var visual := CharacterVisual.build(self, character_model, visual_scale, visual_rotation_y_degrees)
 	if visual == null:
 		return
 	# So o personagem do Kenney precisa de skin externa (mesh sem textura propria).

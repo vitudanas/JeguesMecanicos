@@ -10,16 +10,8 @@ signal sale_completed(amount: int)
 ## Visual do cliente: mesmo personagem dos pedestres (ver CharacterVisual.gd),
 ## sorteando entre homem e mulher pra cada entrega nao ser sempre igual.
 const MODELS: Array[String] = [
-	"res://assets/quaternius/universal-base-characters/Characters/Superhero_Male_FullBody.gltf",
-	"res://assets/quaternius/universal-base-characters/Characters/Superhero_Female_FullBody.gltf",
-]
-const OUTFITS: Array[String] = [
-	"res://assets/quaternius/outfits-fantasy/Outfits/Male_Peasant.gltf",
-	"res://assets/quaternius/outfits-fantasy/Outfits/Female_Peasant.gltf",
-]
-const HAIRS: Array[String] = [
-	"res://assets/quaternius/universal-base-characters/Hairstyles/Hair_SimpleParted.gltf",
-	"res://assets/quaternius/universal-base-characters/Hairstyles/Hair_Long.gltf",
+	"res://assets/quaternius/characters-dressed/Male_Dressed.glb",
+	"res://assets/quaternius/characters-dressed/Female_Dressed.glb",
 ]
 const IDLE_ANIM := "res://assets/quaternius/universal-animation-library-1/Animations/UAL1_Standard.glb"
 
@@ -43,12 +35,7 @@ func _ready() -> void:
 ## esperando a entrega.
 func _load_visual() -> void:
 	var i := randi() % MODELS.size()
-	var visual := CharacterVisual.build(
-		self,
-		load(MODELS[i]) as PackedScene,
-		load(OUTFITS[i]) as PackedScene,
-		load(HAIRS[i]) as PackedScene
-	)
+	var visual := CharacterVisual.build(self, load(MODELS[i]) as PackedScene)
 	if visual == null:
 		return
 	var idle := CharacterVisual.extract_animation(load(IDLE_ANIM) as PackedScene, "Idle")

@@ -78,12 +78,8 @@
 [ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/pebble-square.glb" id="76"]
 [ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/plant-big.glb" id="77"]
 [ext_resource type="PackedScene" path="res://scenes/world/CityBlocks.tscn" id="100"]
-[ext_resource type="PackedScene" path="res://assets/quaternius/universal-base-characters/Characters/Superhero_Male_FullBody.gltf" id="200"]
-[ext_resource type="PackedScene" path="res://assets/quaternius/universal-base-characters/Characters/Superhero_Female_FullBody.gltf" id="201"]
-[ext_resource type="PackedScene" path="res://assets/quaternius/outfits-fantasy/Outfits/Male_Peasant.gltf" id="202"]
-[ext_resource type="PackedScene" path="res://assets/quaternius/outfits-fantasy/Outfits/Female_Peasant.gltf" id="203"]
-[ext_resource type="PackedScene" path="res://assets/quaternius/universal-base-characters/Hairstyles/Hair_SimpleParted.gltf" id="204"]
-[ext_resource type="PackedScene" path="res://assets/quaternius/universal-base-characters/Hairstyles/Hair_Long.gltf" id="205"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/characters-dressed/Male_Dressed.glb" id="200"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/characters-dressed/Female_Dressed.glb" id="201"]
 [ext_resource type="PackedScene" path="res://assets/quaternius/universal-animation-library-1/Animations/UAL1_Standard.glb" id="207"]
 [ext_resource type="PackedScene" path="res://assets/quaternius/cars/car-a.glb" id="101"]
 [ext_resource type="PackedScene" path="res://assets/quaternius/cars/car-b.glb" id="102"]
@@ -305,8 +301,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 0, -5)
 pedestrian_count = 5
 route_points = Array[Vector3]([Vector3(3, 0.1, 28), Vector3(22, 0.1, 28), Vector3(22, 0.1, 47), Vector3(3, 0.1, 47)])
 character_models = Array[PackedScene]([ExtResource("200"), ExtResource("201")])
-outfit_scenes = Array[PackedScene]([ExtResource("202"), ExtResource("203")])
-hair_scenes = Array[PackedScene]([ExtResource("204"), ExtResource("205")])
 idle_anim_scene = ExtResource("207")
 walk_anim_scene = ExtResource("207")
 idle_anim_name = "Idle"
@@ -317,8 +311,6 @@ visual_scale = 1.0
 pedestrian_count = 5
 route_points = Array[Vector3]([Vector3(-22, 0.1, -47), Vector3(-3, 0.1, -47), Vector3(-3, 0.1, -28), Vector3(-22, 0.1, -28)])
 character_models = Array[PackedScene]([ExtResource("200"), ExtResource("201")])
-outfit_scenes = Array[PackedScene]([ExtResource("202"), ExtResource("203")])
-hair_scenes = Array[PackedScene]([ExtResource("204"), ExtResource("205")])
 idle_anim_scene = ExtResource("207")
 walk_anim_scene = ExtResource("207")
 idle_anim_name = "Idle"
@@ -351,8 +343,6 @@ car_models = Array[PackedScene]([ExtResource("102"), ExtResource("106"), ExtReso
 route_points = Array[Vector3]([Vector3(28, 0.1, -22), Vector3(47, 0.1, -22), Vector3(47, 0.1, -3), Vector3(28, 0.1, -3)])
 pedestrian_count = 4
 character_models = Array[PackedScene]([ExtResource("200"), ExtResource("201")])
-outfit_scenes = Array[PackedScene]([ExtResource("202"), ExtResource("203")])
-hair_scenes = Array[PackedScene]([ExtResource("204"), ExtResource("205")])
 idle_anim_scene = ExtResource("207")
 walk_anim_scene = ExtResource("207")
 idle_anim_name = "Idle"
@@ -363,8 +353,6 @@ visual_scale = 1.0
 route_points = Array[Vector3]([Vector3(-47, 0.1, 28), Vector3(-28, 0.1, 28), Vector3(-28, 0.1, 47), Vector3(-47, 0.1, 47)])
 pedestrian_count = 4
 character_models = Array[PackedScene]([ExtResource("200"), ExtResource("201")])
-outfit_scenes = Array[PackedScene]([ExtResource("202"), ExtResource("203")])
-hair_scenes = Array[PackedScene]([ExtResource("204"), ExtResource("205")])
 idle_anim_scene = ExtResource("207")
 walk_anim_scene = ExtResource("207")
 idle_anim_name = "Idle"
@@ -375,8 +363,6 @@ visual_scale = 1.0
 route_points = Array[Vector3]([Vector3(-47, 0.1, -47), Vector3(-28, 0.1, -47), Vector3(-28, 0.1, -28), Vector3(-47, 0.1, -28)])
 pedestrian_count = 4
 character_models = Array[PackedScene]([ExtResource("200"), ExtResource("201")])
-outfit_scenes = Array[PackedScene]([ExtResource("202"), ExtResource("203")])
-hair_scenes = Array[PackedScene]([ExtResource("204"), ExtResource("205")])
 idle_anim_scene = ExtResource("207")
 walk_anim_scene = ExtResource("207")
 idle_anim_name = "Idle"
@@ -387,8 +373,6 @@ visual_scale = 1.0
 route_points = Array[Vector3]([Vector3(28, 0.1, 28), Vector3(47, 0.1, 28), Vector3(47, 0.1, 47), Vector3(28, 0.1, 47)])
 pedestrian_count = 4
 character_models = Array[PackedScene]([ExtResource("200"), ExtResource("201")])
-outfit_scenes = Array[PackedScene]([ExtResource("202"), ExtResource("203")])
-hair_scenes = Array[PackedScene]([ExtResource("204"), ExtResource("205")])
 idle_anim_scene = ExtResource("207")
 walk_anim_scene = ExtResource("207")
 idle_anim_name = "Idle"

@@ -181,7 +181,11 @@ assets/quaternius/      downtown-city-megakit (baixado, não usado no layout ati
                         Roadmap) + farm-buildings/nature-megakit (usados no anel
                         rural fora da cidade — fazendas, natureza, montanhas) +
                         cars (carros de tráfego em escala real) +
-                        universal-animation-library-1 (Walk/Idle normais)
+                        universal-animation-library-1 (Walk/Idle normais) +
+                        characters-dressed (personagens prontos, gerados por
+                        tools/build_characters.py — é o que o jogo carrega)
+tools/                  build_characters.py — roda no Blender headless e gera os
+                        personagens já vestidos (corpo+roupa+cabelo num arquivo só)
 assets/icon/            ícone do jogo (gerado por código, PIL) + .ico/.icns
 builds/                 saída dos exports (ignorado pelo git; publicado como
                         GitHub Release em vez de commitado)
@@ -802,12 +806,32 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     itch.io), que tem `Walk` e `Idle` normais, e **verificado antes de usar** que
     o esqueleto é idêntico (65 ossos, mesmos nomes) — aplicação direta, sem
     retargeting.
-  - **Limitação que sobra**: a roupa Peasant é um **colete aberto no peito**, e
-    por baixo está o corpo do super-herói, então aparece o torso nu. Testei
-    encolher/inflar em vários valores (1.035, 1.07, 0.97+1.05) e o vão é idêntico
-    em todos — não é escala, é o desenho da peça. A versão gratuita do pacote não
-    tem outra roupa. Resolver de verdade exige outro pacote de roupa ou fechar o
-    peito no Blender.
+  - **Roupa resolvida com Blender por script** (`tools/build_characters.py`): a
+    peça Peasant é um **colete aberto no peito**, e por baixo estava o corpo do
+    super-herói, então aparecia torso nu. Testei encolher/inflar em vários
+    valores (1.035, 1.07, 0.97+1.05) e o vão era idêntico em todos — ou seja,
+    não era escala, era o desenho da peça. Costurar a abertura também não era
+    confiável: a malha tem **50 bordas soltas**, várias duplicadas. A saída foi
+    **pintar de cor de tecido** o torso e as pernas do corpo base (regiões
+    escolhidas por coordenada: `|x| < 0.23` exclui os braços, que em T-pose vão
+    até `|x| = 0.93`), então a pele que escapa pela roupa lê como roupa de baixo
+    em vez de pele. Detalhe que custou uma iteração: o glTF guarda
+    `baseColorFactor` em espaço **linear**, então a primeira cor (0.44) saiu
+    quase branca na tela — os valores finais já estão convertidos.
+    O script roda o Blender headless, junta corpo+roupa+cabelo num arquivo só
+    (`assets/quaternius/characters-dressed/*.glb`) e reduz as texturas de 4K pra
+    1024 — sem isso cada personagem embutia ~50MB. Como os personagens passaram
+    a vir prontos, a montagem em runtime saiu do código: `CharacterVisual.gd`
+    encolheu de ~90 pra ~30 linhas e sumiram os remendos de escala.
+  - **Build 40% menor**: com os personagens combinados, 4 pastas de origem
+    (`universal-base-characters`, `outfits-fantasy`,
+    `universal-animation-library-2`, `downtown-city-megakit`, ~145MB) deixaram de
+    ser carregadas pelo jogo — continuam no repo (o script do Blender precisa
+    delas) mas entraram no `exclude_filter`. macOS foi de 194MB pra **116MB**,
+    Windows de 245MB pra **166MB**. Dada a lição de 2026-08-02 (um
+    `exclude_filter` amplo demais cortou uma textura e quebrou o jogo inteiro),
+    conferi o `.pck` exportado item a item: todos os assets que a cidade usa
+    estão dentro, e os 4 excluídos, fora.
   - **Verificação**: dois scripts headless temporários que instanciam o
     `Town.tscn` de verdade — um confere densidade, prédio×rua, prédio×prédio e
     rota×prédio; o outro confere o loop (distância de reboque, casas de entrega,
@@ -840,16 +864,6 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
   diferentes, negociação).
 - Sons, música, efeitos de UI/menu (menu principal e de pause já existem — ver
   changelog 2026-08-02 —, mas ainda sem áudio nenhum no jogo).
-- **Roupa dos NPCs**: os pedestres já usam os personagens realistas do Quaternius
-  (`Superhero_Male/Female_FullBody` + roupa Peasant + cabelo + animação `Walk`/
-  `Idle` da UAL1) — ver changelog 2026-08-03. O que falta é só a roupa: a peça
-  Peasant é um colete **aberto no peito**, então aparece o torso nu do personagem
-  base por baixo. Não é problema de escala (testado em vários valores, o vão é
-  idêntico), é o desenho da peça, e a versão gratuita do pacote não tem outra
-  roupa. Saídas possíveis: achar outro pacote CC0 de roupa com o mesmo esqueleto
-  de 65 ossos, ou fechar o peito da malha no Blender (ver tutorial na caixa
-  abaixo, que continua válido pra combinar corpo+roupa num arquivo só).
-
 - **Prédios do Quaternius (Downtown City MegaKit)**: usados em `Town.tscn` por um
   tempo (2 dos 3 prédios prontos; `Building_Medium_2_001` tem um bug visual), mas
   retirados do layout ativo no redesenho de 2026-08-02 pra manter um único estilo
@@ -875,5 +889,5 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
   negociação (ver Roadmap).
 - Os buracos (`Pothole*`) e poças de lama continuam em 4 pontos fixos da grade, em
   vez de espalhados/procedurais.
-- A roupa dos pedestres deixa o peito à mostra (colete aberto do pacote gratuito,
-  ver Roadmap "Roupa dos NPCs").
+- Os pedestres e o cliente usam só 2 personagens (um masculino, um feminino) com
+  a mesma roupa — não há variação de rosto, cor de roupa ou tipo físico.
