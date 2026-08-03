@@ -149,22 +149,32 @@ project.godot          # config do Godot, autoloads, display/fullscreen
 export_presets.cfg     # presets Windows Desktop + macOS (testados e funcionando)
 autoload/               GameManager.gd, Economy.gd, WeatherManager.gd (clima/chuva),
                         EventManager.gd (eventos procedurais)
-scripts/                Interactable.gd, TowHook.gd, PersuasionMinigame.gd, Pothole.gd
+scripts/                Interactable.gd, TowHook.gd, PersuasionMinigame.gd, Pothole.gd,
+                        CityStreets.gd (malha viária procedural), RuralScatter.gd
+                        (espalha natureza/montanhas no anel rural)
 scenes/main/            Main.tscn — cena de entrada (Town + Player + HUD + RainFX)
 scenes/player/          Player.tscn/gd — controller 1ª pessoa
 scenes/vehicle/         Vehicle.tscn/gd, AttachSpot.gd, GambiarraPart.gd, parts/*.tscn
-scenes/world/           Town.tscn (cidade sandbox), Junkyard.tscn, Workshop.tscn,
-                        MudZone.tscn/gd, RainFX.tscn/gd
+scenes/world/           Town.tscn (cidade + anel rural, tudo num só mundo sandbox),
+                        Junkyard.tscn, Workshop.tscn, MudZone.tscn/gd, RainFX.tscn/gd,
+                        CityBuilding.tscn (prédio genérico com colisão automática),
+                        FarmCluster.tscn/gd (fazenda procedural), ScrapyardCluster.tscn/gd
+                        (ferro-velho rural decorativo), RuralScatter.tscn (wrapper do
+                        script em scripts/)
 scenes/traffic/         TrafficCar.tscn/gd, TrafficRoute.tscn/gd — carros de IA
 scenes/npc/             BuyerNPC.tscn/gd, Pedestrian.tscn/gd, PedestrianRoute.tscn/gd
 scenes/ui/              HUD.tscn/gd — dinheiro, prompt de interação, barra de lábia;
                         MainMenu.tscn/gd (tela inicial, cena de entrada do jogo);
                         PauseMenu.tscn/gd (Esc pausa a árvore, some com o mouse)
 assets/kenney/          pacotes CC0 do Kenney.nl (roads, commercial, car-kit,
-                        mini-characters) — ver "Sistemas de Mundo Aberto"
-assets/quaternius/      prédios CC0 do Quaternius Downtown City MegaKit (2 usados
-                        em Town.tscn) + Universal Base Characters/Animation
-                        Library (baixados, ainda não integrados nos NPCs)
+                        animated-characters-protagonists) — toda a CIDADE (ruas e os
+                        16 prédios) é só desse pacote, de propósito, ver changelog
+                        2026-08-02 "redesenho completo do mapa"
+assets/quaternius/      downtown-city-megakit (baixado, não usado no layout ativo —
+                        ver changelog) + Universal Base Characters/Animation Library/
+                        outfits-fantasy (baixados, não integrados nos NPCs, ver
+                        Roadmap) + farm-buildings/nature-megakit (usados no anel
+                        rural fora da cidade — fazendas, natureza, montanhas)
 assets/icon/            ícone do jogo (gerado por código, PIL) + .ico/.icns
 builds/                 saída dos exports (ignorado pelo git; publicado como
                         GitHub Release em vez de commitado)
@@ -592,6 +602,116 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     oblíqua sobre a praça da oficina (4 skyscrapers, pedestres, sinalização, meio-fio
     e postes todos coerentes) e vista no nível do jogador numa rua (prédios na
     escala certa, sem T-pose, sem clipping). `debug_tmp/` inteiro removido no final.
+- **2026-08-02** — Usuário pediu um anel rural ao redor da cidade, no espaço vazio
+  que sobrava do chão de 300×300 (a cidade só ocupa uma área de ~136×136 no centro):
+  fazendas "bonitinhas", alguns ferros-velhos e montanhas, autorizando aumentar o
+  mapa se precisasse.
+  - **Assets**: Kenney não tem kit 3D de fazenda (só packs 2D/pixel-art — pesquisado
+    via WebSearch/WebFetch). Achado no site pessoal do Quaternius (mesmo criador já
+    usado no projeto) dois pacotes CC0 novos, dessa vez hospedados no agregador
+    [poly.pizza](https://poly.pizza) em vez do itch.io: **Farm Buildings Bundle**
+    (10 modelos: celeiros, silo, moinho, galinheiro, cerca) e **Stylized Nature
+    MegaKit** (68 modelos: árvores, arbustos, grama, flores, rochas — usei um
+    subconjunto de 22). Descoberta boa: diferente do itch.io (que exigiu replicar
+    chamadas JS com curl+cookie jar nas sessões anteriores), o poly.pizza serve os
+    GLBs direto num CDN estático (`static.poly.pizza/<uuid>.glb`, o mesmo uuid da
+    imagem de preview) — inspecionando o JSON embutido no HTML da página deu pra
+    baixar tudo com `curl` puro, sem navegador automatizado. Assets ficam em
+    `assets/quaternius/farm-buildings/` e `assets/quaternius/nature-megakit/`
+    (~50MB, textura PNG embutida no GLB que o importer do Godot extrai sozinho).
+    Medido a AABB de cada modelo em escala 1.0 (script headless temporário) antes de
+    espalhar — ao contrário dos prédios do Kenney (minúsculos, precisavam de escala
+    5-7x), esses já vêm em escala real de metros, só precisou de jitter pequeno
+    (0.8-1.6x) pra variedade.
+  - **Por que só Quaternius no anel rural (não misturei com o Nature Kit do
+    Kenney)**: a cidade já é 100% Kenney de propósito (ver changelog anterior); pra
+    não reintroduzir o mesmo problema de "dois estilos visuais lado a lado" que foi
+    corrigido ali, o anel rural inteiro (fazenda + natureza + montanha) usa só
+    Quaternius — os dois biomas (downtown Kenney x campo Quaternius) ficam cada um
+    internamente consistente, e como estão espacialmente separados (cidade no
+    centro, campo em volta) a transição entre estilos não fica lado a lado feito
+    antes, é gradual conforme o jogador se afasta.
+  - **Geometria**: chão (`GroundMesh`/`GroundShape`) aumentado de 300×300 pra
+    600×600. Zona de exclusão da cidade calculada por distância Chebyshev
+    (`max(abs(x), abs(z))`) em vez de euclidiana, porque a malha viária é um
+    quadrado (ruas + `extent` do `CityStreets.gd` alcançam ±68 nos dois eixos) — com
+    Chebyshev, um raio de exclusão de 78 dá a mesma folga em qualquer direção,
+    inclusive na diagonal (com distância euclidiana teria sido preciso ~96 pra
+    cobrir a diagonal, desperdiçando muito espaço rural nos eixos retos).
+  - **Fazendas** (`scenes/world/FarmCluster.gd`, novo componente reutilizável tipo
+    `CityBuilding.tscn`): gera por código, a partir de parâmetros exportados, um
+    prédio principal (silo/celeiro/moinho) com colisão automática (reaproveita
+    `CityBuilding.tscn`/`AutoCollisionBody.gd`), cerca retangular ao redor (encadeia
+    peças de `fence-a`/`fence-b` ao longo do perímetro, mesma técnica de
+    `CityStreets.gd:_fence_side`/`_build_run`), plantação em fileiras do lado de
+    fora da cerca (grade de `Plant`/`Tall Grass`) e árvores/arbustos espalhados num
+    anel ao redor. 5 instâncias (`Farm1`-`Farm5`) com combinações diferentes de
+    prédio/cerca/plantação/árvores, espalhadas à mão (não em grade — o campo não
+    precisa do alinhamento rígido da cidade) em pontos com pelo menos ~45 unidades
+    de distância entre si.
+  - **Ferros-velhos rurais** (`scenes/world/ScrapyardCluster.gd`): decorativos, não
+    interativos (o único ferro-velho jogável continua sendo `Junkyard.tscn` — não
+    quis criar um segundo sistema de "carro para reboque" sem pedido explícito).
+    Destroços são caixas simples geradas em código (mesmo formato/proporção do
+    `Body` de `Vehicle.tscn`, cores enferrujadas, tombadas em ângulos aleatórios),
+    mais caixotes e árvores mortas/arbustos ao redor pra clima "abandonado". 3
+    instâncias (`Scrapyard1`-`Scrapyard3`).
+  - **Natureza ambiente e montanhas** (`scripts/RuralScatter.gd`, novo componente
+    genérico, instanciado duas vezes): espalha props numa faixa em anel ao redor da
+    cidade, com `RandomNumberGenerator` próprio (não usa `randf`/`seed` globais, pra
+    não interferir na aleatoriedade de outros sistemas como tráfego/pedestres) e
+    semente fixa (sempre gera o mesmo resultado). `NatureScatter` cobre toda a faixa
+    de raio 78-225 com árvores/rochas médias (colisão automática) e grama/flor/
+    cogumelo/seixo (só visual, sem colisão). `MountainRange` reusa o mesmo script
+    numa faixa mais externa (raio 190-230), só com rochas médias em escala bem maior
+    (9x-18x) — na escala aumentada, essas mesmas rochas viram formações que lêem
+    como montanha de verdade (confirmado visualmente, ver abaixo). As duas instâncias
+    recebem os 8 pontos de fazenda/ferro-velho como `exclude_points` (raio 30) pra
+    não nascer rocha/árvore em cima de um cluster já posicionado à mão.
+  - **Verificação**: mesmo rigor das rodadas anteriores. Script headless
+    (`debug_tmp/verify_rural.gd`, apagado depois) que instancia o `Town.tscn` de
+    verdade e usa `global_position` (não cálculo manual acumulando transforms —
+    tentei isso primeiro e é fácil errar em nós aninhados) pra conferir, em 1103 nós
+    gerados: nenhum cai dentro da zona quadrada da cidade, nenhum cai fora do chão
+    novo, nenhum se sobrepõe a um prédio real da cidade (AABB real via
+    `CollisionShape3D` gerada, mesma técnica da rodada anterior), as rochas de
+    montanha ficam dentro da faixa esperada, e os 8 clusters não ficam perto demais
+    uns dos outros — resultado "nenhum problema encontrado". Achei e corrigi no
+    caminho dois bugs de tipagem estrita do GDScript (`max()`/`or` sem anotação de
+    tipo explícita geram "Variant" e o projeto trata warning como erro) tanto no
+    `FarmCluster.gd` quanto no script de verificação. Rodei o projeto headless
+    inteiro antes/depois, zero erros. Confirmei visualmente em janela real com
+    `screencapture`: vista aérea do mapa inteiro (anel de montanhas visivelmente
+    cercando tudo, cidade pequena e centralizada, fazendas/mato bem distribuídos —
+    usuário pediu explicitamente "bem preenchido" no meio da sessão, então subi a
+    densidade da natureza ambiente ~50% e as árvores de cada fazenda antes desse
+    print), close numa fazenda (silo+galinheiro+cerca+plantação em fileiras+árvores,
+    tudo coerente), vista no nível do chão das montanhas (ficaram bem imponentes,
+    maiores que o prédio mais alto da cidade de propósito) e uma vista de transição
+    bem na borda da cidade (a rua termina e já tem árvore/rocha/montanha ao fundo,
+    sem corte feio). `debug_tmp/` removido no final.
+- **2026-08-02** — Usuário reportou que os botões "Jogar" e "Sair" do menu
+  principal não funcionavam. Como não dá pra clicar de verdade numa janela nativa
+  nesta sessão automatizada (sem permissão de Acessibilidade pro `osascript`
+  controlar outros apps), diagnostiquei escrevendo um script headless temporário
+  que instancia `MainMenu.tscn` de verdade e inspeciona o estado direto (em vez de
+  tentar simular clique do SO): achei que `menu.get_script()` vinha `null` mesmo a
+  cena carregando sem erro nenhum. Causa raiz: `MainMenu.tscn` declarava o
+  `ext_resource` do script (`MainMenu.gd`) mas **nunca atribuía ele ao nó raiz**
+  (faltava a linha `script = ExtResource("1")` no bloco `[node name="MainMenu"
+  type="Control"]` — comparei com `PauseMenu.tscn`, que tem essa linha certinha, pra
+  confirmar que era só esse arquivo). Sem o script attached, `_ready()` nunca
+  rodava, os botões nunca conectavam o sinal `pressed`, e por isso pareciam
+  travados — o bug bate exatamente com o que a sessão que criou esse menu já tinha
+  avisado no changelog anterior ("não consegui confirmar visualmente o fluxo
+  completo... vale você conferir"). Corrigido adicionando a linha que faltava.
+  Validei com o mesmo script de diagnóstico: confirmei `has_method("_on_play")`,
+  a conexão real do sinal `pressed → _on_play`, e por fim emiti o sinal `pressed`
+  direto (`play_button.emit_signal("pressed")`, testa o handler de verdade sem
+  depender de simular clique) — a cena trocou de fato pra `Main.tscn` sem erro.
+  Rodei um script à parte varrendo todos os `.tscn` do projeto procurando esse
+  mesmo padrão de bug (`ext_resource` de Script declarado mas nunca atribuído a
+  nenhum nó) — `MainMenu.tscn` era o único caso. `debug_tmp/` removido no final.
 
 ## Roadmap (fora de escopo desta vertical slice)
 
