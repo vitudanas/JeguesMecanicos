@@ -39,6 +39,13 @@ uniform float normal_strength : hint_range(0.0, 2.0) = 1.0;
 uniform float roughness_min : hint_range(0.0, 1.0) = 0.55;
 uniform float roughness_max : hint_range(0.0, 1.0) = 0.95;
 
+// Sombreamento facetado. Medido: 530 das 1252 faces do predio do kit vem
+// marcadas como SUAVES, com a normal de vertice desviando ate 45 graus da
+// normal da face — e dai que vem o aspecto de sabonete, a quina existe na
+// geometria mas o sombreado passa por cima dela. Recalcular a normal por
+// derivada de tela devolve a quina sem tocar na malha.
+uniform bool flat_shading = true;
+
 varying vec3 world_pos;
 varying vec3 world_normal;
 
@@ -71,6 +78,19 @@ void fragment() {
 
 	float scale = 1.0 / max(detail_size, 0.001);
 	vec3 n = normalize(world_normal);
+	if (flat_shading) {
+		// A derivada de tela da a normal da FACE, mas com o sinal dependendo
+		// da orientacao do triangulo na tela — sem realinhar pelo hemisferio
+		// da normal interpolada, metade das fachadas fica virada pro lado
+		// oposto da luz e a cidade inteira renderiza PRETA (foi o que
+		// aconteceu no primeiro teste).
+		vec3 face_view = normalize(cross(dFdx(VERTEX), dFdy(VERTEX)));
+		NORMAL = face_view * sign(dot(face_view, NORMAL));
+		// O triplanar tambem passa a usar a face: com a normal suavizada a
+		// mistura das tres projecoes borrava na quina.
+		vec3 face_world = normalize(cross(dFdx(world_pos), dFdy(world_pos)));
+		n = face_world * sign(dot(face_world, n));
+	}
 
 	// O grao MODULA a cor do kit em torno de 1.0 (nao substitui e nao escurece
 	// no geral): acima do cinza medio clareia, abaixo escurece. Multiplicar

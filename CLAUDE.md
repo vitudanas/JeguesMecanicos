@@ -188,6 +188,10 @@ export_presets.cfg     # presets Windows Desktop + macOS (testados e funcionando
 autoload/               GameManager.gd, Economy.gd, WeatherManager.gd (clima/chuva),
                         EventManager.gd (eventos procedurais),
                         DeliveryManager.gd (sorteia a casa da entrega da vez)
+shaders/                city_surface.gdshader (fachada/asfalto: atlas do kit +
+                        PBR triplanar + sombreamento facetado),
+                        ground.gdshader (chao do mundo por ruido, sem textura),
+                        mountain.gdshader (rocha/mato/neve por altura e declive)
 scripts/                Interactable.gd, TowHook.gd, PersuasionMinigame.gd, Pothole.gd,
                         CityStreets.gd (malha viária procedural + semáforo/ponto
                         de ônibus/faixa), CityBlocks.gd (preenche os quarteirões
@@ -196,7 +200,9 @@ scripts/                Interactable.gd, TowHook.gd, PersuasionMinigame.gd, Poth
                         registra as casas de entrega), StreetFurniture.gd
                         (mobiliário urbano montado com primitivas),
                         CityOutskirts.gd (cinturão de transição cidade→campo),
-                        RuralScatter.gd (espalha natureza/montanhas no anel rural)
+                        RuralScatter.gd (espalha natureza no anel rural),
+                        MountainRange.gd (cordilheira gerada como malha),
+                        CitySurface.gd (monta o material das superficies da cidade)
 scenes/main/            Main.tscn — cena de entrada (Town + Player + HUD + RainFX)
 scenes/player/          Player.tscn/gd — controller 1ª pessoa
 scenes/vehicle/         Vehicle.tscn/gd, AttachSpot.gd, GambiarraPart.gd, parts/*.tscn
@@ -1097,6 +1103,117 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     condicionado, lixeira). Conclusão registrada: o que ainda lê como desenho
     na vista de longe é **geometria** (caixa sem janela rebaixada, sem beiral,
     sem entulho de telhado) e as árvores em cone chapado — não a superfície.
+
+- **2026-08-03** — Usuário apontou que as construções têm "visual
+  arredondado" e pediu para conferir de perto: **borda de janela, telhado e
+  porta** parecendo chanfradas.
+  - **Medido antes de mexer** (Blender, `building-a.glb` do kit comercial):
+    **530 das 1252 faces vêm marcadas como SUAVES**, e a normal de vértice
+    desvia da normal da face em até 45° (p90). Ou seja: a quina **existe na
+    geometria**, o que arredonda é o sombreamento passando por cima dela.
+  - **Conserto sem tocar na malha**: `shaders/city_surface.gdshader` ganhou
+    `flat_shading`, que recalcula a normal por derivada de tela
+    (`cross(dFdx(VERTEX), dFdy(VERTEX))`) e devolve a faceta. O triplanar
+    passou a usar a mesma normal de face, senão a mistura das três projeções
+    borra justamente na quina.
+  - **Atenção pra quem continuar**: o shader só cobre o que passa por
+    `CitySurface.apply()` — fachadas, asfalto e meio-fio. Carro, personagem,
+    árvore, mobiliário urbano e os props de telhado continuam com material
+    próprio e sombreado suave; se sobrar canto redondo, é aí.
+
+- **2026-08-03** — Usuário pediu pra fechar as três pendências abertas acima
+  ("continue tudo aí e deixa 100% esses gráficos"). As três foram feitas.
+  - **Escala das construções (pendência 3)**: medi antes de mexer — prédio
+    comercial do kit com 1.293 de altura local dava **7.76m** em escala 6.0,
+    ou 2,6m por andar num modelo com 3 fileiras de janela. A grade inteira
+    subiu 25%: `tile_size` 6.25 → **7.5**, espaçamento de rua 25 → **37.5**
+    (5 tiles, continua múltiplo exato — que era a trava documentada),
+    `building_scale` 6.0 → **7.5**, pista 4.8m → 6.0m e calçada 1.2 → 1.5.
+    Resultado medido: altura média 7.4m → **10.5m**, mais alto 17.3m →
+    **33.6m**, ocupação 23% → **30%**. A grade foi de 8×8 quarteirões de 25
+    para **6×6 de 37.5** (área da cidade 200×200 → 225×225) e o miolo de cada
+    quarteirão passou de 17.4m para 28.3m, o que era necessário: no
+    `depth_budget` antigo (8.4m) quase nenhum prédio na escala nova caberia.
+    Remapeados 18 rotas, 4 buracos, 4 poças, 4 pontos de evento, oficina,
+    ferro-velho, spawn do jogador, cinturão e anel rural.
+  - **Bug antigo achado no caminho: a faixa de pedestre NUNCA nascia.** O
+    censo acusou 0 tiles de `road-crossing` na cidade inteira. Causa: o
+    limiar era `tile_size * 0.95`, mas as peças são ancoradas na grade, então
+    a vizinha do cruzamento fica a **exatamente** um tile — a condição nunca
+    era verdadeira. Com `1.05` são 196 faixas.
+  - **Montanhas (pendência 2)**: `scripts/MountainRange.gd` + 
+    `shaders/mountain.gdshader` geram 38 maciços como campo de altura próprio
+    (perfil que vai a ZERO na borda, então o pé encosta no chão sem degrau;
+    cume deslocado do centro; ruído de cordilheira + uma oitava fina de
+    sulcos). A cor sai da **forma**, não de textura: rocha na encosta íngreme,
+    mato embaixo, neve no alto — é o que faz ler como montanha e não como
+    pedra grande. As rochas escaladas 9x-18x saíram.
+  - **Chão do mundo**: era **uma cor chapada**, e de longe a cidade lia como
+    maquete em cima de uma mesa cinza — o tell mais forte que sobrava. Agora
+    `shaders/ground.gdshader` faz grama/terra por fbm em três escalas, com
+    micro-relevo na normal. Ruído em vez de foto de propósito: uma textura 1K
+    repetindo em 600m vira listra, e o ruído não repete (e não custa byte no
+    build). A placa foi de 600×600 pra **1800×1800**, senão a borda quadrada
+    aparecia contra o céu.
+  - **Canto arredondado (pendência 1)**: medi quanto a normal de vértice
+    desvia da normal de face em cada kit. Kits de **prédio** do Kenney:
+    41-45% das faces suavizadas (é daí que vem o aspecto de sabonete). Kit de
+    **ruas**: 2.3%. Fazenda do Quaternius: **0%**. Árvore: 96% e carro: 4.4%
+    — os dois devem continuar suaves. Ou seja, só faltava cobrir os prédios
+    do Kenney que não passavam pelo `CitySurface`: o **cinturão de transição**
+    (77 construções, ainda em cor chapada), a **loja do posto** e a
+    **oficina**. `AutoCollisionBody` ganhou um `surface_kind` opt-in pra isso.
+  - **Erros meus, todos pegos olhando o render ou o verificador**:
+    1. *Normal de face pelo sinal errado*: `cross(dFdx, dFdy)` devolve a
+       normal com o sinal dependendo da orientação do triângulo na tela.
+       Sem realinhar pelo hemisfério da normal interpolada
+       (`face * sign(dot(face, NORMAL))`), metade das fachadas ficou virada
+       pro lado oposto da luz e **a cidade inteira renderizou PRETA**. O que
+       denunciou foi que só o que passa pelo CitySurface estava escuro — bomba
+       de gasolina e caixa d'água, que têm material próprio, estavam certas.
+    2. *Ordem dos vértices do maciço invertida*: mesma armadilha de sinal, mas
+       na geometria. A montanha ficava **invisível vista de cima** (o
+       `cull_back` comia a face virada pra câmera) e de longe só aparecia uma
+       lasca fina. Trocar `[0,2,1,0,3,2]` por `[0,1,2,0,2,3]` resolveu.
+    3. *Pé da montanha calculado pelo raio nominal*: a base é elíptica e o
+       cume é deslocado, então a base real chega a **1.8× o raio**. Posicionar
+       pelo raio deixou a encosta 90m mais pra dentro do planejado, engolindo
+       ferro-velho e 128 props de natureza. Passou a descontar o `span` real.
+    4. *Script de patch que só gravava no fim*: uma contagem errada no meio do
+       lote abortava e **descartava em silêncio** todas as trocas já impressas
+       como "ok" — foi assim que as fazendas ficaram na posição velha com a
+       lista de exclusão já na nova. O helper passou a gravar a cada passo.
+    5. *Verificador dando "nenhum problema" com ZERO montanhas*: o script
+       tinha erro de parse e a lista vazia passava calada. Contagem zero em
+       qualquer gerador agora é falha dura.
+    6. *Medição de normais com o sinal invertido*: acusou 100% de faces
+       suavizadas em todos os kits, inclusive numa caixa. Só o ângulo importa,
+       então `absf(dot)`.
+  - **Verificação**: `debug_tmp/verify_city.gd` instancia o `Town.tscn` de
+    verdade e lê os parâmetros dos próprios nós (então continua valendo depois
+    de mexer na escala): censo, continuidade da malha viária (distância exata
+    de um tile entre peças vizinhas), prédio×rua, prédio×prédio, rota×prédio,
+    rota sobre pista/calçada, entrega (NPC na calçada e zona do carro na
+    pista), spawn de evento, quarteirão vazio, buraco/poça sobre o asfalto,
+    e o anel rural (pé da montanha × cinturão × clusters × natureza × borda do
+    chão). Terminou em "nenhum problema encontrado". Builds reexportados e o
+    `.app` exportado rodado de verdade; conferido item a item que as **183**
+    referências `res://` do jogo estão no `.pck` e que as 4 pastas de origem
+    continuam fora. macOS 127MB, Windows 179MB. `debug_tmp/` removido.
+
+### Pendências pedidas e ainda NÃO feitas
+
+Nenhuma das três pendências anteriores continua aberta. O que sobrou de
+observação pra uma próxima rodada (nada disso foi pedido):
+
+1. **Fluxo completo do jogo não foi jogado nesta sessão** — a verificação é
+   geométrica e por render, não por input. Vale dirigir de verdade uma vez:
+   rebocar do ferro-velho até a oficina (38m ao norte), sair pela estrada
+   oeste e entrar na cidade, e fechar uma entrega.
+2. **Telhado verde do kit suburbano** ainda puxa pro menta. O shader já
+   dessatura verde puro (`green_tame`), mas a cor vive dentro do atlas.
+3. **Câmera 04 do roteiro de fotos** ficava em (30, 2.2, 30), que com a grade
+   nova cai DENTRO de um quarteirão — se recriar o script de fotos, reposicionar.
 
 ## Roadmap (fora de escopo desta vertical slice)
 

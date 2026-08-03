@@ -90,6 +90,12 @@ static var _footprint_cache: Dictionary = {}
 @export var rooftop_props_enabled := true
 @export var rooftop_prop_chance := 0.55
 
+## Raio (Chebyshev, a partir do centro) de cada anel de zoneamento. Eram
+## numeros magicos casados com o espacamento de rua antigo (25); virando
+## export, mudar a grade nao exige mais mexer no script.
+@export var downtown_extent := 30.0
+@export var midtown_extent := 75.0
+
 @export var exclude_points: Array[Vector3] = []
 @export var exclude_radius := 12.0
 
@@ -293,7 +299,8 @@ func _build_gas_station(x_min: float, x_max: float, z_min: float, z_max: float) 
 		var kiosk: PackedScene = kiosk_scenes[_rng.randi() % kiosk_scenes.size()]
 		var kiosk_scale := building_scale * 0.62
 		var depth := _footprint(kiosk, 180.0, kiosk_scale).y
-		_place_prop(kiosk, Vector3(center.x, 0.0, z_max - depth * 0.5 - 0.4), 180.0, kiosk_scale)
+		_place_prop(kiosk, Vector3(center.x, 0.0, z_max - depth * 0.5 - 0.4), 180.0, kiosk_scale,
+			"reboco")
 
 ## Estacionamento: asfalto, faixas e duas fileiras de carros parados.
 func _build_parking(x_min: float, x_max: float, z_min: float, z_max: float) -> void:
@@ -366,16 +373,27 @@ func _patch(center: Vector3, size: Vector2, color: Color, key: String, y: float,
 
 ## Igual a _place(), mas sem o tint de fachada: arvore, carro e guarda-sol tem
 ## cor propria e nao podem entrar na paleta de predio.
-func _place_prop(scene: PackedScene, pos: Vector3, rot_deg: float, prop_scale: float) -> Node3D:
+func _place_prop(scene: PackedScene, pos: Vector3, rot_deg: float, prop_scale: float,
+		surface_kind := "") -> Node3D:
 	var body := CITY_BUILDING_SCENE.instantiate()
 	body.visual_scene = scene
 	body.visual_scale = prop_scale
 	body.visual_rotation_y_degrees = rot_deg
+	# Grupo, nao nome: arvore/carro/guarda-sol PODEM se tocar (copa encosta em
+	# copa), predio nao. Sem separar os dois, uma verificacao de sobreposicao
+	# acusa 125 "predios se atravessando" que na verdade sao copas de arvore.
+	body.add_to_group("city_prop")
 	add_child(body)
 	# Mesmo desconto de _fill_edge: varios modelos do kit tem a malha deslocada
 	# da origem do no, e sem isso o prop nasce fora do lugar planejado.
 	var off := _center_offset(scene, rot_deg, prop_scale)
 	body.position = pos - Vector3(off.x, 0.0, off.y)
+	# Prop que por acaso E um predio do kit (a loja do posto) precisa do mesmo
+	# acabamento das fachadas, senao fica de cor chapada e com quina redonda no
+	# meio de uma cidade toda facetada.
+	if surface_kind != "" and use_pbr_surface:
+		CitySurface.apply(body, Color(0.92, 0.9, 0.86), surface_kind, facade_texture_size,
+			facade_saturation)
 	return body
 
 ## Percorre uma borda colocando predios lado a lado, todos virados pra fora
@@ -500,10 +518,13 @@ func _measure(scene: PackedScene) -> Dictionary:
 func _pool_for(center: Vector2) -> Array:
 	var ring: float = maxf(absf(center.x), absf(center.y))
 	var pool: Array = []
-	if ring < 20.0:
+	if ring < downtown_extent:
+		# Torre entra em DOBRO no miolo: com uma copia so ela se perde no meio
+		# das 23 fachadas comerciais e o centro nao ganha silhueta alta.
+		pool.append_array(skyscraper_scenes)
 		pool.append_array(skyscraper_scenes)
 		pool.append_array(commercial_scenes)
-	elif ring < 58.0:
+	elif ring < midtown_extent:
 		pool.append_array(commercial_scenes)
 		pool.append_array(house_scenes)
 	else:
@@ -522,6 +543,7 @@ func _place(scene: PackedScene, pos: Vector3, rot_deg: float) -> Node3D:
 	body.visual_scene = scene
 	body.visual_scale = building_scale
 	body.visual_rotation_y_degrees = rot_deg
+	body.add_to_group("city_building")
 	add_child(body)
 	body.position = pos
 	_tint(body)

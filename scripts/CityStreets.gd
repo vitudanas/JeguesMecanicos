@@ -161,9 +161,13 @@ func _build_run(min_v: float, max_v: float, cross_values: Array[float], pos_fn: 
 			_place_curb_pair(pos_fn.call(p), rot)
 		else:
 			# Aproximacao de cruzamento ganha faixa de pedestre; o resto do
-			# trecho continua reto.
+			# trecho continua reto. O limiar tem que ser MAIOR que um tile: as
+			# pecas sao ancoradas na grade, entao a vizinha do cruzamento fica a
+			# exatamente tile_size dele — com o 0.95 que estava aqui a condicao
+			# nunca era verdadeira e a faixa de pedestre NUNCA nascia (censo
+			# acusou 0 tiles de road-crossing na cidade inteira).
 			var tile_scene := straight_scene
-			if crossing_scene != null and _near_any(cross_values, p, tile_size * 0.95):
+			if crossing_scene != null and _near_any(cross_values, p, tile_size * 1.05):
 				tile_scene = crossing_scene
 			_place(tile_scene, pos_fn.call(p), rot)
 			_place_curb_pair(pos_fn.call(p), rot)

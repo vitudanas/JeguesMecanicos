@@ -1,6 +1,8 @@
 [gd_scene load_steps=145 format=3]
 
 [ext_resource type="Script" path="res://scripts/Pothole.gd" id="1"]
+[ext_resource type="Shader" path="res://shaders/ground.gdshader" id="400"]
+[ext_resource type="Script" path="res://scripts/MountainRange.gd" id="401"]
 [ext_resource type="Script" path="res://scenes/world/Town.gd" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/world/Junkyard.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/world/RuralWorkshop.tscn" id="4"]
@@ -190,7 +192,7 @@ fog_mode = 0
 fog_light_color = Color(0.71, 0.76, 0.83, 1)
 fog_light_energy = 1.0
 fog_sun_scatter = 0.08
-fog_density = 0.0009
+fog_density = 0.0006
 fog_sky_affect = 0.12
 fog_aerial_perspective = 0.22
 fog_height = 0.0
@@ -201,14 +203,23 @@ adjustment_contrast = 1.09
 adjustment_saturation = 0.92
 
 [sub_resource type="BoxShape3D" id="GroundShape"]
-size = Vector3(600, 1, 600)
+size = Vector3(1800, 1, 1800)
 
 [sub_resource type="BoxMesh" id="GroundMesh"]
-size = Vector3(600, 1, 600)
+size = Vector3(1800, 1, 1800)
 
-[sub_resource type="StandardMaterial3D" id="GroundMat"]
-albedo_color = Color(0.42, 0.42, 0.45, 1)
-roughness = 0.95
+[sub_resource type="ShaderMaterial" id="GroundMat"]
+shader = ExtResource("400")
+shader_parameter/grass_color = Color(0.3, 0.38, 0.21, 1)
+shader_parameter/grass_dry_color = Color(0.46, 0.47, 0.28, 1)
+shader_parameter/dirt_color = Color(0.37, 0.31, 0.24, 1)
+shader_parameter/gravel_color = Color(0.44, 0.45, 0.36, 1)
+shader_parameter/city_extent = 135.0
+shader_parameter/city_fade = 115.0
+shader_parameter/macro_scale = 0.007
+shader_parameter/meso_scale = 0.055
+shader_parameter/micro_scale = 0.9
+shader_parameter/normal_strength = 1.1
 
 [sub_resource type="BoxShape3D" id="PotholeShape"]
 size = Vector3(2.2, 0.6, 2.2)
@@ -232,7 +243,7 @@ directional_shadow_mode = 2
 directional_shadow_split_1 = 0.06
 directional_shadow_split_2 = 0.18
 directional_shadow_split_3 = 0.45
-directional_shadow_max_distance = 260.0
+directional_shadow_max_distance = 420.0
 directional_shadow_fade_start = 0.9
 
 [node name="Ground" type="StaticBody3D" parent="."]
@@ -246,37 +257,37 @@ surface_material_override/0 = SubResource("GroundMat")
 shape = SubResource("GroundShape")
 
 [node name="Junkyard" parent="." instance=ExtResource("3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -150, 0, 40)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -175, 0, 40)
 
 [node name="Workshop" parent="." instance=ExtResource("4")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -150, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -175, 0, 0)
 
 [node name="PlayerSpawn" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -144, 0.4, 6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -169, 0.4, 6)
 
 [node name="Pothole1" type="Area3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, -0.1, 6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37.5, -0.1, 9)
 script = ExtResource("1")
 
 [node name="Shape" type="CollisionShape3D" parent="Pothole1"]
 shape = SubResource("PotholeShape")
 
 [node name="Pothole2" type="Area3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, -0.1, 25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, -0.1, 37.5)
 script = ExtResource("1")
 
 [node name="Shape" type="CollisionShape3D" parent="Pothole2"]
 shape = SubResource("PotholeShape")
 
 [node name="Pothole3" type="Area3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, -0.1, -6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37.5, -0.1, -9)
 script = ExtResource("1")
 
 [node name="Shape" type="CollisionShape3D" parent="Pothole3"]
 shape = SubResource("PotholeShape")
 
 [node name="Pothole4" type="Area3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, -0.1, -5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -37.5, -0.1, -8)
 script = ExtResource("1")
 
 [node name="Shape" type="CollisionShape3D" parent="Pothole4"]
@@ -284,29 +295,29 @@ shape = SubResource("PotholeShape")
 
 [node name="TrafficRouteWorkshop" parent="." instance=ExtResource("6")]
 car_count = 4
-route_points = Array[Vector3]([Vector3(26.2, 0.4, 1.2), Vector3(48.8, 0.4, 1.2), Vector3(48.8, 0.4, 23.8), Vector3(26.2, 0.4, 23.8)])
+route_points = Array[Vector3]([Vector3(39, 0.4, 1.5), Vector3(73.5, 0.4, 1.5), Vector3(73.5, 0.4, 36), Vector3(39, 0.4, 36)])
 car_models = Array[PackedScene]([ExtResource("101"), ExtResource("104"), ExtResource("106")])
 
 [node name="TrafficRouteJunkyard" parent="." instance=ExtResource("6")]
-route_points = Array[Vector3]([Vector3(-48.8, 0.4, -48.8), Vector3(-26.2, 0.4, -48.8), Vector3(-26.2, 0.4, -26.2), Vector3(-48.8, 0.4, -26.2)])
+route_points = Array[Vector3]([Vector3(-73.5, 0.4, -73.5), Vector3(-39, 0.4, -73.5), Vector3(-39, 0.4, -39), Vector3(-73.5, 0.4, -39)])
 car_count = 3
 car_models = Array[PackedScene]([ExtResource("105"), ExtResource("103")])
 
 [node name="MudZone1" parent="." instance=ExtResource("7")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0, 6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37.5, 0, 9)
 
 [node name="MudZone2" parent="." instance=ExtResource("7")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, 25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 0, 37.5)
 
 [node name="MudZone3" parent="." instance=ExtResource("7")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0, -6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37.5, 0, -9)
 
 [node name="MudZone4" parent="." instance=ExtResource("7")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 0, -5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -37.5, 0, -8)
 
 [node name="PedestrianRouteWorkshop" parent="." instance=ExtResource("15")]
 pedestrian_count = 5
-route_points = Array[Vector3]([Vector3(3, 0.1, 28), Vector3(22, 0.1, 28), Vector3(22, 0.1, 47), Vector3(3, 0.1, 47)])
+route_points = Array[Vector3]([Vector3(3.75, 0.1, 41.25), Vector3(33.75, 0.1, 41.25), Vector3(33.75, 0.1, 71.25), Vector3(3.75, 0.1, 71.25)])
 character_models = Array[PackedScene]([ExtResource("200"), ExtResource("201")])
 idle_anim_scene = ExtResource("207")
 walk_anim_scene = ExtResource("207")
@@ -316,7 +327,7 @@ visual_scale = 1.0
 
 [node name="PedestrianRouteBuyer" parent="." instance=ExtResource("15")]
 pedestrian_count = 5
-route_points = Array[Vector3]([Vector3(-22, 0.1, -47), Vector3(-3, 0.1, -47), Vector3(-3, 0.1, -28), Vector3(-22, 0.1, -28)])
+route_points = Array[Vector3]([Vector3(-33.75, 0.1, -71.25), Vector3(-3.75, 0.1, -71.25), Vector3(-3.75, 0.1, -41.25), Vector3(-33.75, 0.1, -41.25)])
 character_models = Array[PackedScene]([ExtResource("200"), ExtResource("201")])
 idle_anim_scene = ExtResource("207")
 walk_anim_scene = ExtResource("207")
@@ -325,29 +336,29 @@ walk_anim_name = "Walk"
 visual_scale = 1.0
 
 [node name="TrafficRouteRingOuter" parent="." instance=ExtResource("6")]
-route_points = Array[Vector3]([Vector3(-48.8, 0.4, -48.8), Vector3(48.8, 0.4, -48.8), Vector3(48.8, 0.4, 48.8), Vector3(-48.8, 0.4, 48.8)])
+route_points = Array[Vector3]([Vector3(-73.5, 0.4, -73.5), Vector3(73.5, 0.4, -73.5), Vector3(73.5, 0.4, 73.5), Vector3(-73.5, 0.4, 73.5)])
 car_count = 6
 car_speed_min = 5.0
 car_speed_max = 8.0
 car_models = Array[PackedScene]([ExtResource("101"), ExtResource("102"), ExtResource("104"), ExtResource("103")])
 
 [node name="TrafficRouteNorth" parent="." instance=ExtResource("6")]
-route_points = Array[Vector3]([Vector3(-23.8, 0.4, 26.2), Vector3(23.8, 0.4, 26.2), Vector3(23.8, 0.4, 48.8), Vector3(-23.8, 0.4, 48.8)])
+route_points = Array[Vector3]([Vector3(-36, 0.4, 39), Vector3(36, 0.4, 39), Vector3(36, 0.4, 73.5), Vector3(-36, 0.4, 73.5)])
 car_count = 4
 car_models = Array[PackedScene]([ExtResource("103"), ExtResource("102"), ExtResource("107")])
 
 [node name="TrafficRouteSouth" parent="." instance=ExtResource("6")]
-route_points = Array[Vector3]([Vector3(-23.8, 0.4, -48.8), Vector3(23.8, 0.4, -48.8), Vector3(23.8, 0.4, -26.2), Vector3(-23.8, 0.4, -26.2)])
+route_points = Array[Vector3]([Vector3(-36, 0.4, -73.5), Vector3(36, 0.4, -73.5), Vector3(36, 0.4, -39), Vector3(-36, 0.4, -39)])
 car_count = 4
 car_models = Array[PackedScene]([ExtResource("101"), ExtResource("105"), ExtResource("104")])
 
 [node name="TrafficRouteWest" parent="." instance=ExtResource("6")]
-route_points = Array[Vector3]([Vector3(-48.8, 0.4, 1.2), Vector3(-26.2, 0.4, 1.2), Vector3(-26.2, 0.4, 23.8), Vector3(-48.8, 0.4, 23.8)])
+route_points = Array[Vector3]([Vector3(-73.5, 0.4, 1.5), Vector3(-39, 0.4, 1.5), Vector3(-39, 0.4, 36), Vector3(-73.5, 0.4, 36)])
 car_count = 3
 car_models = Array[PackedScene]([ExtResource("102"), ExtResource("106"), ExtResource("103")])
 
 [node name="PedestrianRouteEast" parent="." instance=ExtResource("15")]
-route_points = Array[Vector3]([Vector3(28, 0.1, -22), Vector3(47, 0.1, -22), Vector3(47, 0.1, -3), Vector3(28, 0.1, -3)])
+route_points = Array[Vector3]([Vector3(41.25, 0.1, -33.75), Vector3(71.25, 0.1, -33.75), Vector3(71.25, 0.1, -3.75), Vector3(41.25, 0.1, -3.75)])
 pedestrian_count = 4
 character_models = Array[PackedScene]([ExtResource("200"), ExtResource("201")])
 idle_anim_scene = ExtResource("207")
@@ -357,7 +368,7 @@ walk_anim_name = "Walk"
 visual_scale = 1.0
 
 [node name="PedestrianRouteNorthWest" parent="." instance=ExtResource("15")]
-route_points = Array[Vector3]([Vector3(-47, 0.1, 28), Vector3(-28, 0.1, 28), Vector3(-28, 0.1, 47), Vector3(-47, 0.1, 47)])
+route_points = Array[Vector3]([Vector3(-71.25, 0.1, 41.25), Vector3(-41.25, 0.1, 41.25), Vector3(-41.25, 0.1, 71.25), Vector3(-71.25, 0.1, 71.25)])
 pedestrian_count = 4
 character_models = Array[PackedScene]([ExtResource("200"), ExtResource("201")])
 idle_anim_scene = ExtResource("207")
@@ -367,7 +378,7 @@ walk_anim_name = "Walk"
 visual_scale = 1.0
 
 [node name="PedestrianRouteSouthWest" parent="." instance=ExtResource("15")]
-route_points = Array[Vector3]([Vector3(-47, 0.1, -47), Vector3(-28, 0.1, -47), Vector3(-28, 0.1, -28), Vector3(-47, 0.1, -28)])
+route_points = Array[Vector3]([Vector3(-71.25, 0.1, -71.25), Vector3(-41.25, 0.1, -71.25), Vector3(-41.25, 0.1, -41.25), Vector3(-71.25, 0.1, -41.25)])
 pedestrian_count = 4
 character_models = Array[PackedScene]([ExtResource("200"), ExtResource("201")])
 idle_anim_scene = ExtResource("207")
@@ -377,7 +388,7 @@ walk_anim_name = "Walk"
 visual_scale = 1.0
 
 [node name="PedestrianRouteNorthEast" parent="." instance=ExtResource("15")]
-route_points = Array[Vector3]([Vector3(28, 0.1, 28), Vector3(47, 0.1, 28), Vector3(47, 0.1, 47), Vector3(28, 0.1, 47)])
+route_points = Array[Vector3]([Vector3(41.25, 0.1, 41.25), Vector3(71.25, 0.1, 41.25), Vector3(71.25, 0.1, 71.25), Vector3(41.25, 0.1, 71.25)])
 pedestrian_count = 4
 character_models = Array[PackedScene]([ExtResource("200"), ExtResource("201")])
 idle_anim_scene = ExtResource("207")
@@ -387,29 +398,31 @@ walk_anim_name = "Walk"
 visual_scale = 1.0
 
 [node name="EventSpawnPoint1" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 50, 0.5, -25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 75, 0.5, -37.5)
 
 [node name="EventSpawnPoint2" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -50, 0.5, 25)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -75, 0.5, 37.5)
 
 [node name="EventSpawnPoint3" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 50, 0.5, 50)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 75, 0.5, 75)
 
 [node name="EventSpawnPoint4" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -50, 0.5, -50)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -75, 0.5, -75)
 
 [node name="CityBlocks" parent="." instance=ExtResource("100")]
-streets_x = Array[float]([-100.0, -75.0, -50.0, -25.0, 0.0, 25.0, 50.0, 75.0, 100.0])
-streets_z = Array[float]([-100.0, -75.0, -50.0, -25.0, 0.0, 25.0, 50.0, 75.0, 100.0])
-road_clearance = 3.8
-building_scale = 6.0
+streets_x = Array[float]([-112.5, -75.0, -37.5, 0.0, 37.5, 75.0, 112.5])
+streets_z = Array[float]([-112.5, -75.0, -37.5, 0.0, 37.5, 75.0, 112.5])
+road_clearance = 4.6
+building_scale = 7.5
+downtown_extent = 30.0
+midtown_extent = 75.0
 lot_gap = 0.3
 skyscraper_scenes = Array[PackedScene]([ExtResource("34"), ExtResource("35"), ExtResource("36"), ExtResource("37")])
 commercial_scenes = Array[PackedScene]([ExtResource("22"), ExtResource("23"), ExtResource("24"), ExtResource("25"), ExtResource("26"), ExtResource("27"), ExtResource("28"), ExtResource("29"), ExtResource("30"), ExtResource("31"), ExtResource("32"), ExtResource("33"), ExtResource("149"), ExtResource("150"), ExtResource("151"), ExtResource("152"), ExtResource("153"), ExtResource("154"), ExtResource("155"), ExtResource("156"), ExtResource("157"), ExtResource("158"), ExtResource("159")])
 house_scenes = Array[PackedScene]([ExtResource("108"), ExtResource("109"), ExtResource("110"), ExtResource("111"), ExtResource("112"), ExtResource("113"), ExtResource("114"), ExtResource("115"), ExtResource("116"), ExtResource("117"), ExtResource("118"), ExtResource("119"), ExtResource("120"), ExtResource("121"), ExtResource("122"), ExtResource("123"), ExtResource("124"), ExtResource("125"), ExtResource("126"), ExtResource("127"), ExtResource("128")])
 industrial_scenes = Array[PackedScene]([ExtResource("129"), ExtResource("130"), ExtResource("131"), ExtResource("132"), ExtResource("133"), ExtResource("134"), ExtResource("135"), ExtResource("136"), ExtResource("137"), ExtResource("138"), ExtResource("139"), ExtResource("140"), ExtResource("141"), ExtResource("142"), ExtResource("143"), ExtResource("144"), ExtResource("145"), ExtResource("146"), ExtResource("147"), ExtResource("148")])
 tree_scenes = Array[PackedScene]([ExtResource("321"), ExtResource("322"), ExtResource("323")])
-tree_scale = 0.85
+tree_scale = 1.05
 parasol_scenes = Array[PackedScene]([ExtResource("303"), ExtResource("304")])
 parked_car_scenes = Array[PackedScene]([ExtResource("101"), ExtResource("102"), ExtResource("103"), ExtResource("104"), ExtResource("105")])
 kiosk_scenes = Array[PackedScene]([ExtResource("305"), ExtResource("306")])
@@ -421,20 +434,24 @@ rng_seed = 20260803
 
 [node name="CityStreets" type="Node3D" parent="."]
 script = ExtResource("41")
-streets_x = Array[float]([-100.0, -75.0, -50.0, -25.0, 0.0, 25.0, 50.0, 75.0, 100.0])
-streets_z = Array[float]([-100.0, -75.0, -50.0, -25.0, 0.0, 25.0, 50.0, 75.0, 100.0])
-extent = 18.75
-tile_size = 6.25
+streets_x = Array[float]([-112.5, -75.0, -37.5, 0.0, 37.5, 75.0, 112.5])
+streets_z = Array[float]([-112.5, -75.0, -37.5, 0.0, 37.5, 75.0, 112.5])
+extent = 22.5
+tile_size = 7.5
+road_half_width = 3.0
+sidewalk_width = 1.5
+furniture_offset = 3.75
 crossroad_scene = ExtResource("39")
 straight_scene = ExtResource("38")
 crossing_scene = ExtResource("300")
 end_scene = ExtResource("42")
 light_scene = ExtResource("40")
 light_every_n_tiles = 3
-light_offset = 2.6
+light_offset = 3.3
+bus_stop_every_n_tiles = 5
 
 [node name="Farm1" parent="." instance=ExtResource("43")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 130, 0, 90)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 188, 0, 55)
 main_building = ExtResource("48")
 main_building_rotation_degrees = 0.0
 coop_scene = ExtResource("50")
@@ -453,7 +470,7 @@ tree_max_radius = 21.0
 rng_seed = 101
 
 [node name="Farm2" parent="." instance=ExtResource("43")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -110, 0, 130)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -55, 0, 190)
 main_building = ExtResource("51")
 main_building_rotation_degrees = 90.0
 coop_scene = ExtResource("55")
@@ -472,7 +489,7 @@ tree_max_radius = 22.0
 rng_seed = 202
 
 [node name="Farm3" parent="." instance=ExtResource("43")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 150, 0, -80)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 190, 0, -60)
 main_building = ExtResource("52")
 main_building_rotation_degrees = 180.0
 include_coop = false
@@ -489,7 +506,7 @@ tree_max_radius = 19.0
 rng_seed = 303
 
 [node name="Farm4" parent="." instance=ExtResource("43")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -140, 0, -110)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -190, 0, -60)
 main_building = ExtResource("54")
 main_building_rotation_degrees = 270.0
 coop_scene = ExtResource("48")
@@ -508,7 +525,7 @@ tree_max_radius = 23.0
 rng_seed = 404
 
 [node name="Farm5" parent="." instance=ExtResource("43")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 30, 0, 170)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 50, 0, 192)
 main_building = ExtResource("53")
 main_building_rotation_degrees = 45.0
 coop_scene = ExtResource("50")
@@ -527,21 +544,21 @@ tree_max_radius = 20.0
 rng_seed = 505
 
 [node name="Scrapyard1" parent="." instance=ExtResource("44")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -160, 0, -40)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 105, 0, 175)
 wreck_count = 3
 decor_scenes = Array[PackedScene]([ExtResource("60"), ExtResource("62"), ExtResource("66")])
 decor_count = 6
 rng_seed = 601
 
 [node name="Scrapyard2" parent="." instance=ExtResource("44")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 60, 0, -160)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 55, 0, -190)
 wreck_count = 4
 decor_scenes = Array[PackedScene]([ExtResource("60"), ExtResource("62"), ExtResource("66")])
 decor_count = 7
 rng_seed = 602
 
 [node name="Scrapyard3" parent="." instance=ExtResource("44")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 170, 0, 60)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -100, 0, -172)
 wreck_count = 3
 decor_scenes = Array[PackedScene]([ExtResource("60"), ExtResource("62"), ExtResource("66")])
 decor_count = 6
@@ -549,53 +566,53 @@ rng_seed = 603
 
 [node name="NatureScatter" parent="." instance=ExtResource("45")]
 decor_scenes = Array[PackedScene]([ExtResource("64"), ExtResource("65"), ExtResource("66"), ExtResource("67"), ExtResource("68"), ExtResource("69"), ExtResource("70"), ExtResource("71"), ExtResource("75"), ExtResource("76")])
-decor_count = 560
+decor_count = 900
 decor_scale_min = 0.8
 decor_scale_max = 1.5
 solid_scenes = Array[PackedScene]([ExtResource("56"), ExtResource("57"), ExtResource("58"), ExtResource("59"), ExtResource("60"), ExtResource("61"), ExtResource("62"), ExtResource("63"), ExtResource("72"), ExtResource("73"), ExtResource("74")])
-solid_count = 170
+solid_count = 230
 solid_scale_min = 0.8
 solid_scale_max = 1.6
-inner_extent = 132.0
-outer_radius = 225.0
-exclude_points = Array[Vector3]([Vector3(130, 0, 90), Vector3(-110, 0, 130), Vector3(150, 0, -80), Vector3(-140, 0, -110), Vector3(30, 0, 170), Vector3(-160, 0, -40), Vector3(60, 0, -160), Vector3(170, 0, 60), Vector3(-150, 0, 0), Vector3(-150, 0, 40)])
+inner_extent = 140.0
+outer_radius = 228.0
+exclude_points = Array[Vector3]([Vector3(188, 0, 55), Vector3(-55, 0, 190), Vector3(190, 0, -60), Vector3(-190, 0, -60), Vector3(50, 0, 192), Vector3(105, 0, 175), Vector3(55, 0, -190), Vector3(-100, 0, -172), Vector3(-175, 0, 0), Vector3(-175, 0, 40)])
 exclude_radius = 30.0
 rng_seed = 20260803
 
-[node name="MountainRange" parent="." instance=ExtResource("45")]
-solid_scenes = Array[PackedScene]([ExtResource("72"), ExtResource("73"), ExtResource("74")])
-solid_count = 95
-solid_scale_min = 9.0
-solid_scale_max = 18.0
-inner_radius = 190.0
-outer_radius = 230.0
-exclude_points = Array[Vector3]([Vector3(130, 0, 90), Vector3(-110, 0, 130), Vector3(150, 0, -80), Vector3(-140, 0, -110), Vector3(30, 0, 170), Vector3(-160, 0, -40), Vector3(60, 0, -160), Vector3(170, 0, 60), Vector3(-150, 0, 0), Vector3(-150, 0, 40)])
-exclude_radius = 30.0
+[node name="MountainRange" type="Node3D" parent="."]
+script = ExtResource("401")
+foot_radius = 235.0
+foot_spread = 60.0
+count = 38
+radius_min = 55.0
+radius_max = 115.0
+height_min = 58.0
+height_max = 138.0
 rng_seed = 20260888
 
 [node name="TrafficRouteRingBig" parent="." instance=ExtResource("6")]
-route_points = Array[Vector3]([Vector3(-98.8, 0.4, -98.8), Vector3(98.8, 0.4, -98.8), Vector3(98.8, 0.4, 98.8), Vector3(-98.8, 0.4, 98.8)])
+route_points = Array[Vector3]([Vector3(-111, 0.4, -111), Vector3(111, 0.4, -111), Vector3(111, 0.4, 111), Vector3(-111, 0.4, 111)])
 car_count = 8
 car_speed_min = 6.0
 car_speed_max = 9.0
 car_models = Array[PackedScene]([ExtResource("101"), ExtResource("102"), ExtResource("104"), ExtResource("103"), ExtResource("105")])
 
 [node name="TrafficRouteAvenidaLeste" parent="." instance=ExtResource("6")]
-route_points = Array[Vector3]([Vector3(73.8, 0.4, -73.8), Vector3(98.8, 0.4, -73.8), Vector3(98.8, 0.4, 73.8), Vector3(73.8, 0.4, 73.8)])
+route_points = Array[Vector3]([Vector3(76.5, 0.4, -73.5), Vector3(111, 0.4, -73.5), Vector3(111, 0.4, 73.5), Vector3(76.5, 0.4, 73.5)])
 car_count = 5
 car_speed_min = 5.0
 car_speed_max = 8.0
 car_models = Array[PackedScene]([ExtResource("101"), ExtResource("103"), ExtResource("104")])
 
 [node name="TrafficRouteAvenidaOeste" parent="." instance=ExtResource("6")]
-route_points = Array[Vector3]([Vector3(-98.8, 0.4, -73.8), Vector3(-73.8, 0.4, -73.8), Vector3(-73.8, 0.4, 73.8), Vector3(-98.8, 0.4, 73.8)])
+route_points = Array[Vector3]([Vector3(-111, 0.4, -73.5), Vector3(-76.5, 0.4, -73.5), Vector3(-76.5, 0.4, 73.5), Vector3(-111, 0.4, 73.5)])
 car_count = 5
 car_speed_min = 5.0
 car_speed_max = 8.0
 car_models = Array[PackedScene]([ExtResource("102"), ExtResource("104"), ExtResource("105")])
 
 [node name="PedestrianRouteSudeste" parent="." instance=ExtResource("15")]
-route_points = Array[Vector3]([Vector3(78, 0.1, -97), Vector3(97, 0.1, -97), Vector3(97, 0.1, -78), Vector3(78, 0.1, -78)])
+route_points = Array[Vector3]([Vector3(78.75, 0.1, -108.75), Vector3(108.75, 0.1, -108.75), Vector3(108.75, 0.1, -78.75), Vector3(78.75, 0.1, -78.75)])
 pedestrian_count = 5
 character_models = Array[PackedScene]([ExtResource("200"), ExtResource("201")])
 idle_anim_scene = ExtResource("207")
@@ -605,7 +622,7 @@ walk_anim_name = "Walk"
 visual_scale = 1.0
 
 [node name="PedestrianRouteNoroeste" parent="." instance=ExtResource("15")]
-route_points = Array[Vector3]([Vector3(-97, 0.1, 78), Vector3(-78, 0.1, 78), Vector3(-78, 0.1, 97), Vector3(-97, 0.1, 97)])
+route_points = Array[Vector3]([Vector3(-108.75, 0.1, 78.75), Vector3(-78.75, 0.1, 78.75), Vector3(-78.75, 0.1, 108.75), Vector3(-108.75, 0.1, 108.75)])
 pedestrian_count = 5
 character_models = Array[PackedScene]([ExtResource("200"), ExtResource("201")])
 idle_anim_scene = ExtResource("207")
@@ -615,7 +632,7 @@ walk_anim_name = "Walk"
 visual_scale = 1.0
 
 [node name="PedestrianRouteCentroNorte" parent="." instance=ExtResource("15")]
-route_points = Array[Vector3]([Vector3(-22, 0.1, 53), Vector3(-3, 0.1, 53), Vector3(-3, 0.1, 72), Vector3(-22, 0.1, 72)])
+route_points = Array[Vector3]([Vector3(-33.75, 0.1, 41.25), Vector3(-3.75, 0.1, 41.25), Vector3(-3.75, 0.1, 71.25), Vector3(-33.75, 0.1, 71.25)])
 pedestrian_count = 4
 character_models = Array[PackedScene]([ExtResource("200"), ExtResource("201")])
 idle_anim_scene = ExtResource("207")
@@ -627,14 +644,18 @@ visual_scale = 1.0
 [node name="CityOutskirts" type="Node3D" parent="."]
 script = ExtResource("310")
 scenes = Array[PackedScene]([ExtResource("108"), ExtResource("109"), ExtResource("110"), ExtResource("111"), ExtResource("112"), ExtResource("113"), ExtResource("114"), ExtResource("115"), ExtResource("116"), ExtResource("117"), ExtResource("118"), ExtResource("119"), ExtResource("120"), ExtResource("121"), ExtResource("122"), ExtResource("123"), ExtResource("124"), ExtResource("125"), ExtResource("126"), ExtResource("127"), ExtResource("128"), ExtResource("129"), ExtResource("130"), ExtResource("131"), ExtResource("132"), ExtResource("133"), ExtResource("134"), ExtResource("135"), ExtResource("136")])
-inner_extent = 104.0
-outer_extent = 130.0
-attempts = 460
-scale_near = 5.2
-scale_far = 3.0
+inner_extent = 120.0
+outer_extent = 154.0
+attempts = 620
+scale_near = 6.5
+scale_far = 3.6
 keep_chance_far = 0.22
-spacing = 2.5
+spacing = 3.0
+street_axes_x = Array[float]([-112.5, -75.0, -37.5, 0.0, 37.5, 75.0, 112.5])
+street_axes_z = Array[float]([-112.5, -75.0, -37.5, 0.0, 37.5, 75.0, 112.5])
+street_corridor = 6.0
+street_reach = 135.0
 facade_colors = Array[Color]([Color(1, 0.97, 0.92, 1), Color(0.93, 0.88, 0.8, 1), Color(0.87, 0.8, 0.74, 1), Color(0.8, 0.66, 0.58, 1), Color(0.82, 0.84, 0.86, 1), Color(0.74, 0.79, 0.74, 1), Color(0.86, 0.83, 0.7, 1)])
-exclude_points = Array[Vector3]([Vector3(130, 0, 90), Vector3(-110, 0, 130), Vector3(150, 0, -80), Vector3(-140, 0, -110), Vector3(30, 0, 170), Vector3(-160, 0, -40), Vector3(60, 0, -160), Vector3(170, 0, 60), Vector3(-150, 0, 0), Vector3(-150, 0, 40)])
+exclude_points = Array[Vector3]([Vector3(188, 0, 55), Vector3(-55, 0, 190), Vector3(190, 0, -60), Vector3(-190, 0, -60), Vector3(50, 0, 192), Vector3(105, 0, 175), Vector3(55, 0, -190), Vector3(-100, 0, -172), Vector3(-175, 0, 0), Vector3(-175, 0, 40)])
 exclude_radius = 30.0
 rng_seed = 20260803

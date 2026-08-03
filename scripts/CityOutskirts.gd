@@ -29,6 +29,24 @@ const CITY_BUILDING_SCENE := preload("res://scenes/world/CityBuilding.tscn")
 ## Folga minima entre vizinhos, somada ao raio medido dos dois.
 @export var spacing := 2.5
 @export var facade_colors: Array[Color] = []
+## Mesmo acabamento das fachadas da cidade (ver CitySurface.gd). Sem isso o
+## cinturao ficava com a cor chapada do kit e com as quinas suavizadas — medido:
+## 45% das faces do kit suburbano vem com normal de vertice desviando mais de
+## 15 graus da face, que e exatamente o que faz a construcao ler arredondada.
+## Como o cinturao e a moldura da cidade, a diferenca aparecia lado a lado.
+@export var use_pbr_surface := true
+## Eixos da malha viaria (os mesmos streets_x/streets_z de CityStreets). As
+## ruas nao param na ultima quadra: sobra um rabicho de `extent` saindo da
+## cidade, e ele atravessa esta faixa. Sem descontar isso, uma casa do
+## cinturao nasce NO MEIO da estrada que sai da cidade.
+@export var street_axes_x: Array[float] = []  ## posicoes em Z das ruas leste-oeste
+@export var street_axes_z: Array[float] = []  ## posicoes em X das ruas norte-sul
+@export var street_corridor := 5.0  ## meia largura livre em volta do eixo da rua
+## Ate onde a rua chega de fato (ultima rua + `extent` de CityStreets). Sem
+## esse limite o corredor seria barrado ao longo de todo o anel, inclusive
+## onde a rua ja acabou — e o cinturao perderia metade das construcoes por
+## causa de uma estrada que nao existe ali.
+@export var street_reach := 135.0
 @export var exclude_points: Array[Vector3] = []
 @export var exclude_radius := 30.0
 @export var rng_seed := 7
@@ -62,7 +80,7 @@ func _ready() -> void:
 		if near_limit >= outer_extent:
 			continue
 		var pos := _point_at(lerpf(near_limit, outer_extent, t))
-		if _is_excluded(pos) or _too_close(pos, radius):
+		if _is_excluded(pos) or _on_street(pos, radius) or _too_close(pos, radius):
 			continue
 		_place(scene, pos, prop_scale)
 		_placed.append({"p": Vector2(pos.x, pos.z), "r": radius})
@@ -86,6 +104,21 @@ func _is_excluded(pos: Vector3) -> bool:
 	for e in exclude_points:
 		if Vector2(pos.x - e.x, pos.z - e.z).length() < exclude_radius:
 			return true
+	return false
+
+## Deixa livre a faixa de cada eixo de rua. A construcao inteira tem que caber
+## fora do corredor, por isso o raio entra na conta (validar so pelo centro foi
+## exatamente o erro que deixou casa larga por cima da ultima rua da cidade).
+func _on_street(pos: Vector3, radius: float) -> bool:
+	var margin := street_corridor + radius
+	if absf(pos.x) <= street_reach + radius:
+		for z in street_axes_x:
+			if absf(pos.z - z) < margin:
+				return true
+	if absf(pos.z) <= street_reach + radius:
+		for x in street_axes_z:
+			if absf(pos.x - x) < margin:
+				return true
 	return false
 
 func _too_close(pos: Vector3, radius: float) -> bool:
@@ -123,6 +156,12 @@ func _tint(body: Node3D) -> void:
 	if facade_colors.is_empty():
 		return
 	var color: Color = facade_colors[_rng.randi() % facade_colors.size()]
+	# Sorteado sempre, nos dois modos: o sorteio consome o RNG, e consumir so
+	# num deles mudaria o cinturao INTEIRO ao ligar a chave.
+	var kind := "tijolo" if _rng.randf() < 0.3 else "reboco"
+	if use_pbr_surface:
+		CitySurface.apply(body, color, kind, 2.4, 0.62)
+		return
 	for mesh_inst in _all_meshes(body):
 		for surface in range(mesh_inst.get_surface_override_material_count()):
 			var base: Material = mesh_inst.mesh.surface_get_material(surface)

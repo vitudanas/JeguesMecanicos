@@ -51,12 +51,14 @@ shape = SubResource("PadShape")
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, -9)
 visual_scene = ExtResource("4")
 visual_scale = 5.0
+surface_kind = "concreto"
 visual_rotation_y_degrees = 180.0
 
 [node name="Tank" parent="." instance=ExtResource("2")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -11, 0.2, -6)
 visual_scene = ExtResource("5")
 visual_scale = 4.0
+surface_kind = "concreto"
 visual_rotation_y_degrees = 0.0
 
 [node name="FenceA" parent="." instance=ExtResource("6")]

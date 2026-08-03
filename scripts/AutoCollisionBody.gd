@@ -7,6 +7,15 @@ extends StaticBody3D
 @export var visual_scene: PackedScene
 @export var visual_scale := 1.0
 @export var visual_rotation_y_degrees := 0.0
+## Acabamento de superficie (ver CitySurface.gd): "concreto", "reboco",
+## "tijolo"... Vazio = mantem o material original do modelo.
+##
+## Opt-in de proposito, em vez de aplicar sozinho em todo modelo do kit: quem
+## gera cidade (CityBlocks/CityOutskirts) ja aplica o proprio acabamento com a
+## cor sorteada, e aplicar duas vezes seria so desperdicio. Serve pros modelos
+## do kit colocados a mao numa cena — a oficina, por exemplo.
+@export var surface_kind := ""
+@export var surface_tint := Color(0.88, 0.87, 0.84)
 
 func _ready() -> void:
 	if visual_scene == null:
@@ -25,6 +34,9 @@ func _ready() -> void:
 	coll.shape = shape
 	coll.position = aabb.position + aabb.size / 2.0
 	add_child(coll)
+
+	if surface_kind != "":
+		CitySurface.apply(visual, surface_tint, surface_kind)
 
 func _compute_local_aabb(node: Node, accum: Transform3D) -> AABB:
 	var t := accum
