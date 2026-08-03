@@ -35,9 +35,13 @@ func _ready() -> void:
 ## esperando a entrega.
 func _load_visual() -> void:
 	var i := randi() % MODELS.size()
-	var visual := CharacterVisual.build(self, load(MODELS[i]) as PackedScene)
+	var visual := CharacterVisual.build(self, load(MODELS[i]) as PackedScene,
+			randf_range(0.94, 1.06))
 	if visual == null:
 		return
+	# Cada entrega e um cliente diferente: corpo e cores sorteados igual aos
+	# pedestres (ver CharacterVisual.gd).
+	CharacterVisual.randomize_appearance(visual)
 	var idle := CharacterVisual.extract_animation(load(IDLE_ANIM) as PackedScene, "Idle")
 	if idle:
 		var lib := AnimationLibrary.new()

@@ -20,6 +20,8 @@ signal ragdolled
 @export var character_model: PackedScene
 @export var skin_texture: Texture2D
 @export var visual_scale := 1.0
+## Sorteia corpo (shape keys) e cor de pele/roupa/cabelo ao instanciar.
+@export var randomize_appearance := true
 ## Mesma correcao dos carros: o modelo olha pro +Z e o PathFollow3D anda pro
 ## -Z, entao sem 180 graus o pedestre anda de costas.
 @export var visual_rotation_y_degrees := 180.0
@@ -63,6 +65,10 @@ func _load_visual() -> void:
 	var visual := CharacterVisual.build(self, character_model, visual_scale, visual_rotation_y_degrees)
 	if visual == null:
 		return
+	# Tipo fisico e cores sorteados por pedestre — sem isso a cidade inteira
+	# anda com dois bonecos identicos (ver CharacterVisual.gd).
+	if randomize_appearance:
+		CharacterVisual.randomize_appearance(visual)
 	# So o personagem do Kenney precisa de skin externa (mesh sem textura propria).
 	if skin_texture:
 		var mesh_instance := _find_mesh_instance(visual)

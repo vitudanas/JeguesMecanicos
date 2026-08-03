@@ -6,6 +6,18 @@ uma decisão relevante for tomada ou o escopo mudar.
 
 ## Notas de fluxo de trabalho
 
+- **Sempre reexportar as builds ao terminar uma modificação.** Pedido do usuário em
+  2026-08-03: é pelo `.app` que ele testa o jogo, então uma mudança só está
+  concluída depois do export — não deixar pra "quando pedir". Rodar os dois
+  presets (`godot --headless --export-release "macOS" builds/...` e o Windows) e,
+  seguindo a lição de 2026-08-02, **abrir o binário exportado de verdade** pra
+  conferir, não só o modo desenvolvedor: os dois divergem quando o
+  `export_filter`/`exclude_filter` corta algo que o jogo precisa.
+  **Apagar `debug_tmp/` ANTES de exportar**: PNG de teste largado ali é
+  importado pelo Godot como recurso e entra no `.pck` — já inflou o build em
+  15MB sem ninguém pedir (2026-08-03). Se o build crescer sem motivo, é o
+  primeiro lugar pra olhar.
+
 - **Rodar `/clear` entre sessões/tarefas grandes.** Pedido do usuário em 2026-08-02: a
   conversa fica muito longa depois de várias rodadas seguidas (cada exportação de
   build, cada teste visual etc. consome bastante contexto) — vale limpar o histórico
@@ -85,7 +97,9 @@ local hard-coded sempre que possível.
   - **NPCs**: `assets/quaternius/characters-dressed/*.glb` — corpo + roupa + cabelo
     já combinados por `tools/build_characters.py` (Blender headless). Animação
     `Walk`/`Idle` da Universal Animation Library **1** (a 2 não tem caminhada
-    normal na versão gratuita).
+    normal na versão gratuita). Os mesmos arquivos carregam os **tipos físicos
+    como shape key** (`Bust`/`Butt`/`Hips` só no feminino, `Belly`/`Bulk`/
+    `Chest`/`Skinny` nos dois) — ver changelog 2026-08-03.
   - `export_presets.cfg` tem um `exclude_filter` cortando FBX/OBJ/previews dos kits
     Kenney e as 4 pastas de origem que só o script do Blender usa — sem isso o
     build carregava ~145MB de assets que o jogo nem abre. **Cuidado ao mexer**: um
@@ -175,10 +189,14 @@ autoload/               GameManager.gd, Economy.gd, WeatherManager.gd (clima/chu
                         EventManager.gd (eventos procedurais),
                         DeliveryManager.gd (sorteia a casa da entrega da vez)
 scripts/                Interactable.gd, TowHook.gd, PersuasionMinigame.gd, Pothole.gd,
-                        CityStreets.gd (malha viária procedural), CityBlocks.gd
-                        (preenche os quarteirões com fileiras de prédios virados
-                        pra rua e registra as casas de entrega), RuralScatter.gd
-                        (espalha natureza/montanhas no anel rural)
+                        CityStreets.gd (malha viária procedural + semáforo/ponto
+                        de ônibus/faixa), CityBlocks.gd (preenche os quarteirões
+                        com fileiras de prédios virados pra rua, sorteia lotes
+                        especiais — praça, posto, feira, estacionamento — e
+                        registra as casas de entrega), StreetFurniture.gd
+                        (mobiliário urbano montado com primitivas),
+                        CityOutskirts.gd (cinturão de transição cidade→campo),
+                        RuralScatter.gd (espalha natureza/montanhas no anel rural)
 scenes/main/            Main.tscn — cena de entrada (Town + Player + HUD + RainFX)
 scenes/player/          Player.tscn/gd — controller 1ª pessoa
 scenes/vehicle/         Vehicle.tscn/gd, AttachSpot.gd, GambiarraPart.gd, parts/*.tscn
@@ -209,6 +227,7 @@ assets/quaternius/      downtown-city-megakit (baixado, não usado no layout ati
                         tools/build_characters.py — é o que o jogo carrega)
 tools/                  build_characters.py — roda no Blender headless e gera os
                         personagens já vestidos (corpo+roupa+cabelo num arquivo só)
+                        e com os tipos físicos gravados como shape key
 assets/icon/            ícone do jogo (gerado por código, PIL) + .ico/.icns
 builds/                 saída dos exports (ignorado pelo git; publicado como
                         GitHub Release em vez de commitado)
@@ -867,6 +886,218 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     é rua e cortava a quadra. Confirmado visualmente em janela real com
     `screencapture` a cada etapa. `debug_tmp/` removido no final.
 
+- **2026-08-03** — Usuário perguntou se dava pra modificar os NPCs fisicamente e
+  pediu as duas frentes: variedade (altura/cor) **e** tipos físicos de verdade,
+  com o pedido explícito de aumentar busto e glúteo **do personagem feminino**.
+  - **Por que shape key e não vários personagens**: a alternativa óbvia era
+    gerar N variantes de GLB no Blender, mas cada personagem pronto pesa 10-13MB
+    (textura embutida), então 6 tipos somariam ~60MB num build de 116MB. Gravar
+    os tipos como **morph target** custou **+1.3MB e +1.5MB** nos dois arquivos
+    que já existiam, não toca no esqueleto (a animação continua valendo) e ainda
+    deixa o peso de cada forma ser sorteado **por NPC** — a variedade deixa de
+    ser "um de 6" e passa a ser contínua.
+  - **Como as formas são feitas** (`tools/build_characters.py`): duas operações
+    geométricas aplicadas ao corpo **e à roupa juntos** (deformar só o corpo faz
+    a barriga/seio atravessar o tecido). `Thicken` afasta os vértices de uma
+    linha central (tronco, braços, pernas — mais grosso ou mais fino) e `Bulge`
+    infla uma região a partir de um ponto dentro do corpo. As coordenadas saíram
+    de **medir as seções transversais** dos dois modelos no Blender, não de
+    chute: peito feminino em z 1.25-1.35 com a frente em y -0.115..-0.140,
+    glúteo em z 0.85-1.00 com as costas em +0.162.
+  - **Erro real corrigido no meio do caminho**: a primeira versão do busto usava
+    um empurrão **direcional** (só pra frente) com pico no centro da região —
+    o usuário viu o resultado e apontou que tinha virado um cone esticado, e
+    estava certo: empurrar mais no meio que nas bordas, num eixo só, é
+    literalmente a construção de uma ponta. Trocado pelo `Bulge`, que cresce nos
+    três eixos ao mesmo tempo e dá volume redondo; de quebra o deslocamento caiu
+    de 7.9cm pra 3.5cm no busto e de 6.8cm pra 3.7cm no glúteo, e mesmo assim
+    lê melhor. **Lição**: pra volume arredondado, inflar radialmente de um ponto
+    interno; empurrar numa direção só serve pra coisa achatada (barriga).
+  - **Só o modelo feminino** tem `Bust`/`Butt`/`Hips`, como pedido. Os dois
+    gêneros compartilham `Belly`/`Bulk`/`Skinny` (e o masculino tem `Chest`),
+    que são porte físico, não busto.
+  - **Runtime** (`CharacterVisual.gd`): `randomize_appearance()` sorteia um tipo
+    físico da tabela `BUILDS`, soma as formas femininas quando o modelo as tem
+    (forma que o modelo não tem é ignorada, então a mesma tabela serve pros dois)
+    e tinge pele/roupa/cabelo. As cores são **multiplicadores sobre a textura**,
+    não cores chapadas, pra não apagar o desenho do material. Detalhe que teria
+    virado bug: material vindo de `.glb` é **compartilhado entre todas as
+    instâncias** da cena, então pintar direto pintaria a cidade inteira junto —
+    cada superfície recebe uma cópia como `surface_override_material`. Altura
+    sorteada por pedestre em `PedestrianRoute` (±7%, de ~1.65m a ~1.94m) e o
+    cliente da entrega passou a variar igual aos pedestres.
+  - **Verificação**: script headless instanciando o `Town.tscn` de verdade
+    confirmou 26 pedestres, todos com material próprio (não compartilhado), 6
+    tons de pele distintos, alturas de 1.66m a 1.94m e pesos de forma variados.
+    Depois renderizei do próprio Godot (câmera de debug salvando PNG, sem
+    depender de `screencapture`) as duas fileiras de tipos físicos de frente e
+    de perfil, e por fim pedestres **andando na cidade de verdade**, pra
+    confirmar que a deformação não briga com o esqueleto animado. Um erro meu
+    de diagnóstico no caminho: as primeiras fotos da cidade saíram todas iguais
+    e do lugar errado porque o `Town.tscn` já tem câmera própria — sem
+    `make_current()` a foto sai pelo ponto de vista dela, não pelo da câmera de
+    debug. `debug_tmp/` removido no final. **Builds não foram reexportados**
+    nesta rodada.
+
+- **2026-08-03** — Segunda rodada nos NPCs, a partir do que o usuário viu na
+  primeira: pele atravessando a roupa (braço e costas, nos dois modelos),
+  busto podia crescer mais, e o glúteo tinha ficado desproporcional pra coxa.
+  - **Pele atravessando a roupa — eram três causas diferentes**, e só a
+    terceira explicava o retalho do ombro que não saía de jeito nenhum:
+    1. *Corpo pra fora do tecido* (costas, coxa): resolvido medindo, pra cada
+       vértice do corpo, se há tecido logo acima dele (raio ao longo da
+       normal) e afundando o que estiver rente ou já do lado de fora. Medir a
+       distância até a roupa **mais próxima** não serve — o antebraço nu passa
+       a centímetros da manga e entraria na conta como coberto.
+    2. *Penetração entre vértices*: a face do corpo é reta e o tecido em volta
+       é curvo, então a face cruza o pano mesmo com os vértices por dentro.
+       Resolvido com folga maior (1.8cm), espalhada pelos vizinhos com perda a
+       cada anel — sem isso a pele exposta ao lado do tecido ganhava degrau.
+    3. **A roupa traz uma pele própria embutida**: `Male_Peasant_Arms` não é
+       só tecido, tem uma malha de BRAÇO junto (material `MI_Regular_Male`),
+       pensada pra usar sem personagem embaixo. Como aqui existe o corpo
+       completo, eram dois braços quase no mesmo lugar, e o da roupa furava a
+       manga dela mesma. **Nenhum ajuste no corpo resolvia**, porque o pedaço
+       que vazava nem era do corpo. Achado pintando a malha do corpo de
+       magenta e renderizando: o retalho não ficou magenta. Removidas 3930
+       faces de pele duplicada — e o arquivo do masculino caiu de 13,3MB pra
+       10,2MB, porque a textura de pele extra saiu junto.
+    **Lição de diagnóstico**: quando um defeito visual não muda NADA depois de
+    várias correções, parar de ajustar e primeiro provar de qual malha ele é
+    (esconder/pintar de cor chapada e renderizar). Perdi três rodadas mexendo
+    na malha errada.
+  - **Busto e glúteo**: busto subiu (3,5cm no peso máximo), e o glúteo passou
+    a vir com a coxa junto — só o glúteo crescendo, em cima de uma perna fina,
+    lia como deformidade. O trecho da coxa começa acima do joelho, posição
+    medida (a perna é mais estreita em z 0.45-0.55 e engrossa até o quadril).
+  - **20 combinações** (pedido do usuário): busto e glúteo passaram a sair de
+    degraus fixos sorteados de forma **independente** — 5 níveis de busto × 4
+    de glúteo = 20 pares, incluindo as duas pontas (os dois pequenos e os dois
+    grandes). Antes eu sorteava os dois juntos com piso alto e todas saíam
+    parecidas; o que dá variedade é o contraste entre as partes, não o valor
+    de cada uma. O quadril acompanha o glúteo em vez de ser sorteado à parte.
+    Um jitter em cima do degrau evita que duas do mesmo par fiquem idênticas.
+  - **Verificação**: folha de contato das 20 combinações renderizada do próprio
+    Godot em vista 3/4, frente/perfil/costas dos dois modelos em close no
+    tronco (é onde vazava), e pedestres andando na cidade de verdade. Também
+    conferido de dentro do `.pck` exportado que a pele duplicada não está mais
+    lá e que as formas chegaram no build.
+
+- **2026-08-03** — Usuário pediu a cidade maior, mais harmoniosa, com
+  estabelecimentos variados (mercado, posto de gasolina, ponto de ônibus,
+  semáforo, "tudo que tem numa cidade") e **sem erro de ligação nas ruas**;
+  no fim da rodada, também um degradê de construções menores entre a cidade
+  e o campo.
+  - **O erro de ligação era real e antigo**: as ruas ficam a cada **25** e a
+    peça de asfalto media **6** — e 25 não é múltiplo de 6. Além disso as
+    peças eram posicionadas a partir do *começo do trecho* (`min_v + tile/2`),
+    não alinhadas à grade. Resultado: um vão de ~3 unidades em **cada
+    aproximação de esquina**, na cidade inteira. Corrigido nos dois pontos:
+    `tile_size` passou a 6.25 (25 = 4 × 6.25) e as peças agora são ancoradas
+    em múltiplos do tile a partir do primeiro cruzamento. Verificado por
+    script que percorre cada rua e exige distância **exata** de um tile entre
+    peças vizinhas: 621 peças, nenhum vão e nenhuma sobreposição.
+  - **Ponta arredondada virou buraco**: a peça de acabamento era escolhida por
+    "primeiro/último índice do trecho", o que colocava tampa **dentro** da
+    grade quando o trecho começava num cruzamento. Agora só o rabicho que sai
+    da grade recebe tampa.
+  - **Buraco no centro da cidade**: `exclude_points = (0,0,0)` com raio 9
+    continuava nas ruas e nos quarteirões — sobra da época em que a oficina
+    ficava no centro (ela foi pro campo em (-150,0) na rodada anterior).
+    Removido.
+  - **Cidade maior**: grade de 6×6 para **8×8 quarteirões** (ruas de -100 a
+    100), 82 agentes de trânsito/pedestres (era 50) com rotas novas no anel
+    externo, e 108 casas de entrega.
+  - **Mobiliário que o kit não tem** (`scripts/StreetFurniture.gd`): semáforo,
+    ponto de ônibus, banco e bomba de combustível montados com primitivas —
+    de propósito, em vez de baixar outro pacote: a cidade é 100% Kenney por
+    decisão de projeto, e misturar estilos foi o problema corrigido em
+    2026-08-02. Faixa de pedestre usa `road-crossing` do próprio kit, só nas
+    aproximações dos cruzamentos.
+  - **Lotes com função** (`CityBlocks.gd`): praça (grama, caminho em cruz,
+    árvores, bancos), posto de gasolina (cobertura branca com faixa vermelha,
+    bombas, totem e loja), estacionamento (vagas demarcadas e carros parados)
+    e feira (barracas com guarda-sol). É o que tira a cara de "grade infinita
+    de prédio".
+  - **Degradê cidade→campo** (`scripts/CityOutskirts.gd`): anel quadrado entre
+    104 e 130 onde tamanho e densidade caem indo pra fora. Medido: altura
+    média 5.4 perto da cidade contra 3.9 perto do campo, densidade 3.5 contra
+    2.7 por 100u de anel.
+  - **Bugs meus que a verificação pegou** (e que valem de lição):
+    1. *Identificar nó por nome não funciona*: irmãos de nome repetido viram
+       `@Node3D@N`, então o verificador "achou" só 2 semáforos de 50. Passei a
+       identificar por `scene_file_path` e por grupo.
+    2. *Medir na rotação errada*: os guarda-sóis eram medidos com rotação 0 e
+       plantados com rotação sorteada — e a caixa de colisão é o AABB **depois**
+       de girar, então 21 pares se atravessavam. Barracas passaram a ficar
+       alinhadas; árvores usam a diagonal como passo.
+    3. *Passo chutado*: a vaga do estacionamento usava 2.6 fixo em vez da
+       largura medida do carro.
+    4. *Validar pelo centro*: o cinturão aceitava a construção pelo centro,
+       então casas largas no limite avançavam por cima da última rua. Agora a
+       faixa vale pra construção inteira.
+    5. *Ordem do sorteio invertendo o degradê*: sortear a posição e depois
+       descartar o que não coubesse descartava justamente as construções
+       grandes do lado de dentro. Passou a sortear primeiro o "quanto pro
+       campo", e daí sair tamanho, densidade e profundidade.
+
+- **2026-08-03** — Usuário achou o visual ainda cartunesco e perguntou se
+  trocar o kit Kenney por um mais realista resolveria. **Medi antes de
+  opinar**: as texturas do kit são imagens de **64×64 em paleta**, uma por
+  modelo — cor chapada, sem grão, sem normal map, sem roughness. Ou seja, o
+  aspecto de desenho está no pacote, não na iluminação (que já tinha sido
+  ajustada em 2026-08-03).
+  - **Materiais PBR sobre a geometria existente** (`shaders/city_surface.gdshader`
+    + `scripts/CitySurface.gd`): texturas CC0 do ambientCG (concreto, reboco,
+    tijolo, asfalto, telha, 1K) aplicadas em **triplanar** — que dispensa UV
+    decente, e é o caso aqui: o UV do kit aponta pro atlas de cor. O atlas
+    **continua no albedo**, senão janela e porta somem (elas são desenhadas na
+    textura, não modeladas); o PBR entra só como grão, normal e roughness.
+    Custo: 10MB de textura, contra os ~60MB que um pacote novo de modelos
+    custaria.
+  - **Dois erros meus no caminho**, achados olhando o A/B renderizado:
+    1. *Multiplicar a cor pela textura escurece*: tijolo tem luminância média
+       baixa, e a cidade inteira ficou quase preta. O grão passou a **modular
+       em torno de 1.0** (acima do cinza médio clareia, abaixo escurece).
+    2. *Sortear material sem olhar o tipo*: saiu arranha-céu de tijolo. Agora
+       torre e galpão são concreto, casa é tijolo ou reboco.
+  - **Telhado verde-limão**: é o elemento mais cartunesco da cidade e vive
+    DENTRO do atlas, então não dá pra trocar só a cor dele por fora. O shader
+    detecta verde puro e puxa pra cinza-esverdeado.
+  - **Cuidado ao comparar A/B**: sortear o material consome o RNG, então ligar
+    a chave mudava o layout inteiro da cidade e a comparação deixava de ser da
+    mesma cidade. O sorteio passou a acontecer nos dois modos.
+  - **Céu HDRI** (`assets/polyhaven/sky_partly_cloudy_2k.hdr`, CC0, 5MB): o
+    `ProceduralSkyMaterial` virou `PanoramaSkyMaterial` e a contribuição do céu
+    no ambiente subiu de 0.45 pra 0.85. Maior ganho por byte de toda a rodada —
+    céu, sombra e reflexo passam a vir de uma foto de céu real.
+  - **Entulho de cobertura** (`StreetFurniture.water_tank/ac_unit/antenna`):
+    ~105 props sorteados nos telhados planos (casa do kit tem telhado
+    inclinado e o prop ficaria flutuando). É o que quebra a silhueta de caixa
+    que fazia a cidade ler como maquete de longe.
+  - **Árvores de verdade nas praças**: trocados os cones chapados do Kenney
+    pelos modelos do `nature-megakit` do Quaternius, que já estavam no repo
+    (têm casca texturizada e normal map). Escala própria (0.85), porque eles
+    vêm em metros e o kit de prédio usa módulo 6.0.
+  - **Mais dois bugs meus, os dois de verificação preguiçosa**:
+    1. *Passo de árvore pela diagonal*: copa é redonda, o AABB quase não cresce
+       ao girar, mas eu media pela diagonal — com a árvore maior o passo
+       estourava meio quarteirão, `cols` virava ZERO e a praça saía **sem
+       árvore nenhuma**. Só apareceu porque fui contar (0 instanciadas), não
+       porque olhei a foto.
+    2. *`replace` sem conferir*: um script meu trocou `rng_seed = 20260803` em
+       **dois** nós e vazou o bloco de propriedades do `CityBlocks` pra dentro
+       do `NatureScatter`; e um segundo replace não casou (indentação
+       diferente) mas o script imprimiu "corrigido" assim mesmo. Lição:
+       `replace` em `.tscn` tem que contar as ocorrências e falhar alto.
+  - **Pesquisa sobre trocar o kit** (a pergunta original): **não existe** kit
+    de prédios modular, realista, CC0 e em glTF. O que existe de CC0 é
+    material/textura (ambientCG, Poly Haven) e **props avulsos** — inclusive
+    os que faltam pra quebrar a silhueta de caixa (caixa d'água, ar
+    condicionado, lixeira). Conclusão registrada: o que ainda lê como desenho
+    na vista de longe é **geometria** (caixa sem janela rebaixada, sem beiral,
+    sem entulho de telhado) e as árvores em cone chapado — não a superfície.
+
 ## Roadmap (fora de escopo desta vertical slice)
 
 - Multiplayer real (cooperativo na oficina / competitivo pelas ruas). Arquitetura atual
@@ -912,5 +1143,9 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
   negociação (ver Roadmap).
 - Os buracos (`Pothole*`) e poças de lama continuam em 4 pontos fixos da grade, em
   vez de espalhados/procedurais.
-- Os pedestres e o cliente usam só 2 personagens (um masculino, um feminino) com
-  a mesma roupa — não há variação de rosto, cor de roupa ou tipo físico.
+- Os pedestres e o cliente ainda saem de só 2 personagens-base (um masculino, um
+  feminino) com a mesma peça de roupa. Tipo físico, altura e cor de pele/roupa/
+  cabelo já variam por NPC (ver changelog 2026-08-03), mas **rosto e modelo de
+  roupa não** — dois pedestres do mesmo gênero continuam com a mesma cara. Rosto
+  diferente exigiria outro pacote de assets; o pacote gratuito do Quaternius só
+  traz esses dois corpos, dois cabelos e a roupa Peasant.

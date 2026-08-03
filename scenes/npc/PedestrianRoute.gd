@@ -18,6 +18,9 @@ extends Path3D
 ## Cabelo pra cada character_models[i] (mesmo indice). Ver Pedestrian.gd:hair_scene.
 @export var hair_scenes: Array[PackedScene] = []
 @export var visual_scale := 1.0
+## Variacao de altura por pedestre (fracao de visual_scale). Os dois modelos
+## tem 1.77m/1.81m, entao 0.07 da gente de ~1.65m a ~1.94m na rua.
+@export var height_variation := 0.07
 @export var visual_rotation_y_degrees := 180.0
 @export var idle_anim_scene: PackedScene
 @export var walk_anim_scene: PackedScene
@@ -53,7 +56,8 @@ func _spawn_pedestrians() -> void:
 			pedestrian.character_model = character_model
 			if skin_textures.size() > 0:
 				pedestrian.skin_texture = skin_textures[i % skin_textures.size()]
-		pedestrian.visual_scale = visual_scale
+		pedestrian.visual_scale = visual_scale * randf_range(
+				1.0 - height_variation, 1.0 + height_variation)
 		if idle_anim_scene:
 			pedestrian.idle_anim_scene = idle_anim_scene
 		if walk_anim_scene:

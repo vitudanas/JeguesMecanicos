@@ -62,6 +62,34 @@ static var _footprint_cache: Dictionary = {}
 	Color(0.62, 0.64, 0.70),   # chumbo
 ]
 
+## Lotes especiais. Sem eles a cidade vira uma grade infinita de predio: o que
+## faz ler como cidade de verdade e ter quarteiroes com FUNCAO diferente —
+## praca, posto de gasolina, estacionamento e feira no meio das quadras
+## construidas. Todos cabem dentro do miolo do quarteirao (que ja desconta
+## road_clearance), entao nenhum encosta na pista.
+@export var tree_scenes: Array[PackedScene] = []
+## Arvore tem escala propria: os modelos de natureza do Quaternius ja vem em
+## metros de verdade, ao contrario do kit de predio (modulo 6.0).
+@export var tree_scale := 1.3
+@export var parasol_scenes: Array[PackedScene] = []
+@export var parked_car_scenes: Array[PackedScene] = []
+## Loja de conveniencia do posto: um predio pequeno do kit.
+@export var kiosk_scenes: Array[PackedScene] = []
+@export var park_weight := 0.12
+@export var gas_station_weight := 0.07
+@export var parking_weight := 0.08
+@export var market_weight := 0.09
+
+## Acabamento das fachadas: com PBR (grao/normal/roughness triplanar sobre o
+## atlas do kit) ou a cor chapada antiga. Deixado como chave pra dar pra
+## comparar os dois lado a lado.
+@export var use_pbr_surface := true
+@export var facade_texture_size := 2.4
+@export var facade_saturation := 0.62
+## Entulho de cobertura (ver _add_rooftop_props).
+@export var rooftop_props_enabled := true
+@export var rooftop_prop_chance := 0.55
+
 @export var exclude_points: Array[Vector3] = []
 @export var exclude_radius := 12.0
 
@@ -86,6 +114,23 @@ func _build_block(x_street_a: float, x_street_b: float, z_street_a: float, z_str
 		return
 
 	var center := Vector2((x_street_a + x_street_b) * 0.5, (z_street_a + z_street_b) * 0.5)
+	if _is_excluded(Vector3(center.x, 0.0, center.y)):
+		return
+
+	match _lot_kind():
+		"park":
+			_build_park(x_min, x_max, z_min, z_max)
+			return
+		"gas":
+			_build_gas_station(x_min, x_max, z_min, z_max)
+			return
+		"parking":
+			_build_parking(x_min, x_max, z_min, z_max)
+			return
+		"market":
+			_build_market(x_min, x_max, z_min, z_max)
+			return
+
 	var pool := _pool_for(center)
 	if pool.is_empty():
 		return
@@ -107,6 +152,231 @@ func _build_block(x_street_a: float, x_street_b: float, z_street_a: float, z_str
 	if z_side_max - z_side_min > 2.0:
 		_fill_edge(pool, z_side_min, z_side_max, x_min, false, false, depth_budget_x)
 		_fill_edge(pool, z_side_min, z_side_max, x_max, false, true, depth_budget_x)
+
+const GRASS := Color(0.44, 0.58, 0.36)
+const PATH := Color(0.78, 0.75, 0.68)
+const ASPHALT := Color(0.30, 0.31, 0.34)
+const CONCRETE := Color(0.70, 0.69, 0.66)
+const STRIPE := Color(0.88, 0.88, 0.84)
+
+func _lot_kind() -> String:
+	var roll := _rng.randf()
+	var acc := park_weight
+	if roll < acc:
+		return "park"
+	acc += gas_station_weight
+	if roll < acc:
+		return "gas"
+	acc += parking_weight
+	if roll < acc:
+		return "parking"
+	acc += market_weight
+	if roll < acc:
+		return "market"
+	return "buildings"
+
+## Praca: grama, caminho em cruz, arvores nos quatro quadrantes e bancos
+## virados pro meio.
+func _build_park(x_min: float, x_max: float, z_min: float, z_max: float) -> void:
+	var center := Vector3((x_min + x_max) * 0.5, 0.0, (z_min + z_max) * 0.5)
+	var size := Vector2(x_max - x_min, z_max - z_min)
+	_patch(center, size, GRASS, "grass", 0.04, "lote_praca")
+	_patch(center, Vector2(size.x, 2.4), PATH, "path", 0.05)
+	_patch(center, Vector2(2.4, size.y), PATH, "path", 0.05)
+
+	# Arvores numa grade com sacudida, nao em posicao puramente sorteada: com
+	# sorteio livre duas caem uma dentro da outra (a verificacao pegou 8 pares
+	# assim). O passo sai da largura real do maior modelo do pool.
+	if not tree_scenes.is_empty():
+		# Maior lado, nao diagonal: copa de arvore e aproximadamente redonda,
+		# entao o AABB quase nao cresce ao girar. Com a diagonal (como estava),
+		# a arvore maior estourava meio quarteirao, o numero de colunas virava
+		# ZERO e a praca ficava sem arvore nenhuma.
+		var step := 0.0
+		for scene: PackedScene in tree_scenes:
+			var fp := _footprint(scene, 0.0, tree_scale)
+			step = maxf(step, maxf(fp.x, fp.y))
+		# Copa pode se tocar um pouco (arvore nao e caixa), entao o passo da
+		# grade e menor que a largura medida — senao cabe uma arvore por
+		# quadrante e a praca fica pelada.
+		step = maxf(step * 0.75 + lot_gap, 3.0)
+		var cols: int = maxi(int((size.x * 0.5 - 1.5) / step), 1)
+		var rows: int = maxi(int((size.y * 0.5 - 1.5) / step), 1)
+		for sx in [-1.0, 1.0]:
+			for sz in [-1.0, 1.0]:
+				for cx in range(cols):
+					for cz in range(rows):
+						if _rng.randf() < 0.15:
+							continue
+						var scene: PackedScene = tree_scenes[_rng.randi() % tree_scenes.size()]
+						var jitter := step * 0.18
+						var pos := Vector3(
+							center.x + sx * (2.2 + cx * step + _rng.randf_range(-jitter, jitter)),
+							0.0,
+							center.z + sz * (2.2 + cz * step + _rng.randf_range(-jitter, jitter)))
+						_place_prop(scene, pos, _rng.randf_range(0.0, 360.0), tree_scale)
+
+	# Bancos de frente pro caminho central (o -Z do banco e o encosto).
+	for side in [-1.0, 1.0]:
+		var seat := StreetFurniture.bench()
+		add_child(seat)
+		seat.position = Vector3(center.x + side * 2.1, 0.0, center.z + side * 3.4)
+		seat.rotation_degrees.y = 90.0 if side > 0.0 else 270.0
+
+## Posto de gasolina: cobertura sobre as bombas, loja de conveniencia ao fundo
+## e placa de preco na esquina.
+func _build_gas_station(x_min: float, x_max: float, z_min: float, z_max: float) -> void:
+	var center := Vector3((x_min + x_max) * 0.5, 0.0, (z_min + z_max) * 0.5)
+	var size := Vector2(x_max - x_min, z_max - z_min)
+	_patch(center, size, CONCRETE, "concrete", 0.04, "lote_posto")
+
+	var canopy_w: float = minf(size.x * 0.8, 11.0)
+	var canopy_d: float = minf(size.y * 0.5, 7.0)
+	var canopy_z := center.z - size.y * 0.18
+	var metal := StreetFurniture._material("canopy", Color(0.93, 0.93, 0.90))
+	var top := MeshInstance3D.new()
+	var top_mesh := BoxMesh.new()
+	top_mesh.size = Vector3(canopy_w, 0.5, canopy_d)
+	top.mesh = top_mesh
+	top.set_surface_override_material(0, metal)
+	add_child(top)
+	top.position = Vector3(center.x, 4.4, canopy_z)
+	for sx in [-1.0, 1.0]:
+		for sz in [-1.0, 1.0]:
+			var pillar := MeshInstance3D.new()
+			var pillar_mesh := BoxMesh.new()
+			pillar_mesh.size = Vector3(0.4, 4.2, 0.4)
+			pillar.mesh = pillar_mesh
+			pillar.set_surface_override_material(0, metal)
+			add_child(pillar)
+			pillar.position = Vector3(
+				center.x + sx * (canopy_w * 0.5 - 0.5), 2.1,
+				canopy_z + sz * (canopy_d * 0.5 - 0.5))
+	for sx in [-1.0, 1.0]:
+		var pump := StreetFurniture.fuel_pump()
+		add_child(pump)
+		pump.position = Vector3(center.x + sx * canopy_w * 0.22, 0.0, canopy_z)
+
+	# Faixa vermelha na borda da cobertura: sem ela a estrutura branca sobre
+	# pilares nao le como posto, le como marquise generica.
+	for sz in [-1.0, 1.0]:
+		var band := MeshInstance3D.new()
+		var band_mesh := BoxMesh.new()
+		band_mesh.size = Vector3(canopy_w + 0.1, 0.28, 0.12)
+		band.mesh = band_mesh
+		band.set_surface_override_material(0, StreetFurniture._material(
+				"canopy_band", Color(0.80, 0.22, 0.18)))
+		add_child(band)
+		band.position = Vector3(center.x, 4.4, canopy_z + sz * (canopy_d * 0.5 + 0.05))
+
+	# Totem de preco na esquina do lote, virado pra rua.
+	var totem_pole := MeshInstance3D.new()
+	var totem_pole_mesh := BoxMesh.new()
+	totem_pole_mesh.size = Vector3(0.22, 4.0, 0.22)
+	totem_pole.mesh = totem_pole_mesh
+	totem_pole.set_surface_override_material(0, StreetFurniture._material("metal", Color(0.28, 0.30, 0.33)))
+	add_child(totem_pole)
+	totem_pole.position = Vector3(x_min + 1.2, 2.0, z_min + 1.2)
+	var totem := MeshInstance3D.new()
+	var totem_mesh := BoxMesh.new()
+	totem_mesh.size = Vector3(1.7, 2.0, 0.25)
+	totem.mesh = totem_mesh
+	totem.set_surface_override_material(0, StreetFurniture._material(
+			"canopy_band", Color(0.80, 0.22, 0.18)))
+	add_child(totem)
+	totem.position = Vector3(x_min + 1.2, 4.6, z_min + 1.2)
+
+	# Loja de conveniencia: predio pequeno, encostado no fundo do lote. Numa
+	# escala menor que a dos predios da quadra, senao vira um shopping e o
+	# posto some atras dele.
+	if not kiosk_scenes.is_empty():
+		var kiosk: PackedScene = kiosk_scenes[_rng.randi() % kiosk_scenes.size()]
+		var kiosk_scale := building_scale * 0.62
+		var depth := _footprint(kiosk, 180.0, kiosk_scale).y
+		_place_prop(kiosk, Vector3(center.x, 0.0, z_max - depth * 0.5 - 0.4), 180.0, kiosk_scale)
+
+## Estacionamento: asfalto, faixas e duas fileiras de carros parados.
+func _build_parking(x_min: float, x_max: float, z_min: float, z_max: float) -> void:
+	var center := Vector3((x_min + x_max) * 0.5, 0.0, (z_min + z_max) * 0.5)
+	var size := Vector2(x_max - x_min, z_max - z_min)
+	_patch(center, size, ASPHALT, "asphalt", 0.04, "lote_estacionamento")
+	if parked_car_scenes.is_empty():
+		return
+	# Vaga medida a partir do carro mais largo do pool, na escala em que ele e
+	# usado (1.0 — os carros do Quaternius ja vem em metros). Com passo fixo
+	# chutado, carro vizinho entra dentro do outro.
+	var slot := 0.0
+	for scene: PackedScene in parked_car_scenes:
+		slot = maxf(slot, _footprint(scene, 0.0, 1.0).x)
+	slot += 0.7
+	var columns := int((size.x - 1.0) / slot)
+	for row in range(2):
+		var z := center.z + (-1.0 if row == 0 else 1.0) * size.y * 0.24
+		for c in range(columns):
+			var x := center.x - (columns - 1) * slot * 0.5 + c * slot
+			_patch(Vector3(x - slot * 0.5, 0.0, z), Vector2(0.14, 5.0), STRIPE, "stripe", 0.06)
+			if _rng.randf() < 0.5:
+				continue
+			var car: PackedScene = parked_car_scenes[_rng.randi() % parked_car_scenes.size()]
+			_place_prop(car, Vector3(x, 0.0, z), 0.0 if row == 0 else 180.0, 1.0)
+
+## Feira: barracas cobertas por guarda-sois, em duas fileiras, com corredor no
+## meio — usa as pecas de parasol/awning do proprio kit comercial.
+func _build_market(x_min: float, x_max: float, z_min: float, z_max: float) -> void:
+	var center := Vector3((x_min + x_max) * 0.5, 0.0, (z_min + z_max) * 0.5)
+	var size := Vector2(x_max - x_min, z_max - z_min)
+	_patch(center, size, PATH, "path", 0.04, "lote_feira")
+	if parasol_scenes.is_empty():
+		return
+	# Passo tirado da largura real do guarda-sol, senao duas barracas vizinhas
+	# se atravessam.
+	var slot := 0.0
+	for scene: PackedScene in parasol_scenes:
+		slot = maxf(slot, _footprint(scene, 0.0).x)
+	slot += 0.8
+	var columns: int = maxi(int((size.x - 2.0) / slot), 1)
+	for row in range(2):
+		var z := center.z + (-1.0 if row == 0 else 1.0) * size.y * 0.22
+		for c in range(columns):
+			var x := center.x - (columns - 1) * slot * 0.5 + c * slot
+			var parasol: PackedScene = parasol_scenes[_rng.randi() % parasol_scenes.size()]
+			# Alinhadas de proposito: barraca de feira em fileira le como feira,
+			# e rotacao sorteada aqui so faria a caixa crescer e as barracas se
+			# atravessarem.
+			_place_prop(parasol, Vector3(x, 0.0, z), 180.0 if row == 1 else 0.0, building_scale)
+			# Balcao da barraca por baixo do guarda-sol.
+			var stall := MeshInstance3D.new()
+			var stall_mesh := BoxMesh.new()
+			stall_mesh.size = Vector3(1.9, 0.9, 0.9)
+			stall.mesh = stall_mesh
+			stall.set_surface_override_material(0, StreetFurniture._material(
+					"stall", Color(0.62, 0.46, 0.32)))
+			add_child(stall)
+			stall.position = Vector3(x, 0.45, z)
+
+func _patch(center: Vector3, size: Vector2, color: Color, key: String, y: float,
+		group := "") -> void:
+	var patch := StreetFurniture.ground_patch(size, color, key)
+	if group != "":
+		# Marca o lote pelo tipo: serve pra achar praca/posto/feira depois, sem
+		# depender do nome do no (irmaos repetidos viram "@Node3D@N").
+		patch.add_to_group(group)
+	add_child(patch)
+	patch.position = Vector3(center.x, y, center.z)
+
+## Igual a _place(), mas sem o tint de fachada: arvore, carro e guarda-sol tem
+## cor propria e nao podem entrar na paleta de predio.
+func _place_prop(scene: PackedScene, pos: Vector3, rot_deg: float, prop_scale: float) -> Node3D:
+	var body := CITY_BUILDING_SCENE.instantiate()
+	body.visual_scene = scene
+	body.visual_scale = prop_scale
+	body.visual_rotation_y_degrees = rot_deg
+	add_child(body)
+	# Mesmo desconto de _fill_edge: varios modelos do kit tem a malha deslocada
+	# da origem do no, e sem isso o prop nasce fora do lugar planejado.
+	var off := _center_offset(scene, rot_deg, prop_scale)
+	body.position = pos - Vector3(off.x, 0.0, off.y)
+	return body
 
 ## Percorre uma borda colocando predios lado a lado, todos virados pra fora
 ## (pra rua). Retorna a maior profundidade usada, pra quem chamou saber o
@@ -188,13 +458,13 @@ func _facing_rotation(horizontal: bool, far_side: bool) -> float:
 
 ## Largura/profundidade ocupadas no mundo, ja com a escala e a rotacao
 ## aplicadas (rotacao multipla de 90 graus so troca X por Z).
-func _footprint(scene: PackedScene, rot_deg: float) -> Vector2:
+func _footprint(scene: PackedScene, rot_deg: float, scale := -1.0) -> Vector2:
 	var base := _base_footprint(scene)
 	if base == Vector2.ZERO:
 		return Vector2.ZERO
 	var swapped := int(round(absf(rot_deg) / 90.0)) % 2 == 1
 	var fp := Vector2(base.y, base.x) if swapped else base
-	return fp * building_scale
+	return fp * (scale if scale > 0.0 else building_scale)
 
 func _base_footprint(scene: PackedScene) -> Vector2:
 	return _measure(scene)["size"]
@@ -203,9 +473,9 @@ func _base_footprint(scene: PackedScene) -> Vector2:
 ## girado. Varios modelos do kit nao sao centrados na propria origem; sem
 ## descontar isso, a caixa de colisao real nasce deslocada do lugar planejado
 ## e os predios acabam se sobrepondo ou invadindo a rua.
-func _center_offset(scene: PackedScene, rot_deg: float) -> Vector2:
+func _center_offset(scene: PackedScene, rot_deg: float, scale := -1.0) -> Vector2:
 	var c: Vector2 = _measure(scene)["center"]
-	return c.rotated(-deg_to_rad(rot_deg)) * building_scale
+	return c.rotated(-deg_to_rad(rot_deg)) * (scale if scale > 0.0 else building_scale)
 
 func _measure(scene: PackedScene) -> Dictionary:
 	var key := scene.resource_path
@@ -217,6 +487,9 @@ func _measure(scene: PackedScene) -> Dictionary:
 	var data := {
 		"size": Vector2(aabb.size.x, aabb.size.z),
 		"center": Vector2(aabb.position.x + aabb.size.x * 0.5, aabb.position.z + aabb.size.z * 0.5),
+		# Topo em unidades locais: e daqui que sai a altura do telhado onde os
+		# props de cobertura sao plantados.
+		"top": aabb.position.y + aabb.size.y,
 	}
 	_footprint_cache[key] = data
 	return data
@@ -252,7 +525,42 @@ func _place(scene: PackedScene, pos: Vector3, rot_deg: float) -> Node3D:
 	add_child(body)
 	body.position = pos
 	_tint(body)
+	_add_rooftop_props(scene, pos, rot_deg)
 	return body
+
+## Entulho de cobertura (caixa d'agua, ar condicionado, antena). E o que quebra
+## a silhueta de caixa que ainda fazia a cidade ler como maquete de longe,
+## mesmo com as fachadas ja texturizadas — e nenhum modelo do kit tem isso.
+## So em telhado plano: casa do kit suburbano tem telhado inclinado e o prop
+## ficaria flutuando.
+func _add_rooftop_props(scene: PackedScene, pos: Vector3, rot_deg: float) -> void:
+	if not rooftop_props_enabled or scene in house_scenes:
+		return
+	if _rng.randf() > rooftop_prop_chance:
+		return
+	var footprint := _footprint(scene, rot_deg)
+	var top: float = float(_measure(scene)["top"]) * building_scale
+	if footprint.x < 3.0 or footprint.y < 3.0:
+		return
+	# Recuo generoso: prop encostado na borda fica meio pra fora do telhado nos
+	# modelos cuja malha nao preenche o AABB todo.
+	var inset := 1.6
+	for i in range(_rng.randi_range(1, 3)):
+		var maker: Callable
+		match _rng.randi() % 3:
+			0:
+				maker = StreetFurniture.water_tank
+			1:
+				maker = StreetFurniture.antenna
+			_:
+				maker = StreetFurniture.ac_unit
+		var prop: Node3D = maker.call()
+		add_child(prop)
+		prop.position = Vector3(
+			pos.x + _rng.randf_range(-1.0, 1.0) * maxf(footprint.x * 0.5 - inset, 0.2),
+			top,
+			pos.z + _rng.randf_range(-1.0, 1.0) * maxf(footprint.y * 0.5 - inset, 0.2))
+		prop.rotation_degrees.y = _rng.randf_range(0.0, 360.0)
 
 ## Todos os predios do kit dividem um unico atlas de textura, entao sem isso a
 ## cidade inteira fica da mesma cor. albedo_color multiplica a textura, entao
@@ -261,12 +569,33 @@ func _tint(body: Node3D) -> void:
 	if facade_colors.is_empty():
 		return
 	var color: Color = facade_colors[_rng.randi() % facade_colors.size()]
+	# Sorteado sempre, mesmo sem PBR: o sorteio consome o RNG, e so consumir
+	# num dos dois modos faria a cidade INTEIRA mudar de layout ao ligar a
+	# chave — a comparacao lado a lado deixaria de ser da mesma cidade.
+	var kind := _surface_kind(body)
+	if use_pbr_surface:
+		# Acabamento PBR por cima do atlas do kit (ver CitySurface.gd). O
+		# material combina com o TIPO de construcao: tijolo em arranha-ceu
+		# ficou errado no primeiro teste — torre e concreto, casa e que pode
+		# ser tijolo ou reboco.
+		CitySurface.apply(body, color, kind, facade_texture_size, facade_saturation)
+		return
 	for mesh_inst in _all_mesh_instances(body):
 		for surface in range(mesh_inst.get_surface_override_material_count()):
 			var base: Material = mesh_inst.mesh.surface_get_material(surface)
 			var mat: StandardMaterial3D = base.duplicate() if base is StandardMaterial3D else StandardMaterial3D.new()
 			mat.albedo_color = color
 			mesh_inst.set_surface_override_material(surface, mat)
+
+## Material de acabamento combinando com o tipo de construcao: torre e galpao
+## em concreto, casa em tijolo ou reboco, comercio no meio do caminho.
+func _surface_kind(body: Node3D) -> String:
+	var scene: PackedScene = body.visual_scene
+	if scene in skyscraper_scenes or scene in industrial_scenes:
+		return "concreto"
+	if scene in house_scenes:
+		return "tijolo" if _rng.randf() < 0.35 else "reboco"
+	return "reboco" if _rng.randf() < 0.6 else "concreto"
 
 func _all_mesh_instances(node: Node) -> Array[MeshInstance3D]:
 	var result: Array[MeshInstance3D] = []
