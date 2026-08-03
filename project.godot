@@ -18,6 +18,7 @@ GameManager="*res://autoload/GameManager.gd"
 Economy="*res://autoload/Economy.gd"
 WeatherManager="*res://autoload/WeatherManager.gd"
 EventManager="*res://autoload/EventManager.gd"
+DeliveryManager="*res://autoload/DeliveryManager.gd"
 
 [display]
 

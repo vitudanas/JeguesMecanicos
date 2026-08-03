@@ -27,8 +27,8 @@ pixel_size = 0.012
 outline_size = 10
 modulate = Color(0.2, 0.9, 0.3, 1)
 font_size = 56
-text = "COMPRADOR
-(entregue o carro aqui)"
+text = "ENTREGA
+(traga o carro ate aqui)"
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)

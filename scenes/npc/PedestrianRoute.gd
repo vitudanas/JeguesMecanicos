@@ -18,6 +18,7 @@ extends Path3D
 ## Cabelo pra cada character_models[i] (mesmo indice). Ver Pedestrian.gd:hair_scene.
 @export var hair_scenes: Array[PackedScene] = []
 @export var visual_scale := 1.0
+@export var visual_rotation_y_degrees := 180.0
 @export var idle_anim_scene: PackedScene
 @export var walk_anim_scene: PackedScene
 @export var idle_anim_name := ""

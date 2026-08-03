@@ -7,6 +7,22 @@ extends StaticBody3D
 
 signal sale_completed(amount: int)
 
+## Visual do cliente: mesmo personagem dos pedestres (ver CharacterVisual.gd),
+## sorteando entre homem e mulher pra cada entrega nao ser sempre igual.
+const MODELS: Array[String] = [
+	"res://assets/quaternius/universal-base-characters/Characters/Superhero_Male_FullBody.gltf",
+	"res://assets/quaternius/universal-base-characters/Characters/Superhero_Female_FullBody.gltf",
+]
+const OUTFITS: Array[String] = [
+	"res://assets/quaternius/outfits-fantasy/Outfits/Male_Peasant.gltf",
+	"res://assets/quaternius/outfits-fantasy/Outfits/Female_Peasant.gltf",
+]
+const HAIRS: Array[String] = [
+	"res://assets/quaternius/universal-base-characters/Hairstyles/Hair_SimpleParted.gltf",
+	"res://assets/quaternius/universal-base-characters/Hairstyles/Hair_Long.gltf",
+]
+const IDLE_ANIM := "res://assets/quaternius/universal-animation-library-1/Animations/UAL1_Standard.glb"
+
 @onready var car_zone: Area3D = $CarZone
 
 var persuasion := PersuasionMinigame.new()
@@ -21,6 +37,31 @@ func _ready() -> void:
 	car_zone.body_exited.connect(_on_car_exited)
 	persuasion.succeeded.connect(_on_success)
 	persuasion.failed.connect(_on_failed)
+	_load_visual()
+
+## Troca a capsula placeholder por um personagem de verdade, parado em "Idle"
+## esperando a entrega.
+func _load_visual() -> void:
+	var i := randi() % MODELS.size()
+	var visual := CharacterVisual.build(
+		self,
+		load(MODELS[i]) as PackedScene,
+		load(OUTFITS[i]) as PackedScene,
+		load(HAIRS[i]) as PackedScene
+	)
+	if visual == null:
+		return
+	var idle := CharacterVisual.extract_animation(load(IDLE_ANIM) as PackedScene, "Idle")
+	if idle:
+		var lib := AnimationLibrary.new()
+		lib.add_animation("idle", idle)
+		var player := AnimationPlayer.new()
+		visual.add_child(player)
+		player.add_animation_library("", lib)
+		player.play("idle")
+	var placeholder: MeshInstance3D = get_node_or_null("MeshVisual")
+	if placeholder:
+		placeholder.visible = false
 
 func get_interact_prompt() -> String:
 	if minigame_running:

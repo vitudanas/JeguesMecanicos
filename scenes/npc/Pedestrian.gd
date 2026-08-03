@@ -20,6 +20,9 @@ signal ragdolled
 @export var character_model: PackedScene
 @export var skin_texture: Texture2D
 @export var visual_scale := 1.0
+## Mesma correcao dos carros: o modelo olha pro +Z e o PathFollow3D anda pro
+## -Z, entao sem 180 graus o pedestre anda de costas.
+@export var visual_rotation_y_degrees := 180.0
 @export var ragdoll_impact_threshold := 4.0
 @export var ragdoll_recover_time := 4.0
 @export var idle_anim_scene: PackedScene = preload("res://assets/kenney/animated-characters-protagonists/Animations/idle.fbx")
@@ -55,70 +58,22 @@ func _ready() -> void:
 func _load_visual() -> void:
 	if character_model == null:
 		return
-	var visual := character_model.instantiate()
-	add_child(visual)
-	if visual is Node3D:
-		visual.scale = Vector3.ONE * visual_scale
+	# Corpo + roupa + cabelo sao montados por CharacterVisual (compartilhado com
+	# BuyerNPC.gd, pra pedestre e cliente terem a mesma aparencia).
+	var visual := CharacterVisual.build(self, character_model, outfit_scene, hair_scene,
+		visual_scale, visual_rotation_y_degrees)
+	if visual == null:
+		return
+	# So o personagem do Kenney precisa de skin externa (mesh sem textura propria).
 	if skin_texture:
 		var mesh_instance := _find_mesh_instance(visual)
 		if mesh_instance:
 			var mat := StandardMaterial3D.new()
 			mat.albedo_texture = skin_texture
 			mesh_instance.set_surface_override_material(0, mat)
-	if outfit_scene:
-		_attach_outfit(visual)
-	if hair_scene:
-		var base_skel := _find_skeleton(visual)
-		if base_skel:
-			_attach_external_meshes(base_skel, hair_scene)
 	if fallback_mesh:
 		fallback_mesh.visible = false
 	_setup_animation(visual)
-
-## A roupa e o corpo nu vem de dois arquivos .gltf exportados separadamente e
-## nao ficam perfeitamente coincidentes por baixo da roupa (bind pose com
-## diferencas sutis entre os dois exports) — em vez de z-fighting uniforme,
-## aparecem pedacos de pele por cima do tecido em pontos diferentes (torso,
-## coxa) dependendo da pose. Encolher o corpo nu (nao a roupa) reduz bastante
-## o problema, mas NAO resolve 100%: em valores de encolhimento mais fortes
-## (~0.85) sobra uma folga entre pescoco e gola da camisa; em valores mais
-## fracos (~0.93) ainda sobra um pedaco de pele no meio do tronco. 0.9 abaixo
-## e o meio-termo menos ruim encontrado, mas ainda tem um residuo pequeno de
-## clipping — resolver de verdade exigiria reexportar/realinhar o bind pose
-## no Blender, fora do alcance de scripting.
-const BODY_SHRINK_UNDER_CLOTHES := 0.9
-
-func _attach_outfit(visual: Node) -> void:
-	var base_skel := _find_skeleton(visual)
-	if base_skel == null:
-		return
-	for child in base_skel.get_children():
-		if child is MeshInstance3D and child.name != "Eyes" and child.name != "Eyebrows":
-			child.scale = Vector3.ONE * BODY_SHRINK_UNDER_CLOTHES
-	_attach_external_meshes(base_skel, outfit_scene)
-
-## Instancia scene, extrai suas MeshInstance3D (ja skinadas no mesmo esqueleto
-## de 65 ossos do character_model) e as transplanta pro Skeleton3D base,
-## descartando o resto (Armature/Skeleton3D proprios de scene).
-func _attach_external_meshes(base_skel: Skeleton3D, scene: PackedScene) -> void:
-	var temp := scene.instantiate()
-	var temp_skel := _find_skeleton(temp)
-	if temp_skel:
-		for child in temp_skel.get_children().duplicate():
-			if child is MeshInstance3D:
-				temp_skel.remove_child(child)
-				base_skel.add_child(child)
-				child.skeleton = NodePath("..")
-	temp.queue_free()
-
-func _find_skeleton(node: Node) -> Skeleton3D:
-	if node is Skeleton3D:
-		return node
-	for child in node.get_children():
-		var found := _find_skeleton(child)
-		if found:
-			return found
-	return null
 
 func _setup_animation(visual: Node) -> void:
 	var idle_anim := _get_cached_animation(idle_anim_scene, idle_anim_name)
@@ -143,21 +98,9 @@ static func _get_cached_animation(scene: PackedScene, anim_name: String) -> Anim
 		return null
 	var key := scene.resource_path + "|" + anim_name
 	if not _anim_cache.has(key):
-		_anim_cache[key] = _extract_animation(scene, anim_name)
+		_anim_cache[key] = CharacterVisual.extract_animation(scene, anim_name)
 	return _anim_cache[key]
 
-static func _extract_animation(scene: PackedScene, anim_name: String) -> Animation:
-	var temp := scene.instantiate()
-	var anim: Animation = null
-	var player := temp.find_child("AnimationPlayer", true, false) as AnimationPlayer
-	if player:
-		for lib_name in player.get_animation_library_list():
-			var lib := player.get_animation_library(lib_name)
-			if lib.has_animation(anim_name):
-				anim = lib.get_animation(anim_name)
-				break
-	temp.free()
-	return anim
 
 func _find_mesh_instance(node: Node) -> MeshInstance3D:
 	if node is MeshInstance3D:

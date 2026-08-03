@@ -9,7 +9,10 @@ extends RigidBody3D
 
 @export var speed := 4.0
 @export var car_model: PackedScene
-@export var visual_rotation_y_degrees := 0.0
+## Os modelos de carro (Kenney e Quaternius) olham pro +Z, mas o PathFollow3D
+## do Godot anda no sentido do -Z do no (medido, ver changelog 2026-08-03) —
+## sem esses 180 graus os carros andam de re.
+@export var visual_rotation_y_degrees := 180.0
 
 @onready var fallback_mesh: MeshInstance3D = $FallbackMesh
 

@@ -138,7 +138,8 @@ local hard-coded sempre que possível.
 - **A pé:** W/A/S/D anda, Shift corre, Space pula, E interage (olhando para o alvo),
   Esc abre/fecha o menu de pause.
 - **Dirigindo:** W/S acelera/ré, A/D vira, Space freio de mão, F sai do carro.
-- **Venda:** segurar E perto do comprador enche a barra de lábia.
+- **Venda:** a entrega é numa casa sorteada da cidade (placa verde ENTREGA);
+  encoste o carro na frente dela e segure E perto do NPC pra encher a barra de lábia.
 - **Menus:** o jogo abre num menu principal (Jogar/Sair); Esc a qualquer momento
   dentro da partida pausa e abre Continuar/Sair para o Menu/Sair do Jogo.
 
@@ -148,9 +149,12 @@ local hard-coded sempre que possível.
 project.godot          # config do Godot, autoloads, display/fullscreen
 export_presets.cfg     # presets Windows Desktop + macOS (testados e funcionando)
 autoload/               GameManager.gd, Economy.gd, WeatherManager.gd (clima/chuva),
-                        EventManager.gd (eventos procedurais)
+                        EventManager.gd (eventos procedurais),
+                        DeliveryManager.gd (sorteia a casa da entrega da vez)
 scripts/                Interactable.gd, TowHook.gd, PersuasionMinigame.gd, Pothole.gd,
-                        CityStreets.gd (malha viária procedural), RuralScatter.gd
+                        CityStreets.gd (malha viária procedural), CityBlocks.gd
+                        (preenche os quarteirões com fileiras de prédios virados
+                        pra rua e registra as casas de entrega), RuralScatter.gd
                         (espalha natureza/montanhas no anel rural)
 scenes/main/            Main.tscn — cena de entrada (Town + Player + HUD + RainFX)
 scenes/player/          Player.tscn/gd — controller 1ª pessoa
@@ -159,22 +163,25 @@ scenes/world/           Town.tscn (cidade + anel rural, tudo num só mundo sandb
                         Junkyard.tscn, Workshop.tscn, MudZone.tscn/gd, RainFX.tscn/gd,
                         CityBuilding.tscn (prédio genérico com colisão automática),
                         FarmCluster.tscn/gd (fazenda procedural), ScrapyardCluster.tscn/gd
-                        (ferro-velho rural decorativo), RuralScatter.tscn (wrapper do
-                        script em scripts/)
+                        (ferro-velho rural decorativo), RuralWorkshop.tscn (a oficina
+                        do jogador, um ferro-velho no campo), CityBlocks.tscn e
+                        RuralScatter.tscn (wrappers dos scripts em scripts/)
 scenes/traffic/         TrafficCar.tscn/gd, TrafficRoute.tscn/gd — carros de IA
 scenes/npc/             BuyerNPC.tscn/gd, Pedestrian.tscn/gd, PedestrianRoute.tscn/gd
 scenes/ui/              HUD.tscn/gd — dinheiro, prompt de interação, barra de lábia;
                         MainMenu.tscn/gd (tela inicial, cena de entrada do jogo);
                         PauseMenu.tscn/gd (Esc pausa a árvore, some com o mouse)
-assets/kenney/          pacotes CC0 do Kenney.nl (roads, commercial, car-kit,
-                        animated-characters-protagonists) — toda a CIDADE (ruas e os
-                        16 prédios) é só desse pacote, de propósito, ver changelog
-                        2026-08-02 "redesenho completo do mapa"
+assets/kenney/          pacotes CC0 do Kenney.nl (roads, commercial, suburban,
+                        industrial, car-kit, animated-characters-protagonists) —
+                        toda a CIDADE (ruas e os 175 prédios) é só desses kits, de
+                        propósito, ver changelog 2026-08-02/03
 assets/quaternius/      downtown-city-megakit (baixado, não usado no layout ativo —
                         ver changelog) + Universal Base Characters/Animation Library/
                         outfits-fantasy (baixados, não integrados nos NPCs, ver
                         Roadmap) + farm-buildings/nature-megakit (usados no anel
-                        rural fora da cidade — fazendas, natureza, montanhas)
+                        rural fora da cidade — fazendas, natureza, montanhas) +
+                        cars (carros de tráfego em escala real) +
+                        universal-animation-library-1 (Walk/Idle normais)
 assets/icon/            ícone do jogo (gerado por código, PIL) + .ico/.icns
 builds/                 saída dos exports (ignorado pelo git; publicado como
                         GitHub Release em vez de commitado)
@@ -712,6 +719,106 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
   Rodei um script à parte varrendo todos os `.tscn` do projeto procurando esse
   mesmo padrão de bug (`ext_resource` de Script declarado mas nunca atribuído a
   nenhum nó) — `MainMenu.tscn` era o único caso. `debug_tmp/` removido no final.
+- **2026-08-03** — Usuário deu um feedback franco: cidade vazia e sem vida, NPCs
+  gigantes, carros feios, visual cartunizado demais. Medi tudo contra a cápsula de
+  1.80m do `Player` antes de opinar, e os números confirmaram cada ponto:
+  - **NPCs gigantes**: `characterMedium.fbx` tem **3.76m** de altura — 2.1× o
+    jogador. O changelog de 2026-08-02 dizia "escala 1:1 já bateu certinho", o que
+    estava **errado** (nunca foi medido na época). Corrigido com `visual_scale`
+    calculado (1.8/3.76 = 0.479) e verificado medindo a AABB na cena de verdade.
+  - **Carros**: o Kenney Car Kit tem 2.55m de comprimento e proporção 1.7:1
+    (brinquedo). Trocados pelo **Cars Bundle do Quaternius** (poly.pizza, CC0), que
+    já vem em escala real: 4.22m × 1.81m, proporção 2.34:1 — não precisou de
+    ajuste de escala nenhum.
+  - **Cidade vazia**: cada quarteirão tinha **1 prédio solto no meio** (~11% de
+    ocupação). Novo `scripts/CityBlocks.gd` enfileira prédios encostados na
+    calçada virados pra rua (mesma técnica de "andar ao longo de um trecho" de
+    `CityStreets.gd`), medindo a largura real de cada modelo pra saber quanto
+    avançar. Grade expandida de 4×4 pra **6×6 quarteirões** (ruas a cada 25 de
+    -75 a 75). Resultado: **175 prédios, 62% de ocupação**.
+  - **Variedade**: baixados mais dois kits CC0 do Kenney, da mesma família visual
+    do comercial que já existia — `city-kit-suburban` (21 casas) e
+    `city-kit-industrial` (20 galpões). Zoneamento por distância do centro
+    (Chebyshev): arranha-céus no miolo, comércio no anel do meio, casas e galpões
+    na periferia.
+  - **Escala nativa do kit**: descoberta que destravou a densidade — o tile de rua
+    mede 1.0 no kit e `CityStreets` usa `tile_size = 6.0`, então **6.0 é o módulo
+    nativo**. Padronizar todos os prédios nessa escala faz tudo encaixar na mesma
+    grade (antes as escalas variavam de 5 a 7 sem critério).
+  - **Vida nas ruas**: de 2 pra 6 rotas de tráfego e de 2 pra 6 de pedestres, de
+    11 pra **50 agentes**. As duas rotas antigas **nunca estiveram sobre ruas de
+    verdade** (usavam x=29/z=29, que caem no meio do quarteirão) — passavam
+    despercebidas enquanto os quarteirões eram vazios, mas com a cidade densa
+    começaram a cortar prédios. Todas realinhadas sobre eixos de rua reais
+    (tráfego) e calçadas (pedestres, a 3.0 do eixo, entre o meio-fio em 2.4 e a
+    fachada em 3.8).
+  - **"Menos cartoon"**: o aspecto de desenho vinha muito mais da **iluminação**
+    que dos modelos. Trocado: luz ambiente 0.9 → 0.62 com contribuição parcial do
+    céu (antes 100% céu, o que deixava toda sombra azul-berrante), tonemap ACES,
+    SSAO/SSIL fortes (dão volume às formas chapadas do low-poly), névoa de
+    perspectiva aérea, sombras direcionais suaves em 4 cascatas e dessaturação
+    leve, no lugar do ambiente chapado + glow forte. Duas iterações erradas no
+    caminho, corrigidas olhando o resultado: a névoa de altura
+    (`fog_height_density`) lavou a cena inteira de branco, e depois a luz ambiente
+    100% do céu deixou as sombras azul-escuras demais.
+  - **Cores das construções**: todos os prédios do kit dividem um único atlas de
+    textura, então a cidade inteira saía da mesma cor. `CityBlocks._tint()` aplica
+    um `albedo_color` sorteado por prédio (multiplica a textura, então mantém o
+    desenho de janelas/portas), com uma paleta de tons de fachada bem claros de
+    propósito — cores saturadas devolveriam o aspecto de desenho.
+  - **Oficina virou ferro-velho rural** (pedido do usuário): nova
+    `scenes/world/RuralWorkshop.tscn` (galpão do kit industrial + pátio de
+    concreto + cerca + sucata via `ScrapyardCluster` + tanque), em (-150, 0), no
+    fim da rua que sai da cidade pro oeste — dá pra sair dela e entrar direto na
+    cidade dirigindo. O ferro-velho de achar carcaça foi junto, 38m ao norte
+    (reboque curto; a viagem longa virou o test-drive até a cidade). Os 3
+    ferros-velhos rurais decorativos continuam só como cenário, por escolha do
+    usuário. `PlayerSpawn` movido pro pátio da oficina.
+  - **Entregas em casas aleatórias** (pedido do usuário): o comprador fixo saiu de
+    `Town.tscn`. `CityBlocks` registra cada casa no grupo `"delivery_house"`
+    guardando no próprio nó o ponto da calçada em frente (`front_position`) e pra
+    que lado a fachada olha (`front_facing`); o novo autoload
+    `autoload/DeliveryManager.gd` sorteia uma casa (nunca a mesma duas vezes
+    seguidas), instancia o `BuyerNPC` lá e, ao fechar a venda, agenda a próxima.
+    Verificado numericamente que a `CarZone` do NPC cai **na pista** (0.80m do
+    eixo da rua) — ou seja, dá pra encostar o carro de verdade.
+  - **Carros e NPCs andavam de ré**: medido (não chutado) que o `PathFollow3D`
+    aponta o **-Z** do nó no sentido do movimento, e renderizado cada modelo
+    isolado com a câmera no +Z pra confirmar que **todos olham pro +Z**. Daí os
+    180° em `TrafficCar.visual_rotation_y_degrees` e no novo
+    `Pedestrian.visual_rotation_y_degrees`.
+  - **NPCs realistas** (pedido do usuário): pedestres passaram do boneco do Kenney
+    pros `Superhero_Male/Female_FullBody` do Quaternius (1.82m, escala ~1.0) com
+    roupa Peasant e cabelo. Dois bugs reais resolvidos no caminho: (1) o cabelo
+    ficava **flutuando solto acima da cabeça** — ao transplantar uma malha skinada
+    pra outro `Skeleton3D` era preciso **reatribuir o `skin`** depois de trocar o
+    `skeleton`, senão a malha fica parada na pose de descanso; (2) o corpo era
+    encolhido a 0.9 pra caber na roupa, mas o corpo do Quaternius é uma malha
+    única que **inclui a cabeça**, então a cabeça saía visivelmente menor —
+    trocado por corpo 0.97 + roupa inflada 1.05, que é imperceptível na cabeça.
+  - **Animação de caminhada**: a UAL2 gratuita **não tem caminhada normal** (só
+    `Walk_Carry`, de braços carregando algo, e `Zombie_Walk_Fwd`) — era isso que
+    o usuário achou feio. Baixada a **UAL1 Standard** (Quaternius, CC0, via
+    itch.io), que tem `Walk` e `Idle` normais, e **verificado antes de usar** que
+    o esqueleto é idêntico (65 ossos, mesmos nomes) — aplicação direta, sem
+    retargeting.
+  - **Limitação que sobra**: a roupa Peasant é um **colete aberto no peito**, e
+    por baixo está o corpo do super-herói, então aparece o torso nu. Testei
+    encolher/inflar em vários valores (1.035, 1.07, 0.97+1.05) e o vão é idêntico
+    em todos — não é escala, é o desenho da peça. A versão gratuita do pacote não
+    tem outra roupa. Resolver de verdade exige outro pacote de roupa ou fechar o
+    peito no Blender.
+  - **Verificação**: dois scripts headless temporários que instanciam o
+    `Town.tscn` de verdade — um confere densidade, prédio×rua, prédio×prédio e
+    rota×prédio; o outro confere o loop (distância de reboque, casas de entrega,
+    NPC na calçada com a zona do carro na pista). Ambos terminaram em "nenhum
+    problema encontrado" (175 prédios, 62%, 50 agentes, 63 casas de entrega).
+    Dois bugs meus foram pegos por esses scripts e corrigidos: prédios se
+    sobrepondo porque eu posicionava assumindo malha centrada na origem (vários
+    modelos do kit têm a malha deslocada — passei a descontar o offset), e uma
+    perna de rota que eu tinha posto em z=22 pra desviar do comprador, mas 22 não
+    é rua e cortava a quadra. Confirmado visualmente em janela real com
+    `screencapture` a cada etapa. `debug_tmp/` removido no final.
 
 ## Roadmap (fora de escopo desta vertical slice)
 
@@ -733,50 +840,16 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
   diferentes, negociação).
 - Sons, música, efeitos de UI/menu (menu principal e de pause já existem — ver
   changelog 2026-08-02 —, mas ainda sem áudio nenhum no jogo).
-- **NPCs com personagens diferentes de verdade**: `Superhero_Male/Female_FullBody`
-  (Quaternius, CC0, em `assets/quaternius/universal-base-characters/Characters/`)
-  + roupa Peasant (`assets/quaternius/outfits-fantasy/Outfits/`) + cabelo
-  (`assets/quaternius/universal-base-characters/Hairstyles/`) + animação
-  (`UAL2_Standard.glb`, 43 animações na versão free). Retargeting **não é
-  necessário** (mesmo esqueleto de 65 ossos nos 3 pacotes) e `Pedestrian.gd`/
-  `PedestrianRoute.gd` já têm todo o suporte pronto (`character_models`,
-  `outfit_scene`/`outfit_scenes`, `hair_scene`/`hair_scenes`,
-  `idle_anim_scene`/`walk_anim_scene`). O cabelo prende limpo. **O que falta**:
-  a roupa tem um resíduo de clipping (pele nua aparecendo no torso/coxa) porque
-  o corpo base e a roupa foram exportados separadamente com uma diferença sutil
-  de *bind pose* — testei vários valores de `BODY_SHRINK_UNDER_CLOTHES` em
-  `Pedestrian.gd` (0.7 a 0.93) e nenhum resolve 100% sem quebrar outra parte
-  (pescoço, cabeça, pé). Usuário pediu o tutorial de como resolver isso na mão
-  no Blender — ver caixa abaixo. `Pedestrian.gd` continua usando o personagem
-  do Kenney (`characterMedium.fbx`) em `Town.tscn` até esse combinado ficar
-  pronto.
+- **Roupa dos NPCs**: os pedestres já usam os personagens realistas do Quaternius
+  (`Superhero_Male/Female_FullBody` + roupa Peasant + cabelo + animação `Walk`/
+  `Idle` da UAL1) — ver changelog 2026-08-03. O que falta é só a roupa: a peça
+  Peasant é um colete **aberto no peito**, então aparece o torso nu do personagem
+  base por baixo. Não é problema de escala (testado em vários valores, o vão é
+  idêntico), é o desenho da peça, e a versão gratuita do pacote não tem outra
+  roupa. Saídas possíveis: achar outro pacote CC0 de roupa com o mesmo esqueleto
+  de 65 ossos, ou fechar o peito da malha no Blender (ver tutorial na caixa
+  abaixo, que continua válido pra combinar corpo+roupa num arquivo só).
 
-  > #### Tutorial: combinar corpo + roupa no Blender (pendente do usuário)
-  > Arquivos envolvidos (já estão no repo):
-  > - Corpo: `assets/quaternius/universal-base-characters/Characters/Superhero_Male_FullBody.gltf`
-  > - Roupa: `assets/quaternius/outfits-fantasy/Outfits/Male_Peasant.gltf`
-  >
-  > Passo a passo (Blender, gratuito, blender.org):
-  > 1. Cena vazia → `File → Import → glTF 2.0` → importe o `Superhero_Male_FullBody.gltf`.
-  > 2. Importe também o `Male_Peasant.gltf` na mesma cena (fica com 2 Armatures).
-  > 3. Selecione as malhas da roupa (`Male_Peasant_Arms`/`_Body`/`_Feet`/`_Legs`),
-  >    abra o modificador **Armature** de cada uma e troque o "Object" pro
-  >    Armature do **corpo** (não o da roupa).
-  > 4. Delete o Armature duplicado que veio junto da roupa.
-  > 5. Aqui aparece o problema de verdade: se a roupa não encaixar direito na
-  >    pose de descanso do corpo, ajuste manualmente (mover/rotacionar, ou
-  >    "snap" pra mesma posição) até cobrir certinho — deve ser só um pequeno
-  >    offset.
-  > 6. Com tudo encaixado, selecione corpo + roupa (Armature único) →
-  >    `File → Export → glTF 2.0`, exporte como um arquivo novo único (ex:
-  >    `Male_Peasant_Combined.gltf`).
-  > 7. Repetir pra versão Female (`Superhero_Female_FullBody.gltf` +
-  >    `Female_Peasant.gltf`) se quiser os dois sexos.
-  > 8. Assim que tiver o(s) arquivo(s) combinado(s), é só colocar em
-  >    `assets/quaternius/` e pedir pra trocar o `character_model` das rotas de
-  >    pedestre em `Town.tscn` pra apontar direto pra esse combinado — fica bem
-  >    mais simples que o esquema atual de "colar duas malhas em runtime" no
-  >    `Pedestrian.gd`.
 - **Prédios do Quaternius (Downtown City MegaKit)**: usados em `Town.tscn` por um
   tempo (2 dos 3 prédios prontos; `Building_Medium_2_001` tem um bug visual), mas
   retirados do layout ativo no redesenho de 2026-08-02 pra manter um único estilo
@@ -797,4 +870,10 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
 - Se o jogador mirar no corpo do carro (em vez de num ponto de fixação) enquanto ele
   ainda está incompleto, o prompt volta a mostrar "Rebocar [E]" mesmo já estando na
   oficina — inofensivo, só reengancha o TowHook.
-- Só existe um comprador (BuyerNPC) e uma rota fixa de potholes na Town.tscn.
+- As entregas já são em casas sorteadas da cidade (ver 2026-08-03), mas o NPC de
+  entrega é sempre o mesmo modelo/personalidade — não há variação de cliente nem
+  negociação (ver Roadmap).
+- Os buracos (`Pothole*`) e poças de lama continuam em 4 pontos fixos da grade, em
+  vez de espalhados/procedurais.
+- A roupa dos pedestres deixa o peito à mostra (colete aberto do pacote gratuito,
+  ver Roadmap "Roupa dos NPCs").

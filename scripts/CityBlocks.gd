@@ -20,6 +20,11 @@ const CITY_BUILDING_SCENE := preload("res://scenes/world/CityBuilding.tscn")
 ## borda antes de desistir e deixar o resto vazio.
 const FIT_ATTEMPTS := 12
 
+## Distancia da fachada ate o ponto de entrega. Cai na calcada (que vai de
+## 2.4 a 3.6 da linha de centro da rua, com a fachada em road_clearance),
+## entao o NPC fica na frente da casa e o carro encosta na pista.
+const FRONT_YARD_OFFSET := 1.1
+
 ## Cache de AABB por cena: medir instanciando e descartando e caro, entao
 ## cada modelo so e medido uma vez (mesmo padrao do cache estatico de
 ## animacoes em Pedestrian.gd).
@@ -40,6 +45,22 @@ static var _footprint_cache: Dictionary = {}
 @export var commercial_scenes: Array[PackedScene] = []
 @export var house_scenes: Array[PackedScene] = []
 @export var industrial_scenes: Array[PackedScene] = []
+
+## Tons de fachada sorteados por predio. Ficam perto do branco de proposito:
+## sao multiplicados por cima da textura do kit, entao valores muito saturados
+## deixariam a cidade com cara de desenho de novo.
+@export var facade_colors: Array[Color] = [
+	Color(1.0, 0.97, 0.92),    # creme
+	Color(0.93, 0.88, 0.80),   # areia
+	Color(0.87, 0.80, 0.74),   # bege escuro
+	Color(0.80, 0.66, 0.58),   # terracota claro
+	Color(0.72, 0.55, 0.48),   # tijolo desbotado
+	Color(0.82, 0.84, 0.86),   # cinza claro
+	Color(0.68, 0.72, 0.76),   # cinza azulado
+	Color(0.74, 0.79, 0.74),   # verde acinzentado
+	Color(0.86, 0.83, 0.70),   # amarelo palha
+	Color(0.62, 0.64, 0.70),   # chumbo
+]
 
 @export var exclude_points: Array[Vector3] = []
 @export var exclude_radius := 12.0
@@ -129,15 +150,31 @@ func _fill_edge(pool: Array, run_min: float, run_max: float, edge_coord: float, 
 		else:
 			pos = Vector3(edge_coord + inward, 0.0, along)
 
+		# Centro geometrico do lote, antes de descontar o offset da malha: e
+		# dele que sai o ponto de entrega na calcada (ver _register_house).
+		var slot_pos := pos
 		# Desconta o deslocamento da malha, pra caixa real cair onde foi planejado.
 		var off := _center_offset(scene, rot_deg)
 		pos -= Vector3(off.x, 0.0, off.y)
 
 		if not _is_excluded(pos):
-			_place(scene, pos, rot_deg)
+			var body := _place(scene, pos, rot_deg)
+			if body != null and scene in house_scenes:
+				_register_house(body, slot_pos, rot_deg, depth)
 			max_depth = maxf(max_depth, depth)
 		cursor += width + lot_gap
 	return max_depth
+
+## Marca a casa como destino possivel de entrega e guarda, no proprio no, o
+## ponto da calcada bem na frente dela e pra que lado ela olha. O
+## DeliveryManager sorteia uma dessas casas a cada venda.
+func _register_house(body: Node3D, slot_pos: Vector3, rot_deg: float, depth: float) -> void:
+	var dir := Vector3(0.0, 0.0, -1.0).rotated(Vector3.UP, deg_to_rad(rot_deg))
+	var front := slot_pos + dir * (depth * 0.5 + FRONT_YARD_OFFSET)
+	front.y = 0.0
+	body.add_to_group("delivery_house")
+	body.set_meta("front_position", front)
+	body.set_meta("front_facing", dir)
 
 ## Rotacao pra fachada olhar pra rua. As fachadas do kit olham pro -Z quando
 ## nao rotacionadas, entao a borda "sul" (menor Z) e a referencia de 0 grau.
@@ -207,13 +244,37 @@ func _is_excluded(pos: Vector3) -> bool:
 			return true
 	return false
 
-func _place(scene: PackedScene, pos: Vector3, rot_deg: float) -> void:
+func _place(scene: PackedScene, pos: Vector3, rot_deg: float) -> Node3D:
 	var body := CITY_BUILDING_SCENE.instantiate()
 	body.visual_scene = scene
 	body.visual_scale = building_scale
 	body.visual_rotation_y_degrees = rot_deg
 	add_child(body)
 	body.position = pos
+	_tint(body)
+	return body
+
+## Todos os predios do kit dividem um unico atlas de textura, entao sem isso a
+## cidade inteira fica da mesma cor. albedo_color multiplica a textura, entao
+## um tom por predio da variedade de fachada sem perder o desenho das janelas.
+func _tint(body: Node3D) -> void:
+	if facade_colors.is_empty():
+		return
+	var color: Color = facade_colors[_rng.randi() % facade_colors.size()]
+	for mesh_inst in _all_mesh_instances(body):
+		for surface in range(mesh_inst.get_surface_override_material_count()):
+			var base: Material = mesh_inst.mesh.surface_get_material(surface)
+			var mat: StandardMaterial3D = base.duplicate() if base is StandardMaterial3D else StandardMaterial3D.new()
+			mat.albedo_color = color
+			mesh_inst.set_surface_override_material(surface, mat)
+
+func _all_mesh_instances(node: Node) -> Array[MeshInstance3D]:
+	var result: Array[MeshInstance3D] = []
+	if node is MeshInstance3D and node.mesh:
+		result.append(node)
+	for child in node.get_children():
+		result.append_array(_all_mesh_instances(child))
+	return result
 
 func _compute_local_aabb(node: Node, accum: Transform3D) -> AABB:
 	var t := accum
