@@ -60,6 +60,16 @@ extends Node3D
 ## CitySurface.gd). Chave pra dar pra comparar os dois lado a lado.
 @export var use_pbr_surface := true
 @export var asphalt_texture_size := 5.0
+## Altura do TOPO do asfalto. O tile do kit e uma laje: com o no em y=0.03 e
+## escala 7.5 o topo ficava em 0.18, ou seja 18cm ACIMA do chao fisico (o
+## Ground vai ate y=0). Carro nenhum sobe nisso — eles apoiam no chao fisico e
+## apareciam afundados na rua. Aqui o tile e baixado pelo proprio topo medido,
+## entao o asfalto encosta no chao e a calcada (0.18) volta a ser um degrau de
+## verdade, como o projeto sempre quis.
+@export var road_surface_y := 0.02
+
+## Altura da PISTA de cada tile em unidades locais, medida uma vez por modelo.
+var _road_surface_local: Dictionary = {}
 
 var _curb_mesh: BoxMesh
 var _curb_corner_mesh: BoxMesh
@@ -194,7 +204,14 @@ func _place(scene: PackedScene, pos: Vector3, rot_y_deg: float, custom_scale := 
 	var inst := scene.instantiate()
 	add_child(inst)
 	if inst is Node3D:
-		inst.scale = Vector3.ONE * (custom_scale if custom_scale > 0.0 else tile_size)
+		var node_scale: float = custom_scale if custom_scale > 0.0 else tile_size
+		# A MEDIDA VEM ANTES DA ESCALA: _local_aabb ja aplica a transformada do
+		# proprio no, entao medir depois de escalar devolve o topo JA escalado —
+		# multiplicar por node_scale de novo elevava o desconto ao quadrado e
+		# enterrava a rua inteira 1,1m no chao (a cidade ficou sem asfalto).
+		if scene.resource_path.contains("/road-"):
+			pos.y = road_surface_y - _tile_surface_local(scene, inst) * node_scale
+		inst.scale = Vector3.ONE * node_scale
 		inst.position = pos
 		inst.rotation_degrees.y = rot_y_deg
 		# So o asfalto: o poste de luz e outra coisa e ficaria com grao de rua.
@@ -202,6 +219,64 @@ func _place(scene: PackedScene, pos: Vector3, rot_y_deg: float, custom_scale := 
 			# O triplanar amostra por POSICAO DE MUNDO, entao o tamanho da
 			# textura independe da escala do no — nao ha o que compensar aqui.
 			CitySurface.apply(inst, Color.WHITE, "asfalto", asphalt_texture_size, 0.7, 0.5)
+
+## Altura da PISTA do tile, em unidades locais.
+##
+## NAO e o topo da caixa: o kit e de RODOVIA, e o ponto mais alto do tile e o
+## acostamento levantado da borda (medido no road-straight: 24 vertices em
+## y=0.020 contra 36 em y=0.010). Alinhar pelo topo enterrava a pista de
+## verdade abaixo do chao e a cidade ficava com rua de grama, sobrando so as
+## bordas aparecendo.
+##
+## A pista e o plano horizontal com MAIS vertices — o unico que cobre o tile
+## inteiro.
+func _tile_surface_local(scene: PackedScene, inst: Node3D) -> float:
+	var key := scene.resource_path
+	if _road_surface_local.has(key):
+		return _road_surface_local[key]
+	var histogram := {}
+	_collect_heights(inst, Transform3D.IDENTITY, histogram)
+	var best := 0.0
+	var best_count := -1
+	for y: float in histogram:
+		if int(histogram[y]) > best_count:
+			best_count = histogram[y]
+			best = y
+	_road_surface_local[key] = best
+	return best
+
+func _collect_heights(node: Node, accum: Transform3D, histogram: Dictionary) -> void:
+	var t := accum
+	if node is Node3D:
+		t = accum * (node as Node3D).transform
+	if node is MeshInstance3D and (node as MeshInstance3D).mesh:
+		var mesh: Mesh = (node as MeshInstance3D).mesh
+		for s in range(mesh.get_surface_count()):
+			var verts: PackedVector3Array = mesh.surface_get_arrays(s)[Mesh.ARRAY_VERTEX]
+			for v in verts:
+				var y := snappedf((t * v).y, 0.002)
+				histogram[y] = int(histogram.get(y, 0)) + 1
+	for child in node.get_children():
+		_collect_heights(child, t, histogram)
+
+func _local_aabb(node: Node, accum: Transform3D) -> AABB:
+	var t := accum
+	if node is Node3D:
+		t = accum * (node as Node3D).transform
+	var result := AABB()
+	var has := false
+	if node is MeshInstance3D and (node as MeshInstance3D).mesh:
+		result = t * (node as MeshInstance3D).get_aabb()
+		has = true
+	for child in node.get_children():
+		var c := _local_aabb(child, t)
+		if c.size != Vector3.ZERO:
+			if not has:
+				result = c
+				has = true
+			else:
+				result = result.merge(c)
+	return result
 
 func _is_excluded(pos: Vector3) -> bool:
 	for excl in exclude_points:

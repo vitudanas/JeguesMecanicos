@@ -205,7 +205,10 @@ scripts/                Interactable.gd, TowHook.gd, PersuasionMinigame.gd, Poth
                         CitySurface.gd (monta o material das superficies da cidade)
 scenes/main/            Main.tscn — cena de entrada (Town + Player + HUD + RainFX)
 scenes/player/          Player.tscn/gd — controller 1ª pessoa
-scenes/vehicle/         Vehicle.tscn/gd, AttachSpot.gd, GambiarraPart.gd, parts/*.tscn
+scenes/vehicle/         Vehicle.tscn/gd (carro real + suspensao por raycast),
+                        AttachSpot.gd, GambiarraPart.gd, parts/*.tscn
+tools/verify/           city.tscn e drive_test.tscn — verificacao automatizada
+                        (fora do build, ver tools/verify/README.md)
 scenes/world/           Town.tscn (cidade + anel rural, tudo num só mundo sandbox),
                         Junkyard.tscn, Workshop.tscn, MudZone.tscn/gd, RainFX.tscn/gd,
                         CityBuilding.tscn (prédio genérico com colisão automática),
@@ -1201,15 +1204,84 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     referências `res://` do jogo estão no `.pck` e que as 4 pastas de origem
     continuam fora. macOS 127MB, Windows 179MB. `debug_tmp/` removido.
 
+- **2026-08-03** — Usuário pediu carro de verdade pra fazer as gambiarras, um
+  sistema de dirigir, e apontou que os **carros de NPC estavam flutuando**.
+  - **Carros de IA flutuando — medido, não estimado**: os pontos das rotas
+    estavam em `y=0.4`, herança do Car Kit do Kenney (origem no meio da
+    carroceria). Os modelos do Quaternius têm a origem na **base** (base
+    `y ≈ 0`, medido nos 7), então os 42 carros pairavam **0,4 m** no ar. Os
+    pedestres tinham o problema inverso: rota em `y=0.1` com a calçada em
+    0.18, ou seja o pé **enterrado 8 cm**.
+  - **A rua estava 18 cm acima do chão físico.** Investigando o item acima,
+    medi que o tile de asfalto é uma *laje*: com o nó em `y=0.03` e escala
+    7.5, o topo ficava em 0.18 — mas a colisão do mundo é o `Ground`, que
+    termina em `y=0`. Ou seja: **todo carro apoiava 18 cm abaixo da rua que
+    aparecia na tela**. Com o carro de caixa não dava pra notar; com rodas de
+    verdade seria gritante. `CityStreets` passou a baixar cada tile pelo
+    próprio topo medido (`road_surface_y`), e a calçada em 0.18 virou um
+    **degrau de verdade** — que é o que o projeto sempre quis ("o carro sobe
+    nela e sacode a gambiarra") e nunca teve.
+  - **Carro de verdade** (`scripts/CarRig.gd`): o `car-a.glb` do Quaternius
+    substitui a caixa vermelha. O rig acha as rodas pelo nome (os 7 modelos do
+    pacote usam o mesmo padrão, conferido um a um), cria um **pivô no centro
+    medido de cada roda** e move a malha pra dentro dele — sem isso girar o nó
+    giraria a roda em torno da origem do carro e ela sairia orbitando. As
+    dianteiras esterçam, todas rolam junto com a velocidade.
+  - **Nada de coordenada na mão**: o rig publica eixos, bitola, raio de roda e
+    caixa da carroceria, e o `Vehicle` posiciona a partir daí a colisão, os 4
+    raycasts de suspensão, os 4 pontos de gambiarra e a câmera. Trocar o
+    modelo do carro por outro do pacote não exige reposicionar nada.
+  - **A suspensão nunca sustentou o carro.** `suspension_strength` era 140, o
+    que dá 14 N por 10 cm de compressão contra **17.100 N** de peso (950 kg
+    com a gravidade 18 do projeto). Na prática o carro deslizava apoiado na
+    caixa de colisão e o atrito da barriga era maior que a força do motor.
+    Agora a rigidez sai da conta de equilíbrio (peso ÷ compressão desejada),
+    então continua certa se a massa mudar.
+  - **Erros meus, cada um pego por medição**:
+    1. *Álgebra da suspensão*: usei a mesma altura como origem do raio E como
+       comprimento livre da mola — a compressão dava **zero** parado e o carro
+       não saía do lugar.
+    2. *Amortecedor com o sinal trocado* (já estava assim antes): virava
+       amortecedor **negativo**, bombeava energia a cada quique e o carro se
+       atirava sozinho pro ar (a compressão ia de 0.04 pra 0.34 em 1 s).
+    3. *`can_sleep`*: o Godot adormece o RigidBody quando a velocidade cai, e
+       `apply_force` **não acorda** — o carro parava de responder ao
+       acelerador depois de qualquer paradinha.
+    4. *Medir depois de escalar*: `_local_aabb` já aplica a transformada do
+       próprio nó, então medir o tile depois de escalar devolvia o topo já
+       escalado; multiplicar de novo elevou o desconto ao quadrado e
+       **enterrou a rua inteira 1,1 m** — a cidade ficou com rua de grama.
+    5. *Alinhar pelo topo da caixa*: o kit é de **rodovia**, e o ponto mais
+       alto do tile é o **acostamento levantado da borda** (medido: 24
+       vértices em `y=0.020` contra 36 em `y=0.010`). Alinhar por ele enterrou
+       a pista de novo. Agora alinha pelo plano horizontal com mais vértices.
+    6. *Teste com o carro atravessado na rua*: o banco de provas punha o carro
+       perpendicular à pista e ele batia no meio-fio a 4 m — a "velocidade
+       final" saía 13 km/h.
+  - **Banco de provas** (`tools/verify/drive_test.tscn`): como não dá pra
+    apertar tecla numa sessão automatizada, o teste roda o `Vehicle` com o
+    `_physics_process` **desligado** e injeta throttle/steer chamando o mesmo
+    `_apply_suspension_and_drive` do jogo — testa o caminho real, não uma
+    cópia. Resultado: repouso com 4 rodas no chão, **0-50 km/h em 2,2 s**,
+    final **76 km/h**, 131° de curva em 3 s sem capotar, freada de 20,5 m/s em
+    **10,8 m**, ré funcionando e o carro sucateado ainda rebocável a pé.
+  - **Verificação persistida** (`tools/verify/`, fora do build): o verificador
+    da cidade já tinha sido recriado do zero duas vezes porque morava no
+    `debug_tmp/`, que é apagado antes de cada export. Agora mora no repo e
+    ganhou checagem de **altura** (carro de IA no asfalto, pedestre na
+    calçada) e do topo real do asfalto — as duas coisas que quebraram nesta
+    rodada.
+
 ### Pendências pedidas e ainda NÃO feitas
 
 Nenhuma das três pendências anteriores continua aberta. O que sobrou de
 observação pra uma próxima rodada (nada disso foi pedido):
 
 1. **Fluxo completo do jogo não foi jogado nesta sessão** — a verificação é
-   geométrica e por render, não por input. Vale dirigir de verdade uma vez:
-   rebocar do ferro-velho até a oficina (38m ao norte), sair pela estrada
-   oeste e entrar na cidade, e fechar uma entrega.
+   geométrica, por render e por banco de provas de física, não por input de
+   teclado. Vale dirigir de verdade uma vez: rebocar do ferro-velho até a
+   oficina (38m ao norte), sair pela estrada oeste e entrar na cidade, e
+   fechar uma entrega.
 2. **Telhado verde do kit suburbano** ainda puxa pro menta. O shader já
    dessatura verde puro (`green_tame`), mas a cor vive dentro do atlas.
 3. **Câmera 04 do roteiro de fotos** ficava em (30, 2.2, 30), que com a grade

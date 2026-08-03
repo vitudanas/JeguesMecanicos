@@ -10,14 +10,6 @@
 [sub_resource type="BoxShape3D" id="BodyShape"]
 size = Vector3(1.8, 1.0, 4.0)
 
-[sub_resource type="BoxMesh" id="BodyMesh"]
-size = Vector3(1.8, 1.0, 4.0)
-
-[sub_resource type="StandardMaterial3D" id="BodyMat"]
-albedo_color = Color(0.75, 0.25, 0.15, 1)
-metallic = 0.2
-roughness = 0.5
-
 [sub_resource type="SphereShape3D" id="AttachShape"]
 radius = 0.3
 
@@ -71,11 +63,6 @@ color = Color(0.3, 0.3, 0.3, 0.55)
 mass = 950.0
 script = ExtResource("1")
 is_wrecked = true
-
-[node name="Body" type="MeshInstance3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
-mesh = SubResource("BodyMesh")
-surface_material_override/0 = SubResource("BodyMat")
 
 [node name="CollisionShape3D" type="CollisionShape3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
