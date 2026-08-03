@@ -68,20 +68,29 @@ local hard-coded sempre que possível.
 
 ## Sistemas de Mundo Aberto
 
-- **Assets externos**: baixamos 4 pacotes CC0 (domínio público, sem exigir atribuição)
-  do [Kenney.nl](https://kenney.nl), extraídos em `assets/kenney/`:
-  - [City Kit (Roads)](https://kenney.nl/assets/city-kit-roads) e
-    [City Kit (Commercial)](https://kenney.nl/assets/city-kit-commercial) — ruas e
-    prédios; malha viária gerada por `scripts/CityStreets.gd` e os 16 prédios de
-    `Town.tscn` vêm exclusivamente desse pacote (ver changelog 2026-08-02 "redesenho
-    completo do mapa" — um único kit visual, de propósito, pra manter tudo com a
-    mesma linguagem visual).
-  - [Car Kit](https://kenney.nl/assets/car-kit) — usamos `sedan.glb`, `taxi.glb` e
-    `van.glb` (formato GLB) como visual dos carros de tráfego.
-  - [Mini Characters](https://kenney.nl/assets/mini-characters) — usamos
-    `character-male-a/c.glb` e `character-female-a/c.glb` como visual dos pedestres.
-  - `export_presets.cfg` tem um `exclude_filter` cortando os formatos FBX/OBJ e
-    previews/docs de cada pacote (só o GLB + texturas usados vão pro build final).
+- **Assets externos** (todos CC0, domínio público, sem exigir atribuição):
+  - **Cidade — só Kenney**, de propósito, pra tudo falar a mesma língua visual
+    (ver changelog 2026-08-02 "redesenho completo do mapa"):
+    [City Kit Roads](https://kenney.nl/assets/city-kit-roads) (malha viária, gerada
+    por `scripts/CityStreets.gd`),
+    [Commercial](https://kenney.nl/assets/city-kit-commercial),
+    [Suburban](https://kenney.nl/assets/city-kit-suburban) (casas) e
+    [Industrial](https://kenney.nl/assets/city-kit-industrial) (galpões) — os ~175
+    prédios são posicionados por `scripts/CityBlocks.gd`, não à mão.
+  - **Campo — só Quaternius**, mesma lógica de manter um estilo por bioma:
+    farm-buildings e nature-megakit (via [poly.pizza](https://poly.pizza)).
+  - **Carros**: Quaternius Cars Bundle — escolhidos por já virem em escala real
+    (4.22m, proporção 2.34:1); o Car Kit do Kenney tinha proporção de brinquedo
+    (2.55m, 1.7:1) e saiu de uso (ver changelog 2026-08-03).
+  - **NPCs**: `assets/quaternius/characters-dressed/*.glb` — corpo + roupa + cabelo
+    já combinados por `tools/build_characters.py` (Blender headless). Animação
+    `Walk`/`Idle` da Universal Animation Library **1** (a 2 não tem caminhada
+    normal na versão gratuita).
+  - `export_presets.cfg` tem um `exclude_filter` cortando FBX/OBJ/previews dos kits
+    Kenney e as 4 pastas de origem que só o script do Blender usa — sem isso o
+    build carregava ~145MB de assets que o jogo nem abre. **Cuidado ao mexer**: um
+    filtro amplo demais já cortou uma textura e quebrou o jogo inteiro (changelog
+    2026-08-02); sempre confira o `.pck` exportado depois.
 - **Tráfego de IA** (`scenes/traffic/`): `TrafficCar.gd` é um `RigidBody3D`
   "congelado" (`freeze = true` + `FREEZE_MODE_KINEMATIC`, o mesmo truque de
   `GambiarraPart.gd`) que fica filho de um `PathFollow3D`; a cada frame só faz
@@ -104,7 +113,8 @@ local hard-coded sempre que possível.
   na lama o carro derrapa nas curvas e acelera pior.
 - **Pedestres com ragdoll** (`scenes/npc/Pedestrian.gd` + `PedestrianRoute.gd`): mesmo
   esquema do tráfego (filho de `PathFollow3D`, congelado/kinematic andando pela
-  calçada), com visual do Kenney Mini Characters. `contact_monitor` ligado: ao detectar
+  calçada), com os personagens de `assets/quaternius/characters-dressed/`.
+  `contact_monitor` ligado: ao detectar
   `body_entered` com velocidade de impacto acima de `ragdoll_impact_threshold` (carro do
   jogador, carro de tráfego ou destroço de gambiarra voando — qualquer `RigidBody3D`
   rápido o suficiente), o pedestre descongela (`freeze = false`), leva um impulso na
@@ -123,15 +133,28 @@ local hard-coded sempre que possível.
   registrados no grupo via `Town.gd:_register_event_spawn_points()`. Limite de
   `max_concurrent_events` carros extras simultâneos (filtra instâncias já destruídas/
   vendidas a cada spawn) pra não lotar o mapa.
-- **Grade de quarteirões** (`Town.tscn`, prédios `Building1`-`Building16`): os 16
-  prédios ficam exatamente no centro dos 16 quarteirões formados pela grade de
-  `CityStreets` (ruas em -50/-25/0/25/50 nos dois eixos → quarteirões de 25×25,
-  centros em ±12.5/±37.5), com rotação sempre múltipla de 90° e gradiente de altura
-  (skyscrapers nos 4 quarteirões "centrais" perto da oficina, prédios médios no anel
-  seguinte, `low-detail-building-*` — de propósito, são as variantes do Kenney
-  pensadas pra silhueta de fundo — nos 4 cantos mais distantes). Todos do mesmo pacote
-  (`city-kit-commercial`), sem repetir modelo. Ver changelog 2026-08-02 "redesenho
-  completo do mapa" pra detalhes/decisões e o processo de verificação.
+- **Quarteirões** (`scripts/CityBlocks.gd`): os ~175 prédios **não existem como nós
+  em `Town.tscn`** — são gerados em runtime. Pra cada quarteirão da grade de
+  `CityStreets` (ruas a cada 25 de -75 a 75 → 36 quarteirões), o script percorre as
+  4 bordas enfileirando prédios encostados na calçada e virados pra rua, medindo a
+  largura real de cada modelo pra saber quanto avançar (mesma técnica de "andar ao
+  longo de um trecho" de `CityStreets.gd`). Detalhes que valem saber antes de mexer:
+  - **Escala 6.0 é o módulo nativo do kit** (o tile de rua mede 1.0 e `tile_size`
+    é 6.0), então tudo encaixa na mesma grade. Mudar isso desalinha a cidade.
+  - Vários modelos do kit têm a **malha deslocada da origem do nó** — o script
+    desconta esse offset (`_center_offset`), senão os prédios se sobrepõem.
+  - Nenhum prédio pode passar da metade do quarteirão (`depth_budget`), senão duas
+    bordas opostas se encontram no meio.
+  - Zoneamento por distância do centro (Chebyshev): arranha-céus no miolo,
+    comércio no anel do meio, casas e galpões na periferia.
+  - Cada fachada recebe um `albedo_color` sorteado (`_tint`), porque todos os
+    prédios dividem um atlas de textura só e a cidade sairia toda da mesma cor.
+  - As casas geradas entram no grupo `"delivery_house"` guardando o ponto da
+    calçada em frente — é daí que `DeliveryManager` sorteia a entrega.
+- **Entregas** (`autoload/DeliveryManager.gd`): não há comprador fixo. A cada venda
+  sorteia uma casa (nunca a mesma duas seguidas), instancia o `BuyerNPC` na calçada
+  em frente virado pra rua, e a `CarZone` dele cai na pista pro jogador encostar o
+  carro. Ao fechar a venda, agenda a próxima.
 
 ## Controles (vertical slice atual)
 
