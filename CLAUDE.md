@@ -72,8 +72,10 @@ local hard-coded sempre que possível.
   do [Kenney.nl](https://kenney.nl), extraídos em `assets/kenney/`:
   - [City Kit (Roads)](https://kenney.nl/assets/city-kit-roads) e
     [City Kit (Commercial)](https://kenney.nl/assets/city-kit-commercial) — ruas e
-    prédios; baixados mas **ainda não usados** em `Town.tscn` (reconstrução da cidade
-    fica pra próxima rodada, ver Roadmap).
+    prédios; malha viária gerada por `scripts/CityStreets.gd` e os 16 prédios de
+    `Town.tscn` vêm exclusivamente desse pacote (ver changelog 2026-08-02 "redesenho
+    completo do mapa" — um único kit visual, de propósito, pra manter tudo com a
+    mesma linguagem visual).
   - [Car Kit](https://kenney.nl/assets/car-kit) — usamos `sedan.glb`, `taxi.glb` e
     `van.glb` (formato GLB) como visual dos carros de tráfego.
   - [Mini Characters](https://kenney.nl/assets/mini-characters) — usamos
@@ -121,6 +123,15 @@ local hard-coded sempre que possível.
   registrados no grupo via `Town.gd:_register_event_spawn_points()`. Limite de
   `max_concurrent_events` carros extras simultâneos (filtra instâncias já destruídas/
   vendidas a cada spawn) pra não lotar o mapa.
+- **Grade de quarteirões** (`Town.tscn`, prédios `Building1`-`Building16`): os 16
+  prédios ficam exatamente no centro dos 16 quarteirões formados pela grade de
+  `CityStreets` (ruas em -50/-25/0/25/50 nos dois eixos → quarteirões de 25×25,
+  centros em ±12.5/±37.5), com rotação sempre múltipla de 90° e gradiente de altura
+  (skyscrapers nos 4 quarteirões "centrais" perto da oficina, prédios médios no anel
+  seguinte, `low-detail-building-*` — de propósito, são as variantes do Kenney
+  pensadas pra silhueta de fundo — nos 4 cantos mais distantes). Todos do mesmo pacote
+  (`city-kit-commercial`), sem repetir modelo. Ver changelog 2026-08-02 "redesenho
+  completo do mapa" pra detalhes/decisões e o processo de verificação.
 
 ## Controles (vertical slice atual)
 
@@ -524,6 +535,63 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
   personagem do Kenney nos pedestres; fica pra decidir se o resultado atual
   (com o resíduo de clipping) já é bom o suficiente pra usar, ou se vale
   investir em Blender/outra fonte de assets.
+- **2026-08-02** — Usuário pediu pra refazer o mapa inteiro da cidade "deixando tudo
+  harmonioso". Antes de mexer, levantei o que estava de fato desarmônico em
+  `Town.tscn`: (1) os 14 prédios ficavam em coordenadas arbitrárias sem relação
+  nenhuma com a grade de ruas (alguns, tipo `Building1` em `x=-85`, caíam bem fora da
+  área coberta pelas ruas) e com rotações aleatórias (30°, 250°, 330° etc.) — nenhum
+  alinhamento com os quarteirões; (2) o estilo visual misturava Kenney
+  (`city-kit-commercial`, low-poly simples) com Quaternius (`downtown-city-megakit`,
+  fachada de tijolo/vidro mais detalhada — os dois lados a lado destoavam); (3)
+  sobrava `RoadTile1-3`/`RoadCrossroad1`/`StreetLight1-3`, uma rua diagonal manual
+  montada à mão *antes* de `CityStreets.gd` existir, desconectada da grade
+  procedural nova; (4) `CityStreets` tinha um trecho diagonal de teste
+  (`diagonal_starts`/`diagonal_ends`) que não levava a lugar nenhum, órfão dentro de
+  um quarteirão vazio; (5) as rotas de tráfego/pedestre e os buracos/poças de lama
+  também não tinham relação com as ruas de verdade da grade.
+  - **Prédios**: padronizei os 16 prédios em cima de um único pacote
+    (`city-kit-commercial` do Kenney, 16 variantes sem repetir nenhuma) — decisão de
+    propósito pra eliminar o choque de estilo com o Quaternius (os 4 prédios
+    Quaternius saíram do layout ativo; os assets continuam no repo, só não são mais
+    instanciados em `Town.tscn`). Medi a AABB real de cada modelo candidato (script
+    headless temporário em `debug_tmp/`, apagado depois) pra calibrar escala por
+    prédio e calcular a margem livre até o meio-fio. Reposicionei os 16 prédios
+    exatamente no centro dos 16 quarteirões da grade 5×5 de `CityStreets`
+    (quarteirões de 25×25, centros em ±12.5/±37.5), com rotação sempre múltipla de
+    90° em vez de graus arbitrários, e um gradiente de altura: skyscrapers nos 4
+    quarteirões centrais (perto da oficina), prédios médios no anel seguinte,
+    `low-detail-building-*` (as variantes que o próprio Kenney já pensa pra silhueta
+    de fundo) nos 4 cantos mais distantes — dá uma leitura de "centro/downtown"
+    natural sem precisar inventar zoneamento.
+  - **Rede viária legada**: removi `RoadTile1-3`, `RoadCrossroad1` e `StreetLight1-3`
+    (o crossroad manual que ficava bem em cima da praça da oficina) e o
+    `diagonal_starts`/`diagonal_ends` de teste em `CityStreets` — a praça da oficina
+    fica sem tile de rua (só chão), igual já acontecia com o ferro-velho e o
+    comprador (mesma lógica de `exclude_radius`), então os 3 marcos passaram a se
+    comportar de forma consistente entre si.
+  - **Rotas/buracos/lama/eventos**: as duas `TrafficRoute` e as duas `PedestrianRoute`
+    tiveram os pontos ajustados pra não cruzar os prédios novos (achei e corrigi via
+    script, ver abaixo, um caso real: o laço de tráfego do ferro-velho cortava o
+    canto do novo `Building1`). Os 4 pares de buraco+poça de lama saíram da diagonal
+    removida e foram pro cima de ruas de verdade da grade (coordenada X ou Z igual à
+    da rua, garantindo por construção que a poça — raio 2.3 — cabe dentro da pista
+    pavimentada — meia-largura 2.4 — sem cortar o meio-fio). Os 4
+    `EventSpawnPoint*` saíram de perto do meio dos quarteirões (onde cairiam dentro
+    dos prédios novos) pra cruzamentos reais da grade, sempre livres por construção.
+  - **Verificação**: escrevi um script headless (`debug_tmp/verify_town.gd`, também
+    apagado depois) que instancia o `Town.tscn` de verdade, lê a `CollisionShape3D`
+    real que `AutoCollisionBody` gera pra cada prédio (não uma estimativa manual) e
+    confere sobreposição predio×prédio, prédio×landmark, prédio×rota e
+    spawn×prédio. Rodei, achei o conflito do `Building1` citado acima, corrigi a
+    rota e rodei de novo até "nenhum problema encontrado". Também rodei o projeto
+    headless inteiro (`Main.tscn`) antes e depois, zero erros/warnings nos dois
+    casos. Por fim confirmei visualmente com o jogo de verdade em janela real (não
+    headless) — uma cena de debug temporária só com uma câmera aérea sobre o
+    `Town.tscn`, apagada depois — e `screencapture` do macOS em três ângulos: vista
+    de cima (grade inteira, os 16 quarteirões visivelmente organizados), vista
+    oblíqua sobre a praça da oficina (4 skyscrapers, pedestres, sinalização, meio-fio
+    e postes todos coerentes) e vista no nível do jogador numa rua (prédios na
+    escala certa, sem T-pose, sem clipping). `debug_tmp/` inteiro removido no final.
 
 ## Roadmap (fora de escopo desta vertical slice)
 
@@ -532,12 +600,13 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
   implementada.
 - **Malha viária — polimento restante**: as pontas das ruas já têm acabamento
   arredondado, postes de luz, meio-fio/calçada elevada de verdade (com colisão própria,
-  já fechando nos 4 cantos de cada cruzamento) e um exemplo de trecho diagonal fora da
-  grade ortogonal (ver changelog 2026-08-02, `CityStreets.gd`). Ainda falta: não existe
-  peça de cruzamento diagonal-com-ortogonal — o trecho diagonal atual só funciona por
-  caber inteiro dentro de um quarteirão vazio, sem cruzar nenhuma rua da grade; pra
-  virar uma avenida diagonal de verdade cortando o mapa (tipo Broadway em Manhattan)
-  precisaria resolver esses cruzamentos em ângulo, o que não foi tentado ainda.
+  já fechando nos 4 cantos de cada cruzamento) — ver `CityStreets.gd`. O suporte a
+  trecho diagonal (`diagonal_starts`/`diagonal_ends`) continua no script, mas o
+  exemplo de teste foi removido de `Town.tscn` no redesenho de 2026-08-02 (ficava
+  órfão, sem conectar em nada — ver changelog). Ainda falta: não existe peça de
+  cruzamento diagonal-com-ortogonal no kit do Kenney; uma avenida diagonal de
+  verdade cortando o mapa (tipo Broadway em Manhattan) precisaria resolver esses
+  cruzamentos em ângulo, o que não foi tentado.
 - Sistema de crafting mais rico (mais tipos de gambiarra, escolha de item por
   inventário em vez de item fixo por ponto de fixação).
 - Economia mais profunda (preços variáveis, múltiplos compradores com personalidades
@@ -588,11 +657,17 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
   >    pedestre em `Town.tscn` pra apontar direto pra esse combinado — fica bem
   >    mais simples que o esquema atual de "colar duas malhas em runtime" no
   >    `Pedestrian.gd`.
-- **Mais prédios prontos do Quaternius**: só 2 dos 3 prédios prontos do Downtown
-  City MegaKit foram usados (`Building_Medium_2_001` tem um bug visual, ver
-  changelog 2026-08-02). O pacote também trouxe ~150 peças modulares soltas
-  (tijolos, cornijas, janelas, sacadas) que dariam pra montar fachadas customizadas
-  à mão — não tentado ainda, é um trabalho de "level design" separado.
+- **Prédios do Quaternius (Downtown City MegaKit)**: usados em `Town.tscn` por um
+  tempo (2 dos 3 prédios prontos; `Building_Medium_2_001` tem um bug visual), mas
+  retirados do layout ativo no redesenho de 2026-08-02 pra manter um único estilo
+  visual coerente (ver changelog) — o choque com o low-poly do Kenney era exatamente
+  um dos problemas de "desarmonia" apontados. Os assets continuam no repo
+  (`assets/quaternius/downtown-city-megakit/`), então voltar a usá-los é só trocar
+  `visual_scene` de novo, se um dia quisermos um quarteirão deliberadamente
+  diferente (tipo um "centro histórico" x "downtown moderno"). O pacote também
+  trouxe ~150 peças modulares soltas (tijolos, cornijas, janelas, sacadas) que
+  dariam pra montar fachadas customizadas à mão — não tentado, é um trabalho de
+  "level design" separado.
 - Ícone do jogo e notarização (o preset macOS já usa assinatura ad-hoc, gratuita — ver
   changelog 2026-08-02 — mas não é notarizado pela Apple; hoje quem baixar ainda
   precisa clicar em "Abrir" uma vez, ver README).
