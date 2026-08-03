@@ -1,46 +1,47 @@
-[gd_scene load_steps=52 format=3]
+[gd_scene load_steps=50 format=3]
 
 [ext_resource type="Script" path="res://scripts/Pothole.gd" id="1"]
-[ext_resource type="Script" path="res://scenes/world/Town.gd" id="5"]
-[ext_resource type="PackedScene" path="res://scenes/world/Junkyard.tscn" id="2"]
-[ext_resource type="PackedScene" path="res://scenes/world/Workshop.tscn" id="3"]
-[ext_resource type="PackedScene" path="res://scenes/npc/BuyerNPC.tscn" id="4"]
+[ext_resource type="Script" path="res://scenes/world/Town.gd" id="2"]
+[ext_resource type="PackedScene" path="res://scenes/world/Junkyard.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/world/Workshop.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/npc/BuyerNPC.tscn" id="5"]
 [ext_resource type="PackedScene" path="res://scenes/traffic/TrafficRoute.tscn" id="6"]
 [ext_resource type="PackedScene" path="res://scenes/world/MudZone.tscn" id="7"]
 [ext_resource type="PackedScene" path="res://assets/kenney/car-kit/Models/GLB format/sedan.glb" id="8"]
 [ext_resource type="PackedScene" path="res://assets/kenney/car-kit/Models/GLB format/taxi.glb" id="9"]
 [ext_resource type="PackedScene" path="res://assets/kenney/car-kit/Models/GLB format/van.glb" id="10"]
-[ext_resource type="PackedScene" path="res://assets/kenney/car-kit/Models/GLB format/sedan-sports.glb" id="34"]
-[ext_resource type="PackedScene" path="res://assets/kenney/car-kit/Models/GLB format/suv-luxury.glb" id="35"]
-[ext_resource type="PackedScene" path="res://assets/kenney/car-kit/Models/GLB format/race.glb" id="36"]
-[ext_resource type="PackedScene" path="res://assets/kenney/car-kit/Models/GLB format/police.glb" id="37"]
-[ext_resource type="PackedScene" path="res://scenes/npc/PedestrianRoute.tscn" id="11"]
-[ext_resource type="PackedScene" path="res://assets/kenney/animated-characters-protagonists/Model/characterMedium.fbx" id="12"]
-[ext_resource type="Texture2D" path="res://assets/kenney/animated-characters-protagonists/Skins/skaterMaleA.png" id="13"]
-[ext_resource type="Texture2D" path="res://assets/kenney/animated-characters-protagonists/Skins/skaterFemaleA.png" id="14"]
-[ext_resource type="Texture2D" path="res://assets/kenney/animated-characters-protagonists/Skins/criminalMaleA.png" id="15"]
-[ext_resource type="Texture2D" path="res://assets/kenney/animated-characters-protagonists/Skins/cyborgFemaleA.png" id="16"]
-[ext_resource type="PackedScene" path="res://scenes/world/CityBuilding.tscn" id="17"]
-[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-e.glb" id="18"]
-[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-skyscraper-b.glb" id="19"]
-[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/low-detail-building-c.glb" id="20"]
-[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-skyscraper-a.glb" id="21"]
-[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-h.glb" id="22"]
-[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-skyscraper-d.glb" id="23"]
-[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-j.glb" id="24"]
-[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-skyscraper-c.glb" id="25"]
-[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-b.glb" id="26"]
-[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/low-detail-building-g.glb" id="27"]
-[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-skyscraper-e.glb" id="28"]
+[ext_resource type="PackedScene" path="res://assets/kenney/car-kit/Models/GLB format/sedan-sports.glb" id="11"]
+[ext_resource type="PackedScene" path="res://assets/kenney/car-kit/Models/GLB format/suv-luxury.glb" id="12"]
+[ext_resource type="PackedScene" path="res://assets/kenney/car-kit/Models/GLB format/race.glb" id="13"]
+[ext_resource type="PackedScene" path="res://assets/kenney/car-kit/Models/GLB format/police.glb" id="14"]
+[ext_resource type="PackedScene" path="res://scenes/npc/PedestrianRoute.tscn" id="15"]
+[ext_resource type="PackedScene" path="res://assets/kenney/animated-characters-protagonists/Model/characterMedium.fbx" id="16"]
+[ext_resource type="Texture2D" path="res://assets/kenney/animated-characters-protagonists/Skins/skaterMaleA.png" id="17"]
+[ext_resource type="Texture2D" path="res://assets/kenney/animated-characters-protagonists/Skins/skaterFemaleA.png" id="18"]
+[ext_resource type="Texture2D" path="res://assets/kenney/animated-characters-protagonists/Skins/criminalMaleA.png" id="19"]
+[ext_resource type="Texture2D" path="res://assets/kenney/animated-characters-protagonists/Skins/cyborgFemaleA.png" id="20"]
+[ext_resource type="PackedScene" path="res://scenes/world/CityBuilding.tscn" id="21"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-a.glb" id="22"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-b.glb" id="23"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-d.glb" id="24"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-e.glb" id="25"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-h.glb" id="26"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-j.glb" id="27"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-l.glb" id="28"]
 [ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-n.glb" id="29"]
-[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-roads/Models/GLB format/road-straight.glb" id="30"]
-[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-roads/Models/GLB format/road-bend.glb" id="31"]
-[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-roads/Models/GLB format/road-crossroad.glb" id="32"]
-[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-roads/Models/GLB format/light-square.glb" id="33"]
-[ext_resource type="Script" path="res://scripts/CityStreets.gd" id="38"]
-[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-roads/Models/GLB format/road-end-round.glb" id="39"]
-[ext_resource type="PackedScene" path="res://assets/quaternius/downtown-city-megakit/Buildings/Building_Large_2.gltf" id="40"]
-[ext_resource type="PackedScene" path="res://assets/quaternius/downtown-city-megakit/Buildings/Building_Small_1.gltf" id="41"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/low-detail-building-c.glb" id="30"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/low-detail-building-g.glb" id="31"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/low-detail-building-wide-a.glb" id="32"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/low-detail-building-k.glb" id="33"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-skyscraper-a.glb" id="34"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-skyscraper-b.glb" id="35"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-skyscraper-c.glb" id="36"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-commercial/Models/GLB format/building-skyscraper-d.glb" id="37"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-roads/Models/GLB format/road-straight.glb" id="38"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-roads/Models/GLB format/road-crossroad.glb" id="39"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-roads/Models/GLB format/light-square.glb" id="40"]
+[ext_resource type="Script" path="res://scripts/CityStreets.gd" id="41"]
+[ext_resource type="PackedScene" path="res://assets/kenney/city-kit-roads/Models/GLB format/road-end-round.glb" id="42"]
 
 [sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
 sky_top_color = Color(0.35, 0.55, 0.85, 1)
@@ -75,26 +76,11 @@ size = Vector3(300, 1, 300)
 albedo_color = Color(0.42, 0.42, 0.45, 1)
 roughness = 0.95
 
-[sub_resource type="BoxShape3D" id="UnitBoxShape"]
-size = Vector3(1, 1, 1)
-
-[sub_resource type="BoxMesh" id="UnitBoxMesh"]
-size = Vector3(1, 1, 1)
-
-[sub_resource type="StandardMaterial3D" id="BuildingMatA"]
-albedo_color = Color(0.8, 0.55, 0.35, 1)
-
-[sub_resource type="StandardMaterial3D" id="BuildingMatB"]
-albedo_color = Color(0.55, 0.65, 0.7, 1)
-
-[sub_resource type="StandardMaterial3D" id="BuildingMatC"]
-albedo_color = Color(0.7, 0.4, 0.4, 1)
-
 [sub_resource type="BoxShape3D" id="PotholeShape"]
 size = Vector3(2.2, 0.6, 2.2)
 
 [node name="Town" type="Node3D"]
-script = ExtResource("5")
+script = ExtResource("2")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Env_1")
@@ -115,209 +101,198 @@ surface_material_override/0 = SubResource("GroundMat")
 [node name="Shape" type="CollisionShape3D" parent="Ground"]
 shape = SubResource("GroundShape")
 
-[node name="Junkyard" parent="." instance=ExtResource("2")]
+[node name="Junkyard" parent="." instance=ExtResource("3")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 0, -20)
 
-[node name="Workshop" parent="." instance=ExtResource("3")]
+[node name="Workshop" parent="." instance=ExtResource("4")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 
-[node name="BuyerNPC" parent="." instance=ExtResource("4")]
+[node name="BuyerNPC" parent="." instance=ExtResource("5")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 26, 0, 26)
 
 [node name="PlayerSpawn" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 6)
 
 [node name="Pothole1" type="Area3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, -0.1, 8)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, -0.1, 6)
 script = ExtResource("1")
 
 [node name="Shape" type="CollisionShape3D" parent="Pothole1"]
 shape = SubResource("PotholeShape")
 
 [node name="Pothole2" type="Area3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, -0.1, 15)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, -0.1, 25)
 script = ExtResource("1")
 
 [node name="Shape" type="CollisionShape3D" parent="Pothole2"]
 shape = SubResource("PotholeShape")
 
 [node name="Pothole3" type="Area3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, -0.1, 21)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, -0.1, -6)
 script = ExtResource("1")
 
 [node name="Shape" type="CollisionShape3D" parent="Pothole3"]
 shape = SubResource("PotholeShape")
 
 [node name="Pothole4" type="Area3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12, -0.1, -8)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, -0.1, -5)
 script = ExtResource("1")
 
 [node name="Shape" type="CollisionShape3D" parent="Pothole4"]
 shape = SubResource("PotholeShape")
 
-[node name="Building1" parent="." instance=ExtResource("17")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -85, 0, 15)
-visual_scene = ExtResource("40")
-visual_scale = 1.0
-visual_rotation_y_degrees = 30.0
-
-[node name="Building2" parent="." instance=ExtResource("17")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 18, 0, -12)
-visual_scene = ExtResource("19")
-visual_scale = 4.5
+[node name="Building1" parent="." instance=ExtResource("21")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.5, 0, -12.5)
+visual_scene = ExtResource("37")
+visual_scale = 5.0
 visual_rotation_y_degrees = 0.0
 
-[node name="Building3" parent="." instance=ExtResource("17")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -30, 0, 18)
-visual_scene = ExtResource("20")
-visual_scale = 6.0
-visual_rotation_y_degrees = 60.0
-
-[node name="Building4" parent="." instance=ExtResource("17")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 38, 0, 14)
-visual_scene = ExtResource("21")
-visual_scale = 6.0
+[node name="Building2" parent="." instance=ExtResource("21")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.5, 0, 12.5)
+visual_scene = ExtResource("36")
+visual_scale = 5.5
 visual_rotation_y_degrees = 90.0
 
-[node name="Building5" parent="." instance=ExtResource("17")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, -35)
-visual_scene = ExtResource("22")
-visual_scale = 5.0
-visual_rotation_y_degrees = 15.0
-
-[node name="Building6" parent="." instance=ExtResource("17")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -8, 0, -41)
-visual_scene = ExtResource("23")
-visual_scale = 7.0
-visual_rotation_y_degrees = 45.0
-
-[node name="Building7" parent="." instance=ExtResource("17")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 78, 0, 20)
-visual_scene = ExtResource("41")
-visual_scale = 1.0
-visual_rotation_y_degrees = 200.0
-
-[node name="Building8" parent="." instance=ExtResource("17")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -45, 0, -25)
-visual_scene = ExtResource("25")
+[node name="Building3" parent="." instance=ExtResource("21")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, 0, -12.5)
+visual_scene = ExtResource("35")
 visual_scale = 5.5
-visual_rotation_y_degrees = 100.0
+visual_rotation_y_degrees = 180.0
 
-[node name="Building9" parent="." instance=ExtResource("17")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0, 45)
-visual_scene = ExtResource("26")
-visual_scale = 6.5
-visual_rotation_y_degrees = 250.0
+[node name="Building4" parent="." instance=ExtResource("21")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, 0, 12.5)
+visual_scene = ExtResource("34")
+visual_scale = 6.0
+visual_rotation_y_degrees = 270.0
 
-[node name="Building10" parent="." instance=ExtResource("17")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 0, -45)
+[node name="Building5" parent="." instance=ExtResource("21")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -37.5, 0, -12.5)
 visual_scene = ExtResource("27")
-visual_scale = 6.0
-visual_rotation_y_degrees = 300.0
+visual_scale = 5.5
+visual_rotation_y_degrees = 90.0
 
-[node name="Building11" parent="." instance=ExtResource("17")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 50, 0, -5)
+[node name="Building6" parent="." instance=ExtResource("21")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.5, 0, -37.5)
 visual_scene = ExtResource("28")
-visual_scale = 6.0
-visual_rotation_y_degrees = 150.0
+visual_scale = 5.5
+visual_rotation_y_degrees = 0.0
 
-[node name="Building12" parent="." instance=ExtResource("17")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -50, 0, 5)
+[node name="Building7" parent="." instance=ExtResource("21")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -12.5, 0, 37.5)
 visual_scene = ExtResource("29")
+visual_scale = 5.0
+visual_rotation_y_degrees = 180.0
+
+[node name="Building8" parent="." instance=ExtResource("21")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, 0, -37.5)
+visual_scene = ExtResource("22")
+visual_scale = 6.5
+visual_rotation_y_degrees = 90.0
+
+[node name="Building9" parent="." instance=ExtResource("21")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 12.5, 0, 37.5)
+visual_scene = ExtResource("23")
+visual_scale = 6.5
+visual_rotation_y_degrees = 270.0
+
+[node name="Building10" parent="." instance=ExtResource("21")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37.5, 0, -12.5)
+visual_scene = ExtResource("24")
+visual_scale = 6.5
+visual_rotation_y_degrees = 180.0
+
+[node name="Building11" parent="." instance=ExtResource("21")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37.5, 0, 12.5)
+visual_scene = ExtResource("25")
+visual_scale = 6.0
+visual_rotation_y_degrees = 0.0
+
+[node name="Building12" parent="." instance=ExtResource("21")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -37.5, 0, 12.5)
+visual_scene = ExtResource("26")
+visual_scale = 6.0
+visual_rotation_y_degrees = 270.0
+
+[node name="Building13" parent="." instance=ExtResource("21")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -37.5, 0, -37.5)
+visual_scene = ExtResource("30")
 visual_scale = 7.0
-visual_rotation_y_degrees = 330.0
+visual_rotation_y_degrees = 0.0
 
-[node name="Building13" parent="." instance=ExtResource("17")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, -88)
-visual_scene = ExtResource("40")
-visual_scale = 1.0
-visual_rotation_y_degrees = 110.0
+[node name="Building14" parent="." instance=ExtResource("21")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -37.5, 0, 37.5)
+visual_scene = ExtResource("31")
+visual_scale = 7.0
+visual_rotation_y_degrees = 90.0
 
-[node name="Building14" parent="." instance=ExtResource("17")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -20, 0, 80)
-visual_scene = ExtResource("41")
-visual_scale = 1.0
-visual_rotation_y_degrees = 250.0
+[node name="Building15" parent="." instance=ExtResource("21")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37.5, 0, -37.5)
+visual_scene = ExtResource("32")
+visual_scale = 6.5
+visual_rotation_y_degrees = 180.0
 
-[node name="RoadTile1" parent="." instance=ExtResource("30")]
-transform = Transform3D(4.243, 0, 4.243, 0, 6, 0, -4.243, 0, 4.243, 8, 0.03, 8)
-
-[node name="RoadTile2" parent="." instance=ExtResource("30")]
-transform = Transform3D(4.243, 0, 4.243, 0, 6, 0, -4.243, 0, 4.243, 15, 0.03, 15)
-
-[node name="RoadTile3" parent="." instance=ExtResource("30")]
-transform = Transform3D(4.243, 0, 4.243, 0, 6, 0, -4.243, 0, 4.243, 21, 0.03, 21)
-
-[node name="RoadCrossroad1" parent="." instance=ExtResource("32")]
-transform = Transform3D(6, 0, 0, 0, 6, 0, 0, 0, 6, 0, 0.03, 0)
-
-[node name="StreetLight1" parent="." instance=ExtResource("33")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 6, 0, 10)
-
-[node name="StreetLight2" parent="." instance=ExtResource("33")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, 18, 0, 22)
-
-[node name="StreetLight3" parent="." instance=ExtResource("33")]
-transform = Transform3D(3, 0, 0, 0, 3, 0, 0, 0, 3, -3, 0, -3)
+[node name="Building16" parent="." instance=ExtResource("21")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37.5, 0, 37.5)
+visual_scene = ExtResource("33")
+visual_scale = 7.0
+visual_rotation_y_degrees = 270.0
 
 [node name="TrafficRouteWorkshop" parent="." instance=ExtResource("6")]
 route_points = Array[Vector3]([Vector3(5, 0.4, 5), Vector3(29, 0.4, 5), Vector3(29, 0.4, 29), Vector3(5, 0.4, 29)])
-car_models = Array[PackedScene]([ExtResource("34"), ExtResource("35"), ExtResource("36")])
+car_models = Array[PackedScene]([ExtResource("11"), ExtResource("12"), ExtResource("13")])
 
 [node name="TrafficRouteJunkyard" parent="." instance=ExtResource("6")]
-route_points = Array[Vector3]([Vector3(-36, 0.4, -32), Vector3(-14, 0.4, -32), Vector3(-14, 0.4, -12), Vector3(-36, 0.4, -12)])
+route_points = Array[Vector3]([Vector3(-32, 0.4, -32), Vector3(-18, 0.4, -32), Vector3(-18, 0.4, -16), Vector3(-32, 0.4, -16)])
 car_count = 2
-car_models = Array[PackedScene]([ExtResource("37"), ExtResource("35")])
+car_models = Array[PackedScene]([ExtResource("14"), ExtResource("12")])
 
 [node name="MudZone1" parent="." instance=ExtResource("7")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 8)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0, 6)
 
 [node name="MudZone2" parent="." instance=ExtResource("7")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0, 15)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 14, 0, 25)
 
 [node name="MudZone3" parent="." instance=ExtResource("7")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, 0, 21)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 25, 0, -6)
 
 [node name="MudZone4" parent="." instance=ExtResource("7")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 24, 0, 20)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -25, 0, -5)
 
-[node name="PedestrianRouteWorkshop" parent="." instance=ExtResource("11")]
+[node name="PedestrianRouteWorkshop" parent="." instance=ExtResource("15")]
 route_points = Array[Vector3]([Vector3(-6, 0.1, -6), Vector3(6, 0.1, -6), Vector3(6, 0.1, 6), Vector3(-6, 0.1, 6)])
-character_model = ExtResource("12")
-skin_textures = Array[Texture2D]([ExtResource("13"), ExtResource("14")])
+character_model = ExtResource("16")
+skin_textures = Array[Texture2D]([ExtResource("17"), ExtResource("18")])
 visual_scale = 1.0
 
-[node name="PedestrianRouteBuyer" parent="." instance=ExtResource("11")]
-route_points = Array[Vector3]([Vector3(20, 0.1, 20), Vector3(32, 0.1, 20), Vector3(32, 0.1, 32), Vector3(20, 0.1, 32)])
-character_model = ExtResource("12")
-skin_textures = Array[Texture2D]([ExtResource("15"), ExtResource("16")])
+[node name="PedestrianRouteBuyer" parent="." instance=ExtResource("15")]
+route_points = Array[Vector3]([Vector3(20, 0.1, 20), Vector3(30, 0.1, 20), Vector3(30, 0.1, 32), Vector3(20, 0.1, 32)])
+character_model = ExtResource("16")
+skin_textures = Array[Texture2D]([ExtResource("19"), ExtResource("20")])
 visual_scale = 1.0
 
 [node name="EventSpawnPoint1" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0.5, -15)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 50, 0.5, -25)
 
 [node name="EventSpawnPoint2" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -40, 0.5, 10)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -50, 0.5, 25)
 
 [node name="EventSpawnPoint3" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 15, 0.5, -40)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 50, 0.5, 50)
 
 [node name="EventSpawnPoint4" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0.5, 40)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -50, 0.5, -50)
 
 [node name="CityStreets" type="Node3D" parent="."]
-script = ExtResource("38")
+script = ExtResource("41")
 streets_x = Array[float]([-50.0, -25.0, 0.0, 25.0, 50.0])
 streets_z = Array[float]([-50.0, -25.0, 0.0, 25.0, 50.0])
 extent = 18.0
 tile_size = 6.0
-crossroad_scene = ExtResource("32")
-straight_scene = ExtResource("30")
-end_scene = ExtResource("39")
-light_scene = ExtResource("33")
+crossroad_scene = ExtResource("39")
+straight_scene = ExtResource("38")
+end_scene = ExtResource("42")
+light_scene = ExtResource("40")
 light_every_n_tiles = 3
 light_offset = 2.6
 exclude_points = Array[Vector3]([Vector3(0, 0, 0), Vector3(-25, 0, -20), Vector3(26, 0, 26)])
 exclude_radius = 11.0
-diagonal_starts = Array[Vector3]([Vector3(29, 0, -21)])
-diagonal_ends = Array[Vector3]([Vector3(46, 0, -4)])
