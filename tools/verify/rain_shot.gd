@@ -54,6 +54,12 @@ func _run() -> void:
 	_look(Vector3(-172, 1.7, 12), Vector3(-176, 2, -4))
 	await _shot("07_patio_no_chao")
 
+	# Estrada de terra ligando cidade e oficina.
+	_look(Vector3(-130, 9, 22), Vector3(-155, 0, 2))
+	await _shot("08_estrada_de_terra")
+	_look(Vector3(-120, 1.9, 4), Vector3(-160, 1.5, 1))
+	await _shot("09_estrada_no_chao")
+
 	# Serra nova, do chao e de longe.
 	_look(Vector3(-120, 3, 150), Vector3(-20, 120, 420))
 	await _shot("01_serra_do_chao")
@@ -80,3 +86,7 @@ func _run() -> void:
 	await _shot("04_chuva_na_rua")
 	_look(Vector3(-172, 1.7, 6), Vector3(-175, 3.0, -6))
 	await _shot("05_chuva_na_oficina")
+	_look(Vector3(-120, 30, 200), Vector3(0, 20, -40))
+	await _shot("10_chuva_vista_ampla")
+	_look(Vector3(-140, 4, 90), Vector3(-40, 90, 400))
+	await _shot("11_chuva_na_serra")

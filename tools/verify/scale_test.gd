@@ -23,6 +23,8 @@ const REAL := {
 const FLOAT_TOL := 0.40
 ## Quanto pode estar enterrado.
 const SINK_TOL := 0.60
+## Quanto a colisao pode passar do desenho antes de virar parede invisivel.
+const WALL_TOL := 0.90
 
 var problems: Array[String] = []
 var main: Node
@@ -240,3 +242,102 @@ func _run() -> void:
 	if floating.size() > 0:
 		fail("%d malhas flutuando (a pior a %.1f m do chao)" % [
 			floating.size(), floating[0]["gap"]])
+
+	# ------------------------------------------------------ 4. parede invisivel
+	# Colisao MUITO maior que o desenho = o jogador bate em nada. Acontece quando
+	# a colisao e uma caixa do AABB inteiro do modelo: numa arvore, o AABB inclui
+	# a copa, entao vira um caixote invisivel em volta do tronco.
+	print("\n[4] parede invisivel (colisao muito maior que o desenho)")
+	var walls: Array = []
+	for body in _all_bodies(town):
+		var vis: Array[MeshInstance3D] = []
+		_all_meshes(body, vis)
+		if vis.is_empty():
+			continue
+		var vbox := _world_aabb(vis[0])
+		for i in range(1, vis.size()):
+			vbox = vbox.merge(_world_aabb(vis[i]))
+		var cbox := _collision_aabb(body)
+		if cbox.size == Vector3.ZERO:
+			continue
+		# Folga por eixo horizontal: quanto a colisao passa do desenho.
+		var over_x: float = maxf(vbox.position.x - cbox.position.x,
+			(cbox.position.x + cbox.size.x) - (vbox.position.x + vbox.size.x))
+		var over_z: float = maxf(vbox.position.z - cbox.position.z,
+			(cbox.position.z + cbox.size.z) - (vbox.position.z + vbox.size.z))
+		var over: float = maxf(over_x, over_z)
+		if over > WALL_TOL:
+			walls.append({"fam": _family(body, town), "node": String(body.name),
+				"over": over, "pos": cbox.position + cbox.size * 0.5,
+				"vis": vbox, "col": cbox})
+	walls.sort_custom(func(a, b): return a["over"] > b["over"])
+	var wall_fams: Dictionary = {}
+	for w in walls:
+		wall_fams[w["fam"]] = int(wall_fams.get(w["fam"], 0)) + 1
+	print("    %d corpos com colisao passando mais de %.2f m do desenho" % [
+		walls.size(), WALL_TOL])
+	for fam: String in wall_fams:
+		print("      %-18s %d" % [fam, wall_fams[fam]])
+	for i in range(mini(8, walls.size())):
+		var w = walls[i]
+		print("      +%.2f m | %s / %s" % [w["over"], w["fam"], w["node"]])
+		if i < 3:
+			var vb: AABB = w["vis"]
+			var cb: AABB = w["col"]
+			print("           desenho: %s ate %s" % [vb.position.round(), (vb.position + vb.size).round()])
+			print("           colisao: %s ate %s" % [cb.position.round(), (cb.position + cb.size).round()])
+	if walls.size() > 0:
+		fail("%d paredes invisiveis (a pior sobra %.1f m alem do desenho)" % [
+			walls.size(), walls[0]["over"]])
+
+	# ------------------------------------------- 5. montanha com o pe no ar
+	print("\n[5] o pe de cada macico encosta no chao?")
+	var range_node := town.get_node_or_null("MountainRange")
+	var airborne := 0
+	if range_node:
+		for m in range_node.get_children():
+			var sub: Array[MeshInstance3D] = []
+			_all_meshes(m, sub)
+			if sub.is_empty():
+				continue
+			var box := _world_aabb(sub[0])
+			for i in range(1, sub.size()):
+				box = box.merge(_world_aabb(sub[i]))
+			if box.position.y > 0.5:
+				airborne += 1
+				if airborne <= 6:
+					print("      base a %.2f m do chao | %s em (%.0f, %.0f)" % [
+						box.position.y, String(m.name),
+						box.position.x + box.size.x * 0.5,
+						box.position.z + box.size.z * 0.5])
+	print("    %d macicos com a base acima do chao" % airborne)
+	if airborne > 0:
+		fail("%d montanha(s) com o pe no ar" % airborne)
+
+func _all_bodies(n: Node, out: Array[CollisionObject3D] = []) -> Array[CollisionObject3D]:
+	if n is StaticBody3D:
+		out.append(n)
+	for c in n.get_children():
+		_all_bodies(c, out)
+	return out
+
+func _collision_aabb(body: CollisionObject3D) -> AABB:
+	var box := AABB()
+	var first := true
+	for c in body.get_children():
+		if not (c is CollisionShape3D):
+			continue
+		var cs: CollisionShape3D = c
+		if cs.shape == null or cs.disabled:
+			continue
+		var local := cs.shape.get_debug_mesh().get_aabb()
+		var xf := cs.global_transform
+		var b := AABB(xf * local.position, Vector3.ZERO)
+		for i in range(1, 8):
+			b = b.expand(xf * (local.position + local.size * _corner(i)))
+		if first:
+			box = b
+			first = false
+		else:
+			box = box.merge(b)
+	return box

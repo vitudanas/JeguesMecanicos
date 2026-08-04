@@ -1566,6 +1566,46 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     Medido, o rural está coerente (mediana 1,2-5,9 m, máximos 10-16 m em silo e
     moinho) — o que destoava era a serra, já corrigida.
 
+- **2026-08-04** — Usuário reportou: chuva ainda não parece cobrir o mapa,
+  **muitas paredes invisíveis**, montanha flutuando, textura de grama/montanha
+  feia, e pediu uma estrada de terra até a oficina.
+  - **As paredes invisíveis eram 41, uma por maciço, com até 27 m de sobra.**
+    `MountainRange` gerava a colisão numa malha **grossa** (14 segmentos) e o
+    desenho numa fina (34). Como `_build_mesh` descarta o quad que está
+    inteiramente no chão, a borda da malha acompanha o pé da montanha com a
+    precisão do PASSO da grade — e o passo grosso é ~27 m. Sobrava um quad
+    inteiro de colisão além da encosta visível, na maior parte do perímetro do
+    mapa. Agora a colisão sai da **mesma malha** do desenho; trimesh estático
+    nessa resolução é barato e a economia não valia o defeito.
+  - **Montanha flutuando**: medido, nenhuma — as 44 têm a base no chão. O que
+    dava essa impressão era justamente a parede invisível: o jogador parava
+    longe da encosta e ela parecia solta.
+  - **Chuva no mapa todo** (`scenes/world/WeatherSky.gd`): alargar a caixa de
+    partículas não resolve — partícula só aparece perto. O que vende chuva no
+    mapa inteiro é o **ambiente**: sol caindo pra 42%, céu e ambiente fechando,
+    névoa subindo e o **chão escurecendo como se estivesse molhado** (o sinal
+    mais forte de que choveu ALI, mesmo sem uma gota desenhada). Transição
+    suave de 4 s, e os valores de tempo bom são **lidos da cena**, não escritos
+    no script — mexer no Environment do Town continua valendo.
+    - Erro meu: comecei com névoa 0.006 e a cidade sumiu a 200 m — virou leite.
+      0.0022 fecha o horizonte sem apagar nada.
+  - **Estrada de terra** (`scripts/DirtRoad.gd`): fita de malha da última rua
+    asfaltada (x = -112.5) até o pátio (x = -175), com duas trilhas de roda mais
+    escuras e borda irregular. **Sem colisão de propósito** — o chão já é
+    sólido, e um corpo a mais aqui só criaria degrau e risco de parede
+    invisível, que é o defeito que a cordilheira acabou de ter.
+    - Erro meu: a fita era construída (o print confirmava os 8 pontos) e **não
+      aparecia** — ordem de vértice define pra que lado a face olha, a mesma
+      armadilha que a montanha já tinha tido. Resolvido com dupla face, que numa
+      fita plana não custa nada.
+  - **Novo no verificador**: `scale_test` passou a comparar, em cada corpo, a
+    caixa de **colisão** contra a caixa **visual** — colisão que passa mais de
+    0,9 m do desenho é parede invisível. Foi assim que os 41 maciços apareceram.
+    Também confere se o pé de cada montanha encosta no chão.
+  - **Grama e montanha**: mais detalhe (ver entrada anterior), mas o usuário
+    ainda achou feio — **continua em aberto**, é limitação de acabamento por
+    ruído procedural, não bug.
+
 ### Pendências pedidas e ainda NÃO feitas
 
 Nenhuma das três pendências anteriores continua aberta. O que sobrou de

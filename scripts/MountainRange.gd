@@ -33,7 +33,6 @@ const MOUNTAIN_SHADER := preload("res://shaders/mountain.gdshader")
 ## proposito: o jogador so precisa esbarrar, e um trimesh na resolucao visual
 ## seria dezenas de milhares de faces por macico.
 @export var segments := 34
-@export var collision_segments := 14
 
 ## Quanto o cume sai do centro da base (0 = cone simetrico, 1 = na borda).
 ## Montanha com pico centrado le como cone de tapete de festa.
@@ -106,9 +105,18 @@ func _build_mountain(sector: float, index: int) -> void:
 	mesh_inst.material_override = _material
 	body.add_child(mesh_inst)
 
-	var coarse := _build_mesh(collision_segments, radius, height, stretch, spin, peak, noise_origin)
+	# Colisao da MESMA malha do desenho, nao de uma versao grosseira.
+	#
+	# `_build_mesh` descarta o quad que esta inteiramente no chao, entao a borda
+	# da malha acompanha o pe da montanha com a precisao do PASSO da grade. Numa
+	# grade grosseira (14 segmentos num macico de ~380 m) o passo e ~27 m: sobrava
+	# um quad inteiro de colisao alem da encosta visivel, e o jogador batia numa
+	# parede invisivel 27 m antes de chegar na montanha. Eram 41 macicos assim —
+	# a maior parte do perimetro do mapa.
+	#
+	# Trimesh estatico dessa resolucao e barato; a economia nao valia o defeito.
 	var shape := CollisionShape3D.new()
-	shape.shape = coarse.create_trimesh_shape()
+	shape.shape = mesh_inst.mesh.create_trimesh_shape()
 	body.add_child(shape)
 
 ## Altura em funcao da posicao na base (coordenadas locais, ja em metros).

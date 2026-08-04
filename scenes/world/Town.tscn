@@ -3,6 +3,8 @@
 [ext_resource type="Script" path="res://scripts/Pothole.gd" id="1"]
 [ext_resource type="Shader" path="res://shaders/ground.gdshader" id="400"]
 [ext_resource type="Script" path="res://scripts/MountainRange.gd" id="401"]
+[ext_resource type="Script" path="res://scripts/DirtRoad.gd" id="402"]
+[ext_resource type="Script" path="res://scenes/world/WeatherSky.gd" id="403"]
 [ext_resource type="Script" path="res://scenes/world/Town.gd" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/world/Junkyard.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/world/RuralWorkshop.tscn" id="4"]
@@ -598,6 +600,21 @@ rng_seed = 20260803
 ; (9,5x o predio mais alto), que e o que faz a silhueta fechar o horizonte.
 ; A base cresceu junto (raio 90-190): montanha alta com base estreita vira
 ; espeto, e o pe precisa acompanhar pra manter a inclinacao de encosta.
+; Liga a ultima rua asfaltada (x = -112.5) ao patio da oficina (x = -175). Uma
+; leve serpenteada de proposito: reta perfeita entrega estrada desenhada, e
+; estrada de terra nao e reta.
+; Faz o MUNDO reagir a chuva (sol, ceu, nevoa e chao molhado), nao so as gotas
+; em volta do jogador — e o que faz parecer que chove no mapa inteiro.
+[node name="WeatherSky" type="Node" parent="."]
+script = ExtResource("403")
+sun_path = NodePath("../Sun")
+env_path = NodePath("../WorldEnvironment")
+ground_path = NodePath("../Ground/Mesh")
+
+[node name="DirtRoadWorkshop" type="Node3D" parent="."]
+script = ExtResource("402")
+points = Array[Vector2]([Vector2(-113, 0), Vector2(-122, 1.5), Vector2(-131, 3), Vector2(-140, 2), Vector2(-149, -0.5), Vector2(-158, -1), Vector2(-166, 0), Vector2(-172, 1)])
+
 [node name="MountainRange" type="Node3D" parent="."]
 script = ExtResource("401")
 foot_radius = 300.0
