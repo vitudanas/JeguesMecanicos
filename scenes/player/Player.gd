@@ -98,6 +98,13 @@ func enter_vehicle(vehicle: Node) -> void:
 	driving_vehicle = vehicle
 	visible = false
 	camera.current = false
+	# A capsula tem que SAIR do mundo, nao so ficar invisivel. CharacterBody3D e
+	# cinematico: pra um RigidBody ele e uma parede que nao cede. Como o jogador
+	# para de andar ao dirigir, o corpo ficava plantado exatamente onde ele
+	# estava em pe — em geral do lado ou na frente do carro que ele acabou de
+	# entrar — e segurava o carro no lugar. O verificador do patio flagrou isso
+	# como "barrado por Main/Player a 2.1 m", com o carro andando 0.0 m.
+	_set_body_solid(false)
 
 func exit_vehicle() -> void:
 	if driving_vehicle:
@@ -107,6 +114,14 @@ func exit_vehicle() -> void:
 	driving_vehicle = null
 	visible = true
 	camera.current = true
+	_set_body_solid(true)
+
+## Liga/desliga a colisao do jogador. `set_deferred` porque isso e chamado de
+## dentro do passo de fisica, e mexer em forma de colisao ali e erro no Godot.
+func _set_body_solid(solid: bool) -> void:
+	var shape := get_node_or_null("CollisionShape3D")
+	if shape:
+		shape.set_deferred("disabled", not solid)
 
 func start_towing(vehicle: Node) -> void:
 	tow_hook.attach(vehicle)

@@ -1389,6 +1389,50 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     que é um ângulo raspante — reportou "±0°" num ponto que de frente aguenta
     ±14°. Os dois passaram a sair de raio pra baixo / da direção de frente.
 
+- **2026-08-04** — Seguindo pra pendência nº 2 ("o pátio da oficina prende o
+  carro"), que era o próximo passo do jogador depois de conseguir montar as
+  gambiarras. Medida antes de opinar, com `tools/verify/yard_test.gd`: dirige de
+  verdade (tecla W pelo caminho de input do jogo) a partir de vários ângulos de
+  parada e mede quanto o carro se afasta.
+  - **O pátio NÃO prende**: sai em 4 dos 8 ângulos, e os 4 que travam apontam
+    todos pro fundo do terreno (barracão, tanque, sucata) enquanto os 4 livres
+    formam um arco contínuo virado pra saída. Isso é layout normal — obstáculo
+    atrás, saída na frente. A pendência era suspeita, não defeito.
+  - **Mas o teste achou um bug de verdade, e grave: a cápsula do jogador
+    continuava sólida enquanto ele dirigia.** `enter_vehicle()` só fazia
+    `visible = false`, e `CharacterBody3D` é cinemático — pra um `RigidBody` ele
+    é parede que não cede. Como o jogador para de andar ao dirigir, o corpo
+    ficava plantado onde ele estava em pé (em geral do lado ou na frente do
+    carro que acabou de entrar) e **segurava o carro**: medido `andou 0.0 m`,
+    "barrado por Main/Player". Agora a colisão é desligada ao entrar e religada
+    ao sair — o mesmo caso andou 7.8 m. É irmão do bug das peças de gambiarra
+    cinemáticas de 2026-08-04.
+  - **Estacionamento automático: tentado e REVERTIDO** (fica registrado pra
+    ninguém repetir). A ideia era a oficina largar a carcaça virada pro vão da
+    cerca, já que o ferro-velho fica ao norte e o carro sempre para apontado de
+    volta pro barracão. Cada correção revelou outra interação: (1) girar em
+    torno da origem **translada** a caixa de colisão, que é deslocada porque vem
+    da medida do modelo, e o solver jogava o carro 5,6 m fora da vaga — longe o
+    bastante pro loop não conseguir mais montar o parachoque; (2) teleportar pra
+    vaga mantendo o Y antigo encravava o carro na laje de concreto; (3) o raio
+    que media o chão da vaga batia **no próprio carro** (que já estava lá) e
+    devolvia a altura do teto; (4) corrigido isso, passou a bater **na cabeça do
+    jogador**, parado ali porque acabou de rebocar; (5) e no fim o carro caía em
+    cima do jogador e assentava tombado 16°. **Lição**: teleportar corpo rígido
+    pra cima de onde o jogador está é frágil por natureza, e aqui o ganho era só
+    poupar uma ré. Dar ré é jogo. O `yard_test` passou a RELATAR o ângulo de
+    chegada em vez de reprovar, e só falha se o carro andar menos de 3 m — que é
+    a assinatura de algo prendendo, não de manobra.
+  - **Erros meus de arnês nesta rodada**: rodei o teste com `| tail -60`, que
+    segura a saída inteira até o fim (7 minutos achando que estava travado, e a
+    causa real era um erro de parse — o projeto trata warning como erro); medi a
+    tolerância de mira a partir do "primeiro ângulo do anel que acerta", que é um
+    ângulo raspante; e deixei a varredura de 8 ângulos rodar ANTES do teste de
+    reboque, o que sujava o estado da oficina e produzia um resultado (336°) sem
+    explicação no jogo — esperar não lavou, rodar antes resolveu. Também tinha
+    escrito o guard `_parking` sem liberar em todas as saídas, o que teria
+    estacionado só o primeiro carro da partida.
+
 ### Pendências pedidas e ainda NÃO feitas
 
 Nenhuma das três pendências anteriores continua aberta. O que sobrou de
@@ -1398,9 +1442,13 @@ observação pra uma próxima rodada (nada disso foi pedido):
    real (`tools/verify/loop_test.tscn`, 5/5 rodadas), mas ninguém *sentiu* o
    jogo: se 76 km/h é rápido demais, se a barra de lábia dura o certo, se o
    reboque de 38 m é chato. Isso só se resolve jogando.
-2. **O pátio da oficina prende o carro.** Dependendo de como a carcaça para,
-   acelerar só empurra contra cerca/barracão/sucata. Um jogador dá ré e
-   resolve, mas vale abrir espaço em volta da DropZone.
+2. ~~**O pátio da oficina prende o carro.**~~ **Medido e fechado** em
+   2026-08-04 (`tools/verify/yard_test.tscn`): o pátio não prende — sai em 4 dos
+   8 ângulos, com os bloqueados todos virados pro fundo. O que de fato prendia
+   era a cápsula do jogador, que continuava sólida ao dirigir; corrigido. Sobra
+   que a carcaça rebocada para apontada pro barracão e o primeiro W anda ~8 m e
+   encosta: o jogador manobra. Estacionar automático foi tentado e revertido —
+   ver o changelog antes de tentar de novo.
 3. **Telhado verde do kit suburbano** ainda puxa pro menta. O shader já
    dessatura verde puro (`green_tame`), mas a cor vive dentro do atlas.
 4. **Câmera 04 do roteiro de fotos** ficava em (30, 2.2, 30), que com a grade
