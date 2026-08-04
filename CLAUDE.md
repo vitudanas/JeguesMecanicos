@@ -1624,6 +1624,44 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     natural** no repo. Deixar a grama realmente boa pede baixar 2 conjuntos CC0
     do ambientCG (~15MB), que é o mesmo caminho já usado nas fachadas.
 
+- **2026-08-04** — Usuário autorizou baixar o que fosse preciso ("não se
+  preocupe com o tamanho, quero algo realmente bonito"). Terreno refeito.
+  - **Texturas PBR CC0 no chão** (ambientCG, 2K): Grass004, Grass005, Ground037,
+    Gravel022, Rock030, Rock023 (~118MB de fonte). O `ground.gdshader` passou a
+    usar cor, normal e rugosidade de verdade, com duas coisas que separam
+    "textura aplicada" de "terreno bonito": **anti-repetição** (cada camada
+    amostrada em duas escalas, a segunda deslocada e girada, com razão **não
+    inteira** — múltiplo inteiro faz as escalas baterem e a grade volta) e
+    **mistura por ruído** entre grama/terra/cascalho, sem fronteira reta.
+  - **Dois erros meus de shader, o mesmo em espírito**: eu estava **fazendo
+    média** onde devia **modular**. (1) O anti-tiling misturava 50/50 as duas
+    amostras — média apaga justo o contraste que dá o detalhe, e a grama saiu
+    lisa feito campo de golfe; agora a amostra grande só clareia/escurece a
+    fina. (2) A cor da textura era misturada com a paleta, lavando tudo; agora o
+    brilho é aproximado **por escala**, o que move o tom e preserva o contraste.
+  - **A descoberta que mudou o rumo**: mesmo com a textura certa, o campo
+    continuava lendo como carpete. Fui olhar a textura de origem e **Grass004 é
+    gramado aparado** — uniforme por natureza. Baixei Grass001, Ground038 e
+    Ground042 pra comparar: as grama são todas uniformes; quem tem caráter é
+    Ground037 (musgo, gravetos, manchas de terra). **Textura plana de grama vai
+    sempre ler como carpete da altura dos olhos** — o que dá volume é geometria.
+  - **`scripts/GrassField.gd`**: tufos de grama de verdade num anel de 38 m em
+    volta do jogador, via **MultiMesh** (2600 tufos numa chamada de desenho). O
+    modelo é o `tall-grass.glb` do nature-megakit, que já estava no projeto —
+    nenhum estilo novo. Re-sorteia só quando o jogador anda mais de 12 m, e a
+    semente é amarrada à **célula**, não ao tempo: voltando ao mesmo lugar a
+    grama nasce igual, senão o gramado inteiro troca de desenho e o movimento
+    aparece com o canto do olho.
+    - **Erro meu**: fixei a `custom_aabb` em volta da origem do nó, mas os tufos
+      nascem centenas de metros dali (junto do jogador) — o Godot descartava o
+      campo INTEIRO e a grama não aparecia, **sem erro nenhum no log**. A caixa
+      passou a acompanhar o centro do espalhamento.
+    - Erro de arnês junto: o roteiro de fotos posicionava só a câmera, e a grama
+      nasce em volta do JOGADOR — as primeiras fotos mostravam chão pelado a
+      55 m dele. Agora o jogador acompanha a câmera.
+  - **Rocha PBR na montanha**: `Rock030`/`Concrete034` em triplanar (ver entrada
+    anterior).
+
 ### Pendências pedidas e ainda NÃO feitas
 
 Nenhuma das três pendências anteriores continua aberta. O que sobrou de

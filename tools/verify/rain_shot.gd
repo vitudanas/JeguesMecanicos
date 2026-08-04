@@ -29,10 +29,18 @@ func _ready() -> void:
 	print("fotos em: %s" % ProjectSettings.globalize_path(OUT_DIR))
 	get_tree().quit()
 
+## Leva o JOGADOR junto com a camera. A grama de geometria (GrassField) nasce
+## num anel em volta do jogador, entao fotografar o terreno de longe dele
+## mostrava o chao pelado — foi assim que a primeira foto saiu "sem grama".
+## O corpo dele fica invisivel pra nao entrar na frente.
 func _look(from: Vector3, at: Vector3) -> void:
 	cam.global_position = from
 	cam.look_at(at, Vector3.UP)
 	cam.force_update_transform()
+	var pl := get_tree().get_first_node_in_group("player") as Node3D
+	if pl:
+		pl.global_position = Vector3(from.x, 0.4, from.z)
+		pl.visible = false
 
 func _shot(n: String) -> void:
 	for i in range(14):

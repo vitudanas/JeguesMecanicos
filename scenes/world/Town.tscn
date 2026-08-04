@@ -3,8 +3,17 @@
 [ext_resource type="Script" path="res://scripts/Pothole.gd" id="1"]
 [ext_resource type="Shader" path="res://shaders/ground.gdshader" id="400"]
 [ext_resource type="Script" path="res://scripts/MountainRange.gd" id="401"]
+[ext_resource type="Texture2D" path="res://assets/ambientcg/Grass004/Grass004_2K-JPG_Color.jpg" id="410"]
+[ext_resource type="Texture2D" path="res://assets/ambientcg/Grass004/Grass004_2K-JPG_NormalGL.jpg" id="411"]
+[ext_resource type="Texture2D" path="res://assets/ambientcg/Grass004/Grass004_2K-JPG_Roughness.jpg" id="412"]
+[ext_resource type="Texture2D" path="res://assets/ambientcg/Grass005/Grass005_2K-JPG_Color.jpg" id="413"]
+[ext_resource type="Texture2D" path="res://assets/ambientcg/Ground037/Ground037_2K-JPG_Color.jpg" id="414"]
+[ext_resource type="Texture2D" path="res://assets/ambientcg/Ground037/Ground037_2K-JPG_NormalGL.jpg" id="415"]
+[ext_resource type="Texture2D" path="res://assets/ambientcg/Ground037/Ground037_2K-JPG_Roughness.jpg" id="416"]
+[ext_resource type="Texture2D" path="res://assets/ambientcg/Gravel022/Gravel022_2K-JPG_Color.jpg" id="417"]
 [ext_resource type="Script" path="res://scripts/DirtRoad.gd" id="402"]
 [ext_resource type="Script" path="res://scenes/world/WeatherSky.gd" id="403"]
+[ext_resource type="Script" path="res://scripts/GrassField.gd" id="404"]
 [ext_resource type="Script" path="res://scenes/world/Town.gd" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/world/Junkyard.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/world/RuralWorkshop.tscn" id="4"]
@@ -226,6 +235,19 @@ shader_parameter/macro_scale = 0.007
 shader_parameter/meso_scale = 0.055
 shader_parameter/micro_scale = 0.9
 shader_parameter/normal_strength = 1.1
+shader_parameter/grass_a_tex = ExtResource("410")
+shader_parameter/grass_a_nrm = ExtResource("411")
+shader_parameter/grass_a_rgh = ExtResource("412")
+shader_parameter/grass_b_tex = ExtResource("413")
+shader_parameter/dirt_tex = ExtResource("414")
+shader_parameter/dirt_nrm = ExtResource("415")
+shader_parameter/dirt_rgh = ExtResource("416")
+shader_parameter/gravel_tex = ExtResource("417")
+shader_parameter/tex_size = 2.2
+shader_parameter/tex_macro_ratio = 3.7
+shader_parameter/tex_strength = 1.0
+shader_parameter/detail_fade_start = 60.0
+shader_parameter/detail_fade_end = 200.0
 
 [sub_resource type="BoxShape3D" id="PotholeShape"]
 size = Vector3(2.2, 0.6, 2.2)
@@ -610,6 +632,15 @@ script = ExtResource("403")
 sun_path = NodePath("../Sun")
 env_path = NodePath("../WorldEnvironment")
 ground_path = NodePath("../Ground/Mesh")
+
+; Grama de geometria em volta do jogador. Textura plana de grama le como
+; carpete da altura dos olhos; sao os tufos que dao volume. MultiMesh: os
+; milhares de tufos saem numa chamada de desenho so.
+[node name="GrassField" type="MultiMeshInstance3D" parent="."]
+script = ExtResource("404")
+tuft_scene = ExtResource("66")
+count = 2600
+radius = 38.0
 
 [node name="DirtRoadWorkshop" type="Node3D" parent="."]
 script = ExtResource("402")
