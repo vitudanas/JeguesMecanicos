@@ -88,6 +88,13 @@ var throttle_input := 0.0
 var handbrake := false
 var mud_zones_overlapping := 0
 var being_towed := false
+## Ligado pela DropZone da oficina. Enquanto o carro esta la, mirar na
+## carroceria NAO oferece mais "Rebocar": era a armadilha que travava o jogo.
+## A carroceria e o alvo obvio (ocupa a tela inteira ao lado dos 4 marcadores
+## pequenos), entao o jogador mirava nela, apertava E achando que montava a
+## gambiarra, e o que acontecia era o reboque reengatar — o carro voltava a
+## seguir o jogador pelo patio e a montagem parecia simplesmente nao funcionar.
+var at_workshop := false
 
 var rig: CarRig
 var wheels: Array[RayCast3D] = []
@@ -178,8 +185,12 @@ func _fit_to_model() -> void:
 	chase_rig.position = Vector3(0.0, box.position.y + box.size.y + 0.9, box.size.z * 0.42)
 	chase_rig.spring_length = box.size.z * 1.7
 	if smoke_fx:
-		smoke_fx.position = Vector3(0.0, box.position.y + box.size.y * 0.7,
-			box.position.z + 0.25)
+		# Na grade, baixo e no centro. Descentralizar (tentativa anterior) so
+		# trocava de vitima: a coluna saia de cima do marcador do capo e passava
+		# a cobrir o do radiador. O que resolve e o penacho ser BAIXO (ver o
+		# SmokePPM no .tscn), ai ele morre antes da altura dos marcadores.
+		smoke_fx.position = Vector3(0.0, box.position.y + box.size.y * 0.25,
+			box.position.z + 0.10)
 
 ## Os 4 pontos de gambiarra saem da caixa da carroceria, nao de coordenadas
 ## escritas na mao: capo e radiador na frente, retrovisor na porta do
@@ -196,12 +207,17 @@ func _place_attach_points(box: AABB) -> void:
 	var hl: float = box.size.z * 0.5
 	var y0: float = box.position.y
 	var h: float = box.size.y
-	# Folga: a esfera do marcador tem raio 0.3, entao 0.35 deixa ela INTEIRA
-	# fora da caixa. Com metade disso (0.17) o marcador so espiava pra fora e a
-	# mira escorregava pra carroceria a qualquer centimetro de diferenca — o
-	# teste de loop falhava em ~metade das rodadas, e o jogador teria que mirar
-	# com precisao de centimetro pra instalar a gambiarra.
-	var out := 0.5
+	# Folga entre a caixa de colisao e o CENTRO do marcador. O valor antigo (0.5)
+	# vinha de uma conta errada — dizia "a esfera do marcador tem raio 0.3",
+	# quando a esfera VISIVEL tem 0.16 e o hitbox tem 0.45. Meio metro deixava as
+	# bolinhas boiando soltas longe da lataria, parecendo enfeite aleatorio em
+	# vez de "encaixe aqui" (visto na foto do ponto de vista do jogador).
+	#
+	# Encostar nao custa mira: quem decide a facilidade e o HITBOX (raio 0.45),
+	# que continua saindo 0.45 pra fora da caixa a partir do centro do marcador —
+	# ou seja o raio de interacao ainda acerta a esfera antes da carroceria.
+	# Aqui a folga e so a da esfera visivel, pra ela nao afundar na lataria.
+	var out := 0.20
 	# UMA FACE PRA CADA: capo por CIMA, retrovisor na lateral ESQUERDA, radiador
 	# na lateral DIREITA (capo do lado do motor), parachoque atras.
 	# Antes capo e radiador dividiam a face dianteira, um acima do outro: quem
@@ -210,7 +226,7 @@ func _place_attach_points(box: AABB) -> void:
 	# olhar quase a pino. Cada marcador com a sua face resolve os dois casos e
 	# deixa os 4 na linha do olhar de quem esta de pe ao lado do carro.
 	var spots := {
-		"hood": Vector3(0.0, y0 + h + out * 0.6, -hl * 0.70),
+		"hood": Vector3(0.0, y0 + h + out, -hl * 0.70),
 		"radiator": Vector3(hw + out, y0 + h * 0.55, -hl * 0.30),
 		"mirror": Vector3(-hw - out, y0 + h * 0.78, -hl * 0.18),
 		"bumper": Vector3(0.0, y0 + h * 0.28, hl + out),
@@ -236,6 +252,11 @@ func get_interact_prompt() -> String:
 	if driver:
 		return ""
 	if is_wrecked:
+		if at_workshop:
+			# Sem "[E]" de proposito: aqui a carroceria nao e um alvo de acao, e
+			# a dica de onde a acao esta.
+			var missing: int = attach_points.size() - installed_parts.size()
+			return "Faltam %d gambiarra(s) — mire nos pontos coloridos" % missing
 		return "Rebocar [E]"
 	return "Entrar no carro [E]"
 
@@ -243,6 +264,10 @@ func interact(player: Node) -> void:
 	if driver == player:
 		return
 	if is_wrecked:
+		# Na oficina o carro ja chegou: reengatar o reboque so o arrastaria pra
+		# longe dos marcadores que o jogador esta tentando acertar.
+		if at_workshop:
+			return
 		if player.has_method("start_towing"):
 			player.start_towing(self)
 	else:

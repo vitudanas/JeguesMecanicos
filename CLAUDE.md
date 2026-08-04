@@ -1334,6 +1334,61 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     provar de que lado está o defeito (jogo ou arnês) antes de ajustar qualquer
     número.
 
+- **2026-08-04** — Usuário perguntou se o `.app` já estava atualizado. Estava: o
+  `.zip` e o `.exe` foram exportados 09:10, depois da última alteração de código
+  (09:06) e do commit `6e4f06f`. **Mas o `.app` que ele abre não estava.** Do lado
+  do zip novo tinha um `Jegues Mecanicos 2.app` extraído em 03/08 15:09 — de
+  ANTES do carro de verdade, da física de dirigir e dos 8 bugs do loop. Quem
+  desse dois cliques nele estaria jogando o build velho, sem nenhum aviso de que
+  era velho. **Lição de fluxo de trabalho**: exportar não é o fim — o `.zip` é o
+  artefato, mas o que o usuário abre é o `.app` extraído, e ele NÃO se atualiza
+  sozinho quando o zip é regravado. Extrair de novo (ou apagar o antigo) faz
+  parte do "reexportar ao terminar". Conferido no build atual: as 128 referências
+  `res://` do jogo estão no `.pck`, o binário exportado sobe limpo (`--headless
+  --quit-after`) e o `.app` novo abre de verdade renderizando a cidade inteira
+  (céu HDRI, montanhas, casas, faixa de pedestre, HUD e bússola).
+
+- **2026-08-04** — Usuário jogou e disse que "a mecânica principal não funciona":
+  não conseguia montar as gambiarras. **O `loop_test` passava 5/5 mesmo assim** —
+  e essa é a lição da rodada: ele teleporta o jogador pro ângulo perfeito de cada
+  marcador e mira no CENTRO exato da esfera. Isso prova a lógica e não prova
+  **nada sobre jogar com o mouse**.
+  - **A armadilha que travava o jogo: mirar na carroceria dava "Rebocar [E]".**
+    A carroceria é o alvo óbvio (ocupa a tela inteira, ao lado de 4 bolinhas de
+    32cm), então o jogador mira nela e aperta E — e em vez de montar a peça, o
+    reboque **reengata** e o carro sai sendo arrastado pra longe dos marcadores.
+    Estava documentado como "limitação conhecida — inofensivo, só reengancha o
+    TowHook"; de inofensivo não tinha nada, era o que impedia de jogar. Agora a
+    `DropZone` liga `Vehicle.at_workshop` e, com o carro na oficina, a carroceria
+    mostra "Faltam N gambiarra(s) — mire nos pontos coloridos" e o E não faz
+    nada. Sai do pátio (empurrado ou consertado), volta a ser rebocável.
+  - **O que achou**: `tools/verify/attach_shot.gd`, que **fotografa pelo ponto de
+    vista do jogador**. Nenhum teste numérico ia pegar isso — o raycast acertava
+    os marcadores certinho, os 4 estavam alcançáveis, a tolerância de mira era
+    boa. O defeito só existe na tela. **Vale como método**: quando o usuário diz
+    que algo "não funciona" e a verificação passa, fotografar antes de mexer.
+  - **Fumaça cobrindo o marcador do capô**: a coluna subia mais de 1m bem no eixo
+    do marcador — e de frente é justamente de onde se mira nele. Descentralizar
+    só trocou de vítima (passou a cobrir o radiador); o que resolveu foi o
+    penacho virar **bafo baixo** na grade, morrendo abaixo da faixa dos
+    marcadores (`lifetime` 1.3 → 0.75, gravidade 0.4 → 0.15).
+  - **Marcadores boiando soltos**: a folga era 0.5m a partir da caixa de colisão,
+    vinda de uma conta errada no comentário ("a esfera tem raio 0.3" — a visível
+    tem 0.16 e o hitbox 0.45). Baixada pra 0.20: encostam na lataria e a mira não
+    piora, porque quem decide a facilidade é o hitbox de 0.45, que continua
+    saindo pra fora da caixa.
+  - **Novo verificador** (`tools/verify/attach_test.gd`): varre um anel de
+    posições em volta do carro e mede de quantas dá pra mirar em cada bolinha
+    (hoje 71-100%), quantos graus de erro a mira aguenta (±14° na horizontal,
+    ±10° na vertical) e — a trava de regressão que importa — que a carroceria
+    **não oferece "Rebocar" dentro da oficina**.
+  - **Dois erros meus, os dois de medir com o chão errado**: usei
+    `get_drop_position()` (o CENTRO da Area3D, 1m acima do piso) como altura do
+    chão, e jogador e carro saíram boiando na foto e na medição; e a "melhor
+    posição" pra medir tolerância pegava o primeiro ângulo do anel que acertava,
+    que é um ângulo raspante — reportou "±0°" num ponto que de frente aguenta
+    ±14°. Os dois passaram a sair de raio pra baixo / da direção de frente.
+
 ### Pendências pedidas e ainda NÃO feitas
 
 Nenhuma das três pendências anteriores continua aberta. O que sobrou de
