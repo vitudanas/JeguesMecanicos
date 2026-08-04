@@ -75,6 +75,9 @@ signal part_attached(point_name: String)
 @export var damping_ratio := 0.45       ## 1.0 = criticamente amortecido
 
 @onready var attach_points_node: Node3D = $AttachPoints
+## Criado em runtime por `_place_part_anchors`: um ponto por gambiarra, no lugar
+## que o nome dela diz. Separado dos marcadores de mira de proposito.
+var part_anchors_node: Node3D = null
 @onready var chase_camera: Camera3D = $ChaseCameraRig/ChaseCamera
 @onready var chase_rig: SpringArm3D = $ChaseCameraRig
 @onready var smoke_fx: GPUParticles3D = $SmokeFX
@@ -234,6 +237,64 @@ func _place_attach_points(box: AABB) -> void:
 	for spot in attach_points_node.get_children():
 		if spot is Node3D and spots.has(spot.point_name):
 			(spot as Node3D).position = spots[spot.point_name]
+	_place_part_anchors(box)
+
+## ONDE A PECA FICA e outra coisa de ONDE SE MIRA.
+##
+## Os marcadores acima estao espalhados em faces separadas por causa da MIRA (um
+## na frente do outro, o raio pega o errado). Enquanto a peca instalada nascia
+## no proprio marcador, ela herdava esse espalhamento: a "mangueira do radiador"
+## acabava na porta, a "dobradica do capo" pairando acima do teto e o "plastico
+## do parachoque" solto atras, todos com folga visivel — na tela lia como cubo
+## colorido orbitando o carro, nao como gambiarra. (Visto na foto do ponto de
+## vista do jogador; nenhum teste numerico pega isso, porque pra eles basta a
+## peca existir e estar presa.)
+##
+## Aqui cada peca ganha um ponto proprio: no lugar que o NOME dela diz e
+## ENCOSTADO na carroceria. A mira continua onde e alcancavel.
+func _place_part_anchors(box: AABB) -> void:
+	# Limites REAIS da caixa, nao metade do tamanho. A carroceria nao e centrada
+	# na origem do modelo: usar `-size.z*0.5` como "a frente" errava por 15 cm e
+	# punha a mangueira do radiador atras do bico, dentro da lataria.
+	var x_left: float = box.position.x
+	var x_right: float = box.position.x + box.size.x
+	var z_front: float = box.position.z
+	var z_rear: float = box.position.z + box.size.z
+	var z_mid: float = (z_front + z_rear) * 0.5
+	var y0: float = box.position.y
+	var h: float = box.size.y
+	# Encosta na lataria em vez de pairar: so o suficiente pra peca nao afundar.
+	var skin := 0.06
+	# Altura do capo MEDIDA na malha, nao estimada. Uma fracao da caixa nao
+	# serve: a caixa e do carro inteiro (o topo dela e o teto), e cada um dos 6
+	# modelos tem um capo de altura diferente. Com estimativa, a peca ficava
+	# dentro da lataria e o jogador nao via.
+	var hood_z: float = z_mid + (z_front - z_mid) * 0.62
+	var hood_y: float = rig.surface_y_at(0.0, hood_z) if rig else -INF
+	if hood_y == -INF:
+		hood_y = y0 + h * 0.62
+	var anchors := {
+		# Dobradica DEITADA em cima do capo, na frente do para-brisa.
+		"hood": Vector3(0.0, hood_y + skin, hood_z),
+		# Mangueira saindo da GRADE: na frente do bico, embaixo.
+		"radiator": Vector3(x_right * 0.30, y0 + h * 0.34, z_front - skin),
+		# Fita no RETROVISOR do motorista: na lateral, na altura da janela.
+		"mirror": Vector3(x_left - skin, y0 + h * 0.66,
+			z_mid + (z_front - z_mid) * 0.28),
+		# Plastico amassado no PARACHOQUE traseiro, embaixo.
+		"bumper": Vector3(0.0, y0 + h * 0.22, z_rear + skin),
+	}
+	if part_anchors_node == null:
+		part_anchors_node = Node3D.new()
+		part_anchors_node.name = "PartAnchors"
+		add_child(part_anchors_node)
+	for point_name: String in anchors:
+		var a: Node3D = part_anchors_node.get_node_or_null(point_name)
+		if a == null:
+			a = Node3D.new()
+			a.name = point_name
+			part_anchors_node.add_child(a)
+		a.position = anchors[point_name]
 
 ## Rigidez e amortecimento saem da fisica, nao de tentativa e erro: no
 ## equilibrio a mola de cada roda sustenta 1/4 do peso com `rest_compression`
@@ -291,7 +352,15 @@ func install_part(point_name: String, part: Node, marker: Node3D) -> bool:
 	if installed_parts.has(point_name):
 		return false
 	installed_parts[point_name] = part
-	part.install(self, point_name, marker)
+	# A peca vai pro ANCORA (lugar que o nome dela diz, encostado na lataria),
+	# nao pro marcador de mira que o jogador acertou — os dois so coincidiam por
+	# falta de separacao, e era isso que deixava a mangueira na porta.
+	var anchor: Node3D = marker
+	if part_anchors_node:
+		var a: Node3D = part_anchors_node.get_node_or_null(point_name)
+		if a:
+			anchor = a
+	part.install(self, point_name, anchor)
 	part.broke.connect(_on_part_broke.bind(point_name))
 	part_attached.emit(point_name)
 	if installed_parts.size() >= attach_points.size():

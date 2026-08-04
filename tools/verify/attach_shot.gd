@@ -93,7 +93,8 @@ func _run() -> void:
 	await _shot("02_perto_3m")
 
 	# Um close de cada marcador, da distancia em que se instala.
-	for spot in car.get_node("AttachPoints").get_children():
+	var spots := car.get_node("AttachPoints").get_children()
+	for spot in spots:
 		if not spot.has_method("get_interact_prompt"):
 			continue
 		var target: Vector3 = spot.global_position
@@ -103,3 +104,23 @@ func _run() -> void:
 			side = Vector3(1, 0, 0)
 		_stand(target, side.normalized(), 2.2, ground_y)
 		await _shot("03_%s" % spot.point_name)
+
+	# ---------------------------------------- o carro DEPOIS de gambiarrado
+	# A premissa do jogo e vender carro remendado com tranqueira aparente. Se o
+	# carro consertado nao se distingue de um carro normal na tela, a premissa
+	# nao chega ao jogador — e nenhum teste numerico percebe isso, porque pra
+	# eles basta a peca existir e estar presa no lugar certo.
+	for spot in spots:
+		if spot.has_method("interact"):
+			spot.interact(player)
+			await get_tree().physics_frame
+	for i in range(30):
+		await get_tree().physics_frame
+	print("    gambiarras instaladas: %d | sucateado: %s" % [
+		car.installed_parts.size(), car.is_wrecked])
+	var center2: Vector3 = car.global_position + Vector3(0, 0.5, 0)
+	for shot_spec: Array in [["frente", Vector3(0, 0, -1)], ["tras", Vector3(0, 0, 1)],
+			["esquerda", Vector3(-1, 0, 0)], ["direita", Vector3(1, 0, 0)],
+			["tres_quartos", Vector3(1, 0, -0.9)]]:
+		_stand(center2, (shot_spec[1] as Vector3).normalized(), 3.4, ground_y)
+		await _shot("05_montado_%s" % shot_spec[0])

@@ -195,6 +195,27 @@ func _measure_body() -> void:
 			-(aabb.position.z + aabb.size.z)),
 		aabb.size)
 
+## Altura da SUPERFICIE do modelo em (x, z), no espaco do Vehicle. Devolve
+## -INF se nao houver malha ali.
+##
+## Existe porque `body_aabb` e a caixa do carro INTEIRO: o topo dela e o teto.
+## Estimar "a altura do capo" como uma fracao dessa caixa e chute, e foi assim
+## que a gambiarra do capo acabou dentro da lataria — o capo e bem mais baixo
+## que o teto, e o quanto varia de modelo pra modelo.
+##
+## As malhas do pacote tem transform identidade e a geometria deslocada (ver o
+## comentario do topo deste arquivo), e o modelo inteiro leva 180 graus em Y —
+## por isso basta inverter X e Z pra sair do espaco da malha pro do Vehicle.
+func surface_y_at(x: float, z: float, radius := 0.30) -> float:
+	var best := -INF
+	for mesh_inst in _body_meshes:
+		if mesh_inst.mesh == null:
+			continue
+		for v: Vector3 in mesh_inst.mesh.get_faces():
+			if absf(-v.x - x) <= radius and absf(-v.z - z) <= radius:
+				best = maxf(best, v.y)
+	return best
+
 func _meshes(node: Node) -> Array[MeshInstance3D]:
 	var out: Array[MeshInstance3D] = []
 	if node is MeshInstance3D and (node as MeshInstance3D).mesh:

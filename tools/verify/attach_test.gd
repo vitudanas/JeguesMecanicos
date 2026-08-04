@@ -310,3 +310,65 @@ func _run() -> void:
 				fail("na oficina a carroceria ainda oferece 'Rebocar' (%d posicoes): apertar E arrasta o carro pra longe das gambiarras" % body_prompts[pr])
 		if body_prompts.is_empty():
 			print("    (o raio nunca pegou a carroceria nessas posicoes)")
+
+	# ------------------------- 6. a gambiarra instalada FICA no carro e APARECE?
+	# O jogo inteiro e sobre consertar carro com tranqueira aparente. Se a peca
+	# some, fica no chao ou nasce dentro da lataria, o carro consertado nao se
+	# distingue de um carro normal e a premissa evapora — e nada disso aparece
+	# num teste que so olha `installed_parts.size()`.
+	print("\n[6] a peca instalada fica no carro e da pra ver?")
+	for spot in spots:
+		if not spot.has_method("interact"):
+			continue
+		spot.interact(player)
+		await get_tree().physics_frame
+	await get_tree().physics_frame
+	print("    instaladas: %d de %d | ainda sucateado: %s" % [
+		car.installed_parts.size(), spots.size(), car.is_wrecked])
+	if car.installed_parts.size() < spots.size():
+		fail("so %d de %d gambiarras foram instaladas" % [
+			car.installed_parts.size(), spots.size()])
+	for point_name: String in car.installed_parts:
+		var part: Node3D = car.installed_parts[point_name]
+		if not is_instance_valid(part):
+			fail("a peca de '%s' sumiu da cena" % point_name)
+			continue
+		var local: Vector3 = car.to_local(part.global_position)
+		var dist: float = part.global_position.distance_to(car.global_position)
+		# "Dentro da lataria" tem que ser medido contra a PELE do modelo, nao
+		# contra a caixa de colisao: a caixa e do carro inteiro, entao o topo
+		# dela e o TETO e qualquer peca pousada no capo (que e bem mais baixo)
+		# aparecia como enterrada. Onde nao ha malha naquele (x, z) — o caso das
+		# pecas nas laterais e atras — a peca esta fora do corpo por definicao.
+		# Enterrada = abaixo da pele do modelo E dentro da caixa da carroceria.
+		# So a altura nao basta: uma peca pendurada no parachoque fica abaixo da
+		# linha do capo e mesmo assim aparece, porque esta pra FORA do corpo.
+		var skin_y: float = car.rig.surface_y_at(local.x, local.z) if car.rig else -INF
+		var in_box: bool = car.rig.body_aabb.grow(-0.03).has_point(local)
+		var inside: bool = in_box and skin_y != -INF and local.y < skin_y - 0.02
+		var skin_txt := ""
+		if skin_y != -INF:
+			skin_txt = " | pele do modelo em y=%.2f" % skin_y
+		var vis := ""
+		for m in _meshes_of(part):
+			if m.visible:
+				vis = "visivel"
+				break
+		print("    %-9s local (%.2f, %.2f, %.2f)%s | %s%s" % [
+			point_name, local.x, local.y, local.z, skin_txt,
+			vis if vis != "" else "SEM MALHA VISIVEL",
+			" | DENTRO DA LATARIA" if inside else ""])
+		if dist > 4.0:
+			fail("a peca de '%s' ficou a %.1f m do carro (caiu no chao?)" % [point_name, dist])
+		if inside:
+			fail("a peca de '%s' ficou dentro da lataria: o jogador nao ve" % point_name)
+		if vis == "":
+			fail("a peca de '%s' nao tem malha visivel" % point_name)
+
+func _meshes_of(n: Node) -> Array[MeshInstance3D]:
+	var out: Array[MeshInstance3D] = []
+	if n is MeshInstance3D:
+		out.append(n)
+	for c in n.get_children():
+		out.append_array(_meshes_of(c))
+	return out

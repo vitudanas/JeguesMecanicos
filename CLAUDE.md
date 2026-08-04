@@ -1433,6 +1433,38 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     escrito o guard `_parking` sem liberar em todas as saídas, o que teria
     estacionado só o primeiro carro da partida.
 
+- **2026-08-04** — Usuário pediu um tour visual do jogo. Fotografando cada etapa
+  do loop pelo ponto de vista do jogador (`tools/verify/loop_shots.gd`) e o mundo
+  inteiro (`tools/verify/world_tour.gd`), apareceu um defeito que nenhum teste
+  numérico pegava: **o carro consertado não mostrava gambiarra nenhuma.** As
+  peças existiam, estavam presas e o `installed_parts.size()` batia 4 — mas na
+  tela eram cubos coloridos flutuando ao redor do carro, com folga visível, e
+  nos lugares errados (a "mangueira do radiador" na porta, a "dobradiça do capô"
+  pairando acima do teto). A premissa do jogo não chegava ao jogador.
+  - **Causa**: o mesmo ponto servia pra duas coisas — **onde se mira** e **onde a
+    peça fica**. Os pontos foram espalhados em faces separadas por causa da mira
+    (um na frente do outro, o raio pega o errado, ver 2026-08-04), e a peça foi
+    junto. Agora `Vehicle._place_part_anchors()` dá a cada peça um ponto próprio,
+    no lugar que o nome dela diz e encostado na lataria; a mira continua onde é
+    alcançável.
+  - **`CarRig.surface_y_at()`**: a altura do capô passou a ser **medida nos
+    vértices da malha**, não estimada como fração da caixa. A caixa é do carro
+    inteiro, ou seja o topo dela é o TETO — estimando, a peça do capô ficava
+    dentro da lataria, e o valor certo varia entre os 6 modelos.
+  - **Erro meu**: assumi que a carroceria é centrada na origem e usei
+    `-size.z*0.5` como "a frente". Não é: errava 15 cm e punha a mangueira atrás
+    do bico. Passou a usar os limites reais (`position` e `position + size`).
+  - **O verificador também estava errado** e vale a lição: ele julgava "peça
+    dentro da lataria" pela caixa de colisão, então reprovava qualquer peça
+    pousada no capô (que é bem mais baixo que o teto) e aprovava peça enterrada
+    na traseira. Agora cruza dois sinais — abaixo da **pele medida** do modelo
+    E dentro da caixa. Só altura não basta: peça pendurada no parachoque fica
+    abaixo da linha do capô e mesmo assim aparece.
+  - **Observações do tour** (nada disso foi corrigido): de cima o mundo é uma
+    placa quadrada com borda reta contra o céu; a névoa lava as vistas amplas; o
+    pátio da oficina é o cenário menos trabalhado do mapa (laje nua na grama,
+    cerca só de um lado); e há uma emenda dura no sombreado do chão.
+
 ### Pendências pedidas e ainda NÃO feitas
 
 Nenhuma das três pendências anteriores continua aberta. O que sobrou de
