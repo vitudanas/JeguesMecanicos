@@ -21,6 +21,12 @@ var _e_prev := false
 
 func _ready() -> void:
 	add_to_group("player")
+	# O raio de interacao nasce DENTRO da capsula do jogador (a camera fica na
+	# cabeca). Olhando pra baixo — que e o caso de qualquer alvo baixo, tipo o
+	# ponto do radiador do carro — ele saia atravessando o proprio corpo e
+	# retornava o PROPRIO jogador como alvo, entao a interacao simplesmente nao
+	# acontecia.
+	interact_ray.add_exception(self)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	camera.current = true
 	hud = get_tree().get_first_node_in_group("hud")

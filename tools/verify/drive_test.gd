@@ -160,6 +160,23 @@ func _run() -> void:
 	if rev > -0.5:
 		fail("o carro nao anda de re (%.2f m/s)" % rev)
 
+	# ------------------------------------------------------- queda de 5m
+	car.queue_free()
+	await get_tree().physics_frame
+	car = _spawn()
+	car.global_position = Vector3(10.0, 5.0, 1.5)
+	var peak := 0.0
+	for i in range(600):
+		await _step(car, 0.0, 0.0)
+		peak = maxf(peak, car.global_position.y)
+	var after := car.global_position.y
+	print("\n[queda] solto de 5m: pico depois do impacto %.2f m, repouso %.3f m" % [peak, after])
+	# Sem batente na mola o carro era catapultado a dezenas de metros.
+	if peak > 5.2:
+		fail("o carro foi CATAPULTADO no impacto (subiu a %.1f m)" % peak)
+	if absf(after - 0.02) > 0.15:
+		fail("depois da queda o carro nao voltou a assentar (y=%.2f)" % after)
+
 	# ----------------------------------------------------------- reboque
 	car.queue_free()
 	await get_tree().physics_frame
@@ -178,6 +195,45 @@ func _run() -> void:
 	if towed < 3.0:
 		fail("o carro sucateado quase nao se move sendo rebocado (%.2f m)" % towed)
 
+	# --------------------------------- todos os modelos do pool sao usaveis
+	# O modelo e sorteado por carro, entao o teste de fisica so cobre UM. Aqui
+	# cada modelo do pool e montado e conferido: se algum tiver as rodas com
+	# outro nome ou proporcao esquisita, o Vehicle sai quebrado so as vezes —
+	# que e o pior tipo de bug pra achar depois.
+	print("\n[pool] conferindo cada modelo de carro")
+	var probe: RigidBody3D = VEHICLE.instantiate()
+	var pool: Array = probe.car_pool
+	probe.free()
+	for model: PackedScene in pool:
+		var c: RigidBody3D = VEHICLE.instantiate()
+		c.car_model = model
+		c.is_wrecked = false
+		town.add_child(c)
+		c.global_position = Vector3(10.0, 0.5, 1.5)
+		c.set_physics_process(false)
+		await get_tree().physics_frame
+		var r = c.rig
+		var name: String = model.resource_path.get_file()
+		var wheels_ok: bool = c.wheels.size() == 4
+		var axles_ok: bool = r.front_axle_z < 0.0 and r.rear_axle_z > 0.0
+		var size_ok: bool = r.body_aabb.size.z > 2.0 and r.body_aabb.size.x > 1.0
+		var reach_ok := true
+		for spot: Node3D in c.get_node("AttachPoints").get_children():
+			var sp: Vector3 = spot.position
+			var protrusion: float = maxf(absf(sp.x) - r.body_aabb.size.x * 0.5,
+				maxf(absf(sp.z) - r.body_aabb.size.z * 0.5,
+					sp.y - (r.body_aabb.position.y + r.body_aabb.size.y)))
+			if protrusion < 0.05 or protrusion > 0.6:
+				reach_ok = false
+		print("  %-18s %.2f x %.2f x %.2f | rodas %d | eixos %.2f/%.2f | gambiarras %s" % [
+			name, r.body_aabb.size.x, r.body_aabb.size.y, r.body_aabb.size.z,
+			c.wheels.size(), r.front_axle_z, r.rear_axle_z, "ok" if reach_ok else "INALCANCAVEIS"])
+		if not (wheels_ok and axles_ok and size_ok and reach_ok):
+			fail("modelo %s nao monta direito (rodas=%d eixos=%s tamanho=%s gambiarras=%s)" % [
+				name, c.wheels.size(), axles_ok, size_ok, reach_ok])
+		c.queue_free()
+		await get_tree().physics_frame
+
 	# ------------------------------------------------------ rodas do rig
 	var rig = car.rig
 	print("\n[rig] eixo dianteiro z=%.2f | traseiro z=%.2f | bitola %.2f | raio da roda %.3f" % [
@@ -188,15 +244,24 @@ func _run() -> void:
 	if rig.front_axle_z >= 0.0 or rig.rear_axle_z <= 0.0:
 		fail("eixos invertidos: a frente do carro tem que estar no -Z")
 
-	# Pontos de gambiarra caem sobre a carroceria?
+	# Cada marcador tem que SOBRAR da caixa de colisao (senao o raycast de
+	# interacao acerta a carroceria antes e o jogador nao consegue mirar nele)
+	# mas continuar encostado no carro. O teste de loop pegou 3 pontos
+	# inalcancaveis exatamente por isso.
 	var box: AABB = rig.body_aabb
 	for spot: Node3D in car.get_node("AttachPoints").get_children():
 		var p: Vector3 = spot.position
-		var inside_x: bool = absf(p.x) <= box.size.x * 0.5 + 0.25
-		var inside_z: bool = absf(p.z) <= box.size.z * 0.5 + 0.25
-		var inside_y: bool = p.y >= box.position.y - 0.2 and p.y <= box.position.y + box.size.y + 0.25
-		print("[gambiarra] %-9s em (%.2f, %.2f, %.2f) %s" % [
-			spot.point_name, p.x, p.y, p.z,
-			"ok" if (inside_x and inside_z and inside_y) else "FORA DO CARRO"])
-		if not (inside_x and inside_z and inside_y):
-			fail("ponto de gambiarra '%s' fica fora da carroceria" % spot.point_name)
+		# Quanto o ponto passa da caixa em cada eixo (negativo = ainda dentro).
+		var out_x: float = absf(p.x) - box.size.x * 0.5
+		var out_z: float = absf(p.z) - box.size.z * 0.5
+		var out_y: float = p.y - (box.position.y + box.size.y)
+		var protrusion: float = maxf(out_x, maxf(out_z, out_y))
+		var reachable: bool = protrusion >= 0.05 and protrusion <= 0.6
+		# E nao pode estar solto no ar longe do carro.
+		var attached: bool = out_x <= 0.6 and out_z <= 0.6 and out_y <= 0.6
+		print("[gambiarra] %-9s em (%.2f, %.2f, %.2f) sobra %.2f m %s" % [
+			spot.point_name, p.x, p.y, p.z, protrusion,
+			"ok" if (reachable and attached) else "INALCANCAVEL"])
+		if not (reachable and attached):
+			fail("ponto '%s' sobra %.2f m da carroceria (precisa entre 0.05 e 0.6)" % [
+				spot.point_name, protrusion])

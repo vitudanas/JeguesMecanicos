@@ -34,3 +34,9 @@ func interact(_player: Node) -> void:
 	vehicle.install_part(point_name, part, self)
 	if marker:
 		marker.visible = false
+	# Some tambem pro raycast de interacao. O marcador ficava invisivel mas a
+	# Area3D continuava ali na frente da carroceria: mirando no carro o jogador
+	# pegava um ponto ja usado, cujo prompt e vazio — parecia que o carro tinha
+	# parado de responder ao E.
+	collision_layer = 0
+	monitorable = false

@@ -87,6 +87,59 @@ func roll(distance: float) -> void:
 func body_meshes() -> Array[MeshInstance3D]:
 	return _body_meshes
 
+## Pinta a lataria. So a superficie de MAIOR area de cada malha e trocada: no
+## modelo do kit os vidros, farois e grade sao superficies separadas dentro da
+## mesma malha, e pintar todas deixaria o carro com vidro colorido.
+##
+## Cada superficie ganha uma COPIA como surface_override_material. Material que
+## vem de .glb e compartilhado entre todas as instancias da cena — pintar ele
+## direto pintaria todo carro do mapa da mesma cor de uma vez (armadilha ja
+## documentada no CharacterVisual).
+func paint(color: Color) -> void:
+	for mesh_inst in _body_meshes:
+		var mesh: Mesh = mesh_inst.mesh
+		if mesh == null:
+			continue
+		var best := -1
+		var best_area := -1.0
+		for s in range(mesh.get_surface_count()):
+			var area := _surface_area(mesh, s)
+			if area > best_area:
+				best_area = area
+				best = s
+		if best < 0:
+			continue
+		var base: Material = mesh.surface_get_material(best)
+		var mat: StandardMaterial3D
+		if base is StandardMaterial3D:
+			mat = (base as StandardMaterial3D).duplicate()
+		else:
+			mat = StandardMaterial3D.new()
+		mat.albedo_color = color
+		mesh_inst.set_surface_override_material(best, mat)
+
+## Area aproximada de uma superficie: soma dos triangulos. Serve so pra achar
+## qual superficie e a lataria (a maior), entao precisao nao importa.
+func _surface_area(mesh: Mesh, surface: int) -> float:
+	var arrays := mesh.surface_get_arrays(surface)
+	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var idx: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+	var total := 0.0
+	if idx.size() >= 3:
+		var i := 0
+		while i + 2 < idx.size():
+			total += _tri_area(verts[idx[i]], verts[idx[i + 1]], verts[idx[i + 2]])
+			i += 3
+	else:
+		var i := 0
+		while i + 2 < verts.size():
+			total += _tri_area(verts[i], verts[i + 1], verts[i + 2])
+			i += 3
+	return total
+
+func _tri_area(a: Vector3, b: Vector3, c: Vector3) -> float:
+	return (b - a).cross(c - a).length() * 0.5
+
 func _apply() -> void:
 	for pivot in _front_pivots:
 		# Esterco em Y e giro em X compostos nessa ordem: girar primeiro e

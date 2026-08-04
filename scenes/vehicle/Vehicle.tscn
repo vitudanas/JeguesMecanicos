@@ -11,7 +11,7 @@
 size = Vector3(1.8, 1.0, 4.0)
 
 [sub_resource type="SphereShape3D" id="AttachShape"]
-radius = 0.3
+radius = 0.45
 
 [sub_resource type="SphereMesh" id="MarkerMesh"]
 radius = 0.16

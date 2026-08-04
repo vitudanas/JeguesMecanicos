@@ -266,6 +266,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -175, 0, 0)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -169, 0.4, 6)
 
 [node name="Pothole1" type="Area3D" parent="."]
+collision_layer = 4
+collision_mask = 1
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37.5, -0.1, 9)
 script = ExtResource("1")
 
@@ -273,6 +275,8 @@ script = ExtResource("1")
 shape = SubResource("PotholeShape")
 
 [node name="Pothole2" type="Area3D" parent="."]
+collision_layer = 4
+collision_mask = 1
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 21, -0.1, 37.5)
 script = ExtResource("1")
 
@@ -280,6 +284,8 @@ script = ExtResource("1")
 shape = SubResource("PotholeShape")
 
 [node name="Pothole3" type="Area3D" parent="."]
+collision_layer = 4
+collision_mask = 1
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 37.5, -0.1, -9)
 script = ExtResource("1")
 
@@ -287,6 +293,8 @@ script = ExtResource("1")
 shape = SubResource("PotholeShape")
 
 [node name="Pothole4" type="Area3D" parent="."]
+collision_layer = 4
+collision_mask = 1
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -37.5, -0.1, -8)
 script = ExtResource("1")
 

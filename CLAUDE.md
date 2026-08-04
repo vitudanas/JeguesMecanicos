@@ -207,8 +207,9 @@ scenes/main/            Main.tscn — cena de entrada (Town + Player + HUD + Rai
 scenes/player/          Player.tscn/gd — controller 1ª pessoa
 scenes/vehicle/         Vehicle.tscn/gd (carro real + suspensao por raycast),
                         AttachSpot.gd, GambiarraPart.gd, parts/*.tscn
-tools/verify/           city.tscn e drive_test.tscn — verificacao automatizada
-                        (fora do build, ver tools/verify/README.md)
+tools/verify/           city.tscn, drive_test.tscn e loop_test.tscn —
+                        verificacao automatizada (fora do build, ver
+                        tools/verify/README.md)
 scenes/world/           Town.tscn (cidade + anel rural, tudo num só mundo sandbox),
                         Junkyard.tscn, Workshop.tscn, MudZone.tscn/gd, RainFX.tscn/gd,
                         CityBuilding.tscn (prédio genérico com colisão automática),
@@ -1272,19 +1273,82 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     calçada) e do topo real do asfalto — as duas coisas que quebraram nesta
     rodada.
 
+- **2026-08-04** — Usuário pediu pra continuar. Fechada a pendência número 1
+  (o loop nunca tinha sido jogado) e dada variedade aos carros.
+  - **Teste de loop de ponta a ponta** (`tools/verify/loop_test.tscn`): carrega
+    o `Main.tscn` de verdade e percorre ferro-velho → reboque → oficina → 4
+    gambiarras → dirigir → entrega → lábia → venda. O que faz isso valer:
+    **`Input.parse_input_event()` alimenta o mesmo estado de teclado que
+    `Input.is_key_pressed()` lê**, então o E de interagir e o F de sair do carro
+    passam pelo código real do jogo. Sem isso só dá pra chamar método por fora,
+    e o teste não provaria nada sobre input.
+  - **Ele achou 8 bugs que travavam o jogo de verdade.** Nenhum era visível nas
+    verificações geométricas anteriores:
+    1. **Não dava pra montar gambiarra nenhuma.** O raycast de interação vê
+       áreas, e a `DropZone` da oficina é uma área grande exatamente onde o
+       carro estaciona — ela roubava a mira dos marcadores. Criada a **camada 3
+       = gatilho** (DropZone, CarZone do comprador, buracos e poças), que o raio
+       ignora e que continua detectando o veículo.
+    2. **O carro montado não saía do lugar.** Peça de gambiarra instalada é um
+       `RigidBody3D` cinemático grudado no carro, e corpo cinemático empurra quem
+       encosta: as 4 peças brigavam com a carroceria (throttle 1.0, 4 rodas no
+       chão, 1 cm em 2 s). Peça instalada agora não colide; a colisão volta
+       quando ela se solta e vira destroço.
+    3. **O reboque empurrava o carro por cima do jogador.** O alvo do `TowHook`
+       ficava na FRENTE de quem puxa (apesar do arquivo sempre ter dito "atrás"),
+       e com um carro de 4,22 m a carroceria alcançava a cápsula: o carro subia
+       nela e, quando o jogador saía de baixo, o solver o ejetava a **375 m/s**.
+       Agora puxa atrás, a uma distância derivada do tamanho real do carro.
+    4. **A carcaça chegava de cabeça pra baixo** em 2 de 3 rodadas: era
+       arremessada pelo degrau de 20 cm da laje da oficina. A laje virou rente ao
+       chão (mesma decisão já tomada pro asfalto) e o pneu de carcaça rebocada
+       passou a deslizar em vez de agarrar (`tow_grip`) — puxada de lado com pneu
+       agarrando, ela capotava nos próprios pneus.
+    5. **Marcadores de gambiarra inalcançáveis.** Postos na superfície do carro,
+       ficavam DENTRO da caixa de colisão e o raio acertava a lataria antes. Hoje
+       cada um tem a **sua face**: capô por cima, retrovisor à esquerda, radiador
+       à direita, parachoque atrás — antes capô e radiador dividiam a dianteira e
+       um tapava o outro, e o radiador embaixo do bico virou o ponto mais difícil
+       do jogo.
+    6. **Suspensão sem batente virava catapulta**: qualquer interpenetração
+       gerava força enorme. Agora tem limite de curso e teto de força.
+    7. **O carro capotava na curva** (o SUV deitava, up=0.03): o centro de massa
+       era o centro da caixa de colisão, ou seja a meia-altura da carroceria.
+       Baixado pra altura do eixo, que é onde a massa de um carro fica.
+    8. **Carro parado nunca parava**: sobrava deriva de ~0,28 m/s pra sempre (o
+       arrasto é proporcional à velocidade e perto de zero não segura nada).
+       Adicionado atrito estático com teto de 0.6g.
+  - **Variedade de carros**: modelo sorteado entre 6 do pacote e pintura sorteada
+    entre 8 cores foscas de calhambeque. Só a superfície de MAIOR área de cada
+    malha é pintada (vidro e farol são superfícies separadas), e cada uma recebe
+    uma **cópia** do material — material vindo de `.glb` é compartilhado entre
+    instâncias, então pintar direto pintaria todo carro do mapa junto. O
+    `drive_test` monta os 6 modelos e confere eixos, rodas e alcance das
+    gambiarras em cada um.
+  - **Erros meus nesta rodada**: gastei muitas iterações caçando falhas que eram
+    do ARNÊS, não do jogo — mover o jogador todo frame (o `RayCast3D` que o
+    `Player` lê é o do passo anterior, então ele interagia com o que estava sob a
+    mira um frame antes), pôr o jogador meio enterrado usando a altura do chão
+    como origem da cápsula, e mirar de 2,6 m quando o `InteractRay` alcança 3,5 m
+    e a câmera fica 2,2 m acima do alvo. Lição: quando o teste falha, primeiro
+    provar de que lado está o defeito (jogo ou arnês) antes de ajustar qualquer
+    número.
+
 ### Pendências pedidas e ainda NÃO feitas
 
 Nenhuma das três pendências anteriores continua aberta. O que sobrou de
 observação pra uma próxima rodada (nada disso foi pedido):
 
-1. **Fluxo completo do jogo não foi jogado nesta sessão** — a verificação é
-   geométrica, por render e por banco de provas de física, não por input de
-   teclado. Vale dirigir de verdade uma vez: rebocar do ferro-velho até a
-   oficina (38m ao norte), sair pela estrada oeste e entrar na cidade, e
-   fechar uma entrega.
-2. **Telhado verde do kit suburbano** ainda puxa pro menta. O shader já
+1. **Jogar com as mãos.** O loop agora é testado de ponta a ponta com input
+   real (`tools/verify/loop_test.tscn`, 5/5 rodadas), mas ninguém *sentiu* o
+   jogo: se 76 km/h é rápido demais, se a barra de lábia dura o certo, se o
+   reboque de 38 m é chato. Isso só se resolve jogando.
+2. **O pátio da oficina prende o carro.** Dependendo de como a carcaça para,
+   acelerar só empurra contra cerca/barracão/sucata. Um jogador dá ré e
+   resolve, mas vale abrir espaço em volta da DropZone.
+3. **Telhado verde do kit suburbano** ainda puxa pro menta. O shader já
    dessatura verde puro (`green_tame`), mas a cor vive dentro do atlas.
-3. **Câmera 04 do roteiro de fotos** ficava em (30, 2.2, 30), que com a grade
+4. **Câmera 04 do roteiro de fotos** ficava em (30, 2.2, 30), que com a grade
    nova cai DENTRO de um quarteirão — se recriar o script de fotos, reposicionar.
 
 ## Roadmap (fora de escopo desta vertical slice)

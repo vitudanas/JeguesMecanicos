@@ -16,10 +16,31 @@ signal part_attached(point_name: String)
 
 @export var is_wrecked := true
 
-## Modelo do carro. As medidas (eixos, bitola, raio de roda, caixa da
-## carroceria) sao lidas do proprio modelo em _ready(), entao trocar por outro
-## do pacote nao exige reposicionar raycast, colisao nem ponto de gambiarra.
-@export var car_model: PackedScene = preload("res://assets/quaternius/cars/car-a.glb")
+## Modelo do carro. Se ficar vazio, sorteia um de `car_pool` — assim cada
+## carcaca que aparece no mapa e um carro diferente. As medidas (eixos, bitola,
+## raio de roda, caixa da carroceria) sao lidas do proprio modelo em _ready(),
+## entao qualquer um deles funciona sem reposicionar nada.
+@export var car_model: PackedScene
+@export var car_pool: Array[PackedScene] = [
+	preload("res://assets/quaternius/cars/car-a.glb"),
+	preload("res://assets/quaternius/cars/car-b.glb"),
+	preload("res://assets/quaternius/cars/sports-car-a.glb"),
+	preload("res://assets/quaternius/cars/sports-car-b.glb"),
+	preload("res://assets/quaternius/cars/suv.glb"),
+	preload("res://assets/quaternius/cars/taxi.glb"),
+]
+## Cores de calhambeque: foscas e desbotadas de proposito. Carro de ferro-velho
+## nao sai da tinta de fabrica, e cor saturada brigaria com a cidade.
+@export var paint_colors: Array[Color] = [
+	Color(0.62, 0.20, 0.16),   # vermelho desbotado
+	Color(0.26, 0.34, 0.48),   # azul fosco
+	Color(0.72, 0.68, 0.58),   # bege sujo
+	Color(0.34, 0.40, 0.32),   # verde militar
+	Color(0.78, 0.62, 0.22),   # mostarda
+	Color(0.45, 0.45, 0.47),   # cinza chumbo
+	Color(0.68, 0.40, 0.22),   # laranja ferrugem
+	Color(0.20, 0.20, 0.22),   # preto fosco
+]
 
 @export_group("Motor")
 ## Forca por roda de tracao (o carro e tracao traseira: 2 rodas).
@@ -39,6 +60,14 @@ signal part_attached(point_name: String)
 ## que e o que deixa o carro derrapar em vez de andar sobre trilhos.
 @export var lateral_grip := 1.6
 @export var handbrake_grip := 0.35
+## Aderencia lateral enquanto o carro esta sendo REBOCADO. Bem baixa de
+## proposito: uma carcaca puxada de lado com pneu agarrando trava a lateral e
+## CAPOTA nos proprios pneus — o teste de loop viu o carro chegar de cabeca pra
+## baixo na oficina em 2 de 3 rodadas, e assim nao da pra montar nem dirigir.
+## Carcaca morta desliza, nao faz curva.
+@export var tow_grip := 0.12
+## Amortecimento angular no reboque, pra ele nao sair rodopiando atras.
+@export var tow_angular_damp := 6.0
 
 @export_group("Suspensao")
 @export var suspension_travel := 0.42   ## curso total do amortecedor
@@ -58,6 +87,7 @@ var steer_input := 0.0
 var throttle_input := 0.0
 var handbrake := false
 var mud_zones_overlapping := 0
+var being_towed := false
 
 var rig: CarRig
 var wheels: Array[RayCast3D] = []
@@ -65,6 +95,7 @@ var _steer_angle := 0.0
 var _spring_k := 0.0
 var _spring_c := 0.0
 var _rest_length := 0.0
+var _max_spring_force := 0.0
 
 func _ready() -> void:
 	add_to_group("interactable")
@@ -80,8 +111,17 @@ func _ready() -> void:
 	rig = CarRig.new()
 	rig.name = "CarRig"
 	add_child(rig)
-	if not rig.build(car_model):
+	# Sorteio proprio: usar randi() global faria o carro consumir a mesma
+	# sequencia de trafego e pedestres e mudaria a cidade inteira de layout.
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	var model := car_model
+	if model == null and not car_pool.is_empty():
+		model = car_pool[rng.randi() % car_pool.size()]
+	if not rig.build(model):
 		push_warning("Vehicle: sem modelo de carro, usando so a colisao")
+	elif not paint_colors.is_empty():
+		rig.paint(paint_colors[rng.randi() % paint_colors.size()])
 	_fit_to_model()
 	_tune_suspension()
 
@@ -99,6 +139,14 @@ func _fit_to_model() -> void:
 	shape.size = box.size
 	body_shape.shape = shape
 	body_shape.position = box.position + box.size * 0.5
+
+	# CENTRO DE MASSA BAIXO, na altura do eixo. Por padrao o Godot usa o centro
+	# da caixa de colisao, ou seja a meia-altura da carroceria — com isso o
+	# carro faz curva apoiado num ponto alto e CAPOTA (o banco de provas viu o
+	# SUV deitar, up=0.03). Num carro de verdade a massa (motor, chassi,
+	# tanque) fica embaixo, entao isso e mais correto e nao um truque.
+	center_of_mass_mode = RigidBody3D.CENTER_OF_MASS_MODE_CUSTOM
+	center_of_mass = Vector3(0.0, rig.axle_y, 0.0)
 
 	# Geometria da suspensao, na ordem certa (errar isso zerava a mola):
 	#  - a origem do raio fica meio curso ACIMA do centro da roda em repouso;
@@ -136,16 +184,36 @@ func _fit_to_model() -> void:
 ## Os 4 pontos de gambiarra saem da caixa da carroceria, nao de coordenadas
 ## escritas na mao: capo e radiador na frente, retrovisor na porta do
 ## motorista, parachoque atras.
+##
+## Todos ficam PRA FORA da caixa de colisao, cada um na sua face. Isso nao e
+## enfeite: a colisao do carro e uma caixa unica, entao marcador pousado na
+## superficie (em cima do capo, por exemplo) fica DENTRO dela e o raycast de
+## interacao acerta a carroceria antes da esfera — o jogador simplesmente nao
+## consegue mirar na gambiarra. Foi o que o teste de loop pegou: 3 dos 4
+## pontos eram inalcancaveis.
 func _place_attach_points(box: AABB) -> void:
 	var hw: float = box.size.x * 0.5
 	var hl: float = box.size.z * 0.5
 	var y0: float = box.position.y
 	var h: float = box.size.y
+	# Folga: a esfera do marcador tem raio 0.3, entao 0.35 deixa ela INTEIRA
+	# fora da caixa. Com metade disso (0.17) o marcador so espiava pra fora e a
+	# mira escorregava pra carroceria a qualquer centimetro de diferenca — o
+	# teste de loop falhava em ~metade das rodadas, e o jogador teria que mirar
+	# com precisao de centimetro pra instalar a gambiarra.
+	var out := 0.5
+	# UMA FACE PRA CADA: capo por CIMA, retrovisor na lateral ESQUERDA, radiador
+	# na lateral DIREITA (capo do lado do motor), parachoque atras.
+	# Antes capo e radiador dividiam a face dianteira, um acima do outro: quem
+	# mirava no radiador acertava a esfera do capo. Depois o radiador foi pra
+	# baixo do bico e virou o ponto mais dificil do jogo — o unico que exigia
+	# olhar quase a pino. Cada marcador com a sua face resolve os dois casos e
+	# deixa os 4 na linha do olhar de quem esta de pe ao lado do carro.
 	var spots := {
-		"hood": Vector3(0.0, y0 + h * 0.74, -hl * 0.62),
-		"radiator": Vector3(0.0, y0 + h * 0.34, -hl + 0.08),
-		"mirror": Vector3(-hw - 0.05, y0 + h * 0.80, -hl * 0.18),
-		"bumper": Vector3(0.0, y0 + h * 0.30, hl - 0.06),
+		"hood": Vector3(0.0, y0 + h + out * 0.6, -hl * 0.70),
+		"radiator": Vector3(hw + out, y0 + h * 0.55, -hl * 0.30),
+		"mirror": Vector3(-hw - out, y0 + h * 0.78, -hl * 0.18),
+		"bumper": Vector3(0.0, y0 + h * 0.28, hl + out),
 	}
 	for spot in attach_points_node.get_children():
 		if spot is Node3D and spots.has(spot.point_name):
@@ -160,6 +228,9 @@ func _tune_suspension() -> void:
 	_spring_k = corner_mass * gravity / maxf(rest_compression, 0.01)
 	# c = 2 * ratio * sqrt(k * m) — a formula do amortecedor de um quarto de carro.
 	_spring_c = 2.0 * damping_ratio * sqrt(_spring_k * corner_mass)
+	# Teto da forca por roda: 3.5x o peso que ela sustenta parada. Segura um
+	# pouso forte sem virar catapulta.
+	_max_spring_force = corner_mass * gravity * 3.5
 
 func get_interact_prompt() -> String:
 	if driver:
@@ -179,6 +250,11 @@ func interact(player: Node) -> void:
 			driver = player
 			player.enter_vehicle(self)
 			chase_camera.current = true
+
+## Chamado pelo TowHook ao engatar/soltar.
+func set_towed(towed: bool) -> void:
+	being_towed = towed
+	angular_damp = tow_angular_damp if towed else 0.0
 
 func exit_to_driver() -> void:
 	chase_camera.current = false
@@ -293,6 +369,12 @@ func _apply_suspension_and_drive(delta: float) -> void:
 		var compression: float = _rest_length - distance
 		if compression < 0.0:
 			continue
+		# BATENTE. Sem esse teto, qualquer interpenetracao (cair de um salto,
+		# subir no meio-fio, ser arrastado por cima de uma laje) vira uma
+		# compressao enorme e a mola CATAPULTA o carro — o teste de loop viu a
+		# carcaca sair voando a mais de 100 m/s e subir a 9m de altura. Na
+		# realidade a suspensao bate no fim do curso e para de crescer.
+		compression = minf(compression, rest_compression + suspension_travel * 0.5)
 		var offset: Vector3 = contact - global_transform.origin
 		var world_vel: Vector3 = linear_velocity + angular_velocity.cross(offset)
 		# Tudo no eixo da suspensao (pra cima). O amortecedor tem que OPOR a
@@ -303,9 +385,10 @@ func _apply_suspension_and_drive(delta: float) -> void:
 		var susp_up: Vector3 = -ray_dir
 		var vel_up: float = world_vel.dot(susp_up)
 		var spring_force: float = compression * _spring_k - vel_up * _spring_c
-		# Mola so empurra: sem esse piso o amortecedor "puxa" o carro pro chao
-		# quando a roda sobe rapido, e o carro gruda em vez de saltar no buraco.
-		spring_force = maxf(spring_force, 0.0)
+		# Mola so empurra, e no maximo algumas vezes o peso que ela sustenta:
+		# o amortecedor sozinho tambem consegue estourar a forca num impacto
+		# forte, e o batente acima nao limita ele.
+		spring_force = clampf(spring_force, 0.0, _max_spring_force)
 		apply_force(susp_up * spring_force, offset)
 
 		var is_front: bool = wheel.name.begins_with("WheelF")
@@ -328,9 +411,37 @@ func _apply_suspension_and_drive(delta: float) -> void:
 		# Aderencia lateral com TETO: acima da carga da roda vezes o
 		# coeficiente, a roda escorrega. E o que permite derrapar.
 		var side_vel: float = world_vel.dot(right)
-		var grip_limit: float = spring_force * (handbrake_grip if handbrake else lateral_grip) * traction
+		var grip_coef: float = lateral_grip
+		if being_towed:
+			grip_coef = tow_grip
+		elif handbrake:
+			grip_coef = handbrake_grip
+		var grip_limit: float = spring_force * grip_coef * traction
 		var side_force: float = clampf(-side_vel * mass * 4.0, -grip_limit, grip_limit)
 		apply_force(right * side_force, offset)
+
+	# Carro parado tem que FICAR parado. Sem isso ele fica deslizando a ~26 cm/s
+	# indefinidamente (o modelo de aderencia so resiste ao movimento LATERAL, e
+	# nada segura o rolamento pra frente com o acelerador solto). Na oficina
+	# isso faz o alvo da gambiarra fugir da mira enquanto o jogador aperta E.
+	if grounded > 0 and is_zero_approx(throttle_input) and not handbrake and not being_towed:
+		var creep := Vector3(linear_velocity.x, 0.0, linear_velocity.z)
+		if creep.length() < 1.5:
+			apply_central_force(-creep * mass * 4.0)
+
+	# ATRITO ESTATICO: carro parado tem que FICAR parado. Sem isso sobrava uma
+	# deriva de ~0.28 m/s pra sempre (o arrasto e proporcional a velocidade,
+	# entao perto de zero ele nao segura nada) — o carro escorregava sozinho
+	# pela oficina e o jogador mirava numa gambiarra que se mexia.
+	if grounded > 0 and not being_towed and absf(throttle_input) < 0.01:
+		var flat_vel := Vector3(linear_velocity.x, 0.0, linear_velocity.z)
+		var v_flat: float = flat_vel.length()
+		if v_flat > 0.001 and v_flat < 0.6:
+			# Forca pra zerar a velocidade neste passo, limitada a 0.6g — o
+			# mesmo teto que um pneu parado aguenta antes de deslizar.
+			var stop_force: float = minf(mass * v_flat / maxf(delta, 0.0001),
+				mass * 18.0 * 0.6)
+			apply_central_force(-flat_vel.normalized() * stop_force)
 
 	if grounded > 0:
 		# Arrasto: define a velocidade final sem trava artificial.

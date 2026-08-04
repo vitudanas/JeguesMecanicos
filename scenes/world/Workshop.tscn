@@ -63,6 +63,13 @@ mesh = SubResource("PillarMesh")
 shape = SubResource("PillarShape")
 
 [node name="DropZone" type="Area3D" parent="."]
+; Camada 3 = GATILHO. O raycast de interacao do jogador ve areas
+; (collide_with_areas), entao um gatilho grande na camada padrao rouba a mira:
+; com o carro estacionado na oficina, a DropZone ficava na frente dos
+; marcadores de gambiarra e NAO DAVA pra montar o carro. Gatilho continua com
+; mask 1 pra detectar o veiculo normalmente.
+collision_layer = 4
+collision_mask = 1
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 0)
 
 [node name="Shape" type="CollisionShape3D" parent="DropZone"]

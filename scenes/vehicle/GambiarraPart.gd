@@ -14,6 +14,8 @@ signal broke
 var attach_point_name := ""
 var vehicle: Node = null
 var installed := false
+var _layer := 1
+var _mask := 1
 
 func _ready() -> void:
 	freeze = true
@@ -31,6 +33,16 @@ func install(target_vehicle: Node, point_name: String, marker: Node3D) -> void:
 	transform = Transform3D.IDENTITY
 	freeze = true
 	freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
+	# Peca instalada NAO colide. Enquanto instalada ela e um RigidBody
+	# cinematico grudado no carro, e corpo cinematico empurra quem encosta —
+	# as 4 pecas ficavam brigando com a carroceria e o carro simplesmente NAO
+	# SAIA DO LUGAR com o acelerador no fundo (medido no teste de loop:
+	# throttle 1.0, 4 rodas no chao, 1 cm andado em 2 segundos).
+	# A colisao volta quando a peca se solta e vira destroco de verdade.
+	_layer = collision_layer
+	_mask = collision_mask
+	collision_layer = 0
+	collision_mask = 0
 	installed = true
 
 ## Chamado pelo Vehicle quando o carro leva um impacto/buraco.
@@ -49,6 +61,8 @@ func _detach(force: float) -> void:
 		current_parent.remove_child(self)
 	world.add_child(self)
 	global_transform = global_t
+	collision_layer = _layer
+	collision_mask = _mask
 	freeze = false
 	apply_central_impulse(Vector3(randf_range(-1.0, 1.0), randf_range(0.6, 1.6), randf_range(-1.0, 1.0)) * force * 0.15)
 	apply_torque_impulse(Vector3(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * force * 0.05)
