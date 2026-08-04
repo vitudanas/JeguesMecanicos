@@ -1465,6 +1465,25 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     pátio da oficina é o cenário menos trabalhado do mapa (laje nua na grama,
     cerca só de um lado); e há uma emenda dura no sombreado do chão.
 
+- **2026-08-04** — Usuário pediu pra transformar as gambiarras em "coisas reais
+  para ficar graficamente bonito". Cada peça era UM bloco liso (cubo cinza,
+  cilindro verde, cubo vermelho, cubo amarelo): mesmo já posicionadas certo, na
+  tela liam como cubo colorido grudado no carro, e a piada do jogo — consertar
+  com tranqueira do dia a dia — não chegava ao jogador.
+  - **`scripts/GambiarraVisual.gd`** monta cada peça em código, com primitivas
+    combinadas e material próprio — mesma escolha já feita pro mobiliário urbano
+    (`StreetFurniture.gd`), pra não trazer pacote novo e não reintroduzir mistura
+    de estilos: **dobradiça** com duas abas tortas, pino e quatro parafusos (aço
+    + aba enferrujada); **mangueira** em 7 segmentos num arco, com anéis de
+    corrugado e abraçadeira de metal nas pontas; **fita** em três tiras cruzadas
+    em ângulos diferentes, ponta solta levantada e o rolo sobrando; **lona
+    plástica** em cinco abas amassadas, translúcidas e de dupla face, presas por
+    três tiras de fita.
+  - As `CollisionShape3D` das 4 peças foram remedidas pro novo tamanho — elas
+    valem quando a gambiarra se solta e vira destroço.
+  - `cull_mode = CULL_DISABLED` no plástico: lona é fina, e sem isso o remendo
+    fica com buraco quando o jogador olha do outro lado.
+
 ### Pendências pedidas e ainda NÃO feitas
 
 Nenhuma das três pendências anteriores continua aberta. O que sobrou de
