@@ -202,11 +202,15 @@ adjustment_brightness = 1.0
 adjustment_contrast = 1.09
 adjustment_saturation = 0.92
 
+; 2200 e nao 1800: com a serra subindo pra 320 m a base dela cresceu junto e o
+; pe passou a alcancar 914 do centro, ou seja PRA FORA da placa antiga (meia
+; largura 900) — a montanha ficava com o pe no vazio. Meia largura 1100 devolve
+; a folga.
 [sub_resource type="BoxShape3D" id="GroundShape"]
-size = Vector3(1800, 1, 1800)
+size = Vector3(2200, 1, 2200)
 
 [sub_resource type="BoxMesh" id="GroundMesh"]
-size = Vector3(1800, 1, 1800)
+size = Vector3(2200, 1, 2200)
 
 [sub_resource type="ShaderMaterial" id="GroundMat"]
 shader = ExtResource("400")
@@ -587,15 +591,22 @@ exclude_points = Array[Vector3]([Vector3(188, 0, 55), Vector3(-55, 0, 190), Vect
 exclude_radius = 30.0
 rng_seed = 20260803
 
+; Escala medida contra a cidade, nao chutada: o predio mais alto tem 33,6 m, e
+; com pico maximo de 138 a serra ficava so 3,7x isso — de longe lia como morro
+; atras da cidade, nao como cordilheira. Uma serra de verdade perto de uma
+; cidade e ordem de grandeza maior que os predios; aqui os picos vao a 320 m
+; (9,5x o predio mais alto), que e o que faz a silhueta fechar o horizonte.
+; A base cresceu junto (raio 90-190): montanha alta com base estreita vira
+; espeto, e o pe precisa acompanhar pra manter a inclinacao de encosta.
 [node name="MountainRange" type="Node3D" parent="."]
 script = ExtResource("401")
-foot_radius = 235.0
-foot_spread = 60.0
-count = 38
-radius_min = 55.0
-radius_max = 115.0
-height_min = 58.0
-height_max = 138.0
+foot_radius = 300.0
+foot_spread = 90.0
+count = 44
+radius_min = 90.0
+radius_max = 190.0
+height_min = 130.0
+height_max = 320.0
 rng_seed = 20260888
 
 [node name="TrafficRouteRingBig" parent="." instance=ExtResource("6")]

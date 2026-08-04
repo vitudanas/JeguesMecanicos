@@ -246,6 +246,11 @@ func _build_gas_station(x_min: float, x_max: float, z_min: float, z_max: float) 
 	top.mesh = top_mesh
 	top.set_surface_override_material(0, metal)
 	add_child(top)
+	# Fica no ar DE PROPOSITO, apoiada nos 4 pilares abaixo. Sem marcar, o
+	# verificador de flutuacao (`tools/verify/scale_test.gd`) a acusa como
+	# construcao boiando — e afrouxar o limiar pra calar isso esconderia
+	# flutuacao de verdade.
+	top.add_to_group("suspenso")
 	top.position = Vector3(center.x, 4.4, canopy_z)
 	for sx in [-1.0, 1.0]:
 		for sz in [-1.0, 1.0]:
@@ -273,6 +278,7 @@ func _build_gas_station(x_min: float, x_max: float, z_min: float, z_max: float) 
 		band.set_surface_override_material(0, StreetFurniture._material(
 				"canopy_band", Color(0.80, 0.22, 0.18)))
 		add_child(band)
+		band.add_to_group("suspenso")
 		band.position = Vector3(center.x, 4.4, canopy_z + sz * (canopy_d * 0.5 + 0.05))
 
 	# Totem de preco na esquina do lote, virado pra rua.
@@ -290,6 +296,9 @@ func _build_gas_station(x_min: float, x_max: float, z_min: float, z_max: float) 
 	totem.set_surface_override_material(0, StreetFurniture._material(
 			"canopy_band", Color(0.80, 0.22, 0.18)))
 	add_child(totem)
+	# A placa fica no alto do mastro, como todo totem de posto — suspensa de
+	# proposito, igual a cobertura.
+	totem.add_to_group("suspenso")
 	totem.position = Vector3(x_min + 1.2, 4.6, z_min + 1.2)
 
 	# Loja de conveniencia: predio pequeno, encostado no fundo do lote. Numa
@@ -567,6 +576,14 @@ func _add_rooftop_props(scene: PackedScene, pos: Vector3, rot_deg: float) -> voi
 	# Recuo generoso: prop encostado na borda fica meio pra fora do telhado nos
 	# modelos cuja malha nao preenche o AABB todo.
 	var inset := 1.6
+	# O TELHADO nao fica sobre `pos`. Varios modelos do kit tem a malha deslocada
+	# da origem do no, e quem planta o predio ja desconta esse offset (`pos -=
+	# off`) — entao a construcao aparece em `pos + off`. Plantando o entulho em
+	# `pos`, ele caia ao lado do predio, sobre o vazio: o verificador achou 15
+	# props boiando, o pior a 14,3 m do chao.
+	var roof_off := _center_offset(scene, rot_deg)
+	var roof_x: float = pos.x + roof_off.x
+	var roof_z: float = pos.z + roof_off.y
 	for i in range(_rng.randi_range(1, 3)):
 		var maker: Callable
 		match _rng.randi() % 3:
@@ -579,9 +596,9 @@ func _add_rooftop_props(scene: PackedScene, pos: Vector3, rot_deg: float) -> voi
 		var prop: Node3D = maker.call()
 		add_child(prop)
 		prop.position = Vector3(
-			pos.x + _rng.randf_range(-1.0, 1.0) * maxf(footprint.x * 0.5 - inset, 0.2),
+			roof_x + _rng.randf_range(-1.0, 1.0) * maxf(footprint.x * 0.5 - inset, 0.2),
 			top,
-			pos.z + _rng.randf_range(-1.0, 1.0) * maxf(footprint.y * 0.5 - inset, 0.2))
+			roof_z + _rng.randf_range(-1.0, 1.0) * maxf(footprint.y * 0.5 - inset, 0.2))
 		prop.rotation_degrees.y = _rng.randf_range(0.0, 360.0)
 
 ## Todos os predios do kit dividem um unico atlas de textura, entao sem isso a

@@ -2,31 +2,57 @@
 
 [ext_resource type="Script" path="res://scenes/world/RainFX.gd" id="1"]
 
-[sub_resource type="BoxMesh" id="DropMesh"]
-size = Vector3(0.03, 0.5, 0.03)
-
+; Gota nao tem cor propria: ela refrata e reflete o que esta em volta, entao o
+; que se ve e um brilho quase branco. Sem sombreamento (e pequena demais pra ter
+; luz e sombra), aditiva e bem transparente, pra chuva densa nao virar parede.
+;
+; ATENCAO: este material antes existia no arquivo mas NAO ERA ATRIBUIDO a nada —
+; mesma classe de bug do script solto no MainMenu (ver changelog 2026-08-02). A
+; chuva caia com o material padrao, opaco. Agora ele vai na propria malha.
+;
+; Blend NORMAL, nao aditivo. Com aditivo cada gota SOMA luz: 1400 riscos
+; sobrepostos contra um ceu claro viraram uma cortina branca solida — lia como
+; cachoeira na frente da camera, nao como chuva (conferido na foto). Alpha
+; baixa deixa o risco aparecer sem apagar o que esta atras.
 [sub_resource type="StandardMaterial3D" id="DropMat"]
 transparency = 1
-albedo_color = Color(0.7, 0.8, 0.95, 0.55)
+albedo_color = Color(0.78, 0.85, 0.95, 0.16)
 shading_mode = 0
 
+; Fio de chuva, nao caixinha. A gota media tem milimetros de largura e, caindo a
+; ~9 m/s, o olho (e a camera) veem um RISCO. Com 3 cm de largura e 50 cm de
+; altura, cada gota aparecia como um tijolo e o efeito lia como confete.
+[sub_resource type="BoxMesh" id="DropMesh"]
+material = SubResource("DropMat")
+size = Vector3(0.007, 0.65, 0.007)
+
+; Chuva de verdade cai quase reta e mais devagar do que estava: 14-18 m/s com
+; gravidade extra virava borrao. ~9 m/s e a velocidade terminal de uma gota
+; media; a inclinacao vem do vento, nao do espalhamento.
 [sub_resource type="ParticleProcessMaterial" id="RainPPM"]
-direction = Vector3(0, -1, 0)
-spread = 4.0
-initial_velocity_min = 14.0
-initial_velocity_max = 18.0
-gravity = Vector3(0, -4.0, 0)
+direction = Vector3(0.12, -1, 0.06)
+spread = 1.5
+initial_velocity_min = 8.5
+initial_velocity_max = 10.5
+gravity = Vector3(0.6, -2.0, 0.3)
 emission_shape = 1
-emission_box_extents = Vector3(20, 0.5, 20)
-scale_min = 0.8
-scale_max = 1.3
+; Area larga: com a caixa estreita a chuva fica concentrada em volta da camera
+; e some alguns metros adiante, o que denuncia o truque de "chuva que segue o
+; jogador".
+emission_box_extents = Vector3(62, 0.5, 62)
+scale_min = 0.7
+scale_max = 1.5
 
 [node name="RainFX" type="GPUParticles3D"]
 script = ExtResource("1")
 emitting = false
-amount = 400
-lifetime = 1.0
-preprocess = 0.5
-visibility_aabb = AABB(-22, -12, -22, 44, 24, 44)
+; Mais gotas e mais finas: densidade e o que faz ler como chuva. Com 400 gotas
+; gordas a tela tinha pouco risco e muito bloco.
+amount = 2200
+lifetime = 2.4
+preprocess = 1.2
+; A caixa cobre a queda inteira: menor que isso, o Godot corta as gotas quando a
+; camera olha pra cima e a chuva "acaba" no meio do ar.
+visibility_aabb = AABB(-70, -26, -70, 140, 50, 140)
 process_material = SubResource("RainPPM")
 draw_pass_1 = SubResource("DropMesh")

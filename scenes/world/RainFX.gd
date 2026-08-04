@@ -3,7 +3,11 @@ extends GPUParticles3D
 ## de onde ele anda) e liga/desliga sozinha conforme
 ## WeatherManager.weather_changed. Ver autoload/WeatherManager.gd.
 
-@export var height_offset := 8.0
+## Altura de onde a chuva cai. Alto de proposito: caindo de 8 m, o jogador via a
+## chuva "comecar" logo acima da cabeca — e o truque de a chuva seguir o jogador
+## ficava obvio. De 18 m ela ja esta caindo antes de entrar no campo de visao, e
+## a coluna cobre altura de predio.
+@export var height_offset := 18.0
 
 var player: Node3D = null
 

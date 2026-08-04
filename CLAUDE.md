@@ -1484,6 +1484,45 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
   - `cull_mode = CULL_DISABLED` no plástico: lona é fina, e sem isso o remendo
     fica com buraco quando o jogador olha do outro lado.
 
+- **2026-08-04** — Usuário pediu escala proporcional à realidade em TODAS as
+  construções e montanhas, chuva melhor, e caçar tudo que estivesse flutuando.
+  - **`tools/verify/scale_test.gd`** (novo): censo de altura por família de
+    construção e caça a objeto boiando — pra cada objeto, mede a base da caixa e
+    joga um raio pra baixo até bater em algo sólido; a sobra é a flutuação.
+  - **Escala já estava certa onde importa**: pedestre 1,79 m, carro 4,2 m,
+    prédio mediano 7,7 m (~2,5 andares) e o mais alto 33,6 m (~11 andares).
+    Quem estava fora era a **serra**: pico máximo de 138 m, só 3,7x o prédio
+    mais alto — lia como morro atrás da cidade. Subiu pra **320 m (9,5x)**, com
+    a base crescendo junto (raio 90-190), senão montanha alta e base estreita
+    vira espeto. O chão foi de 1800 pra **2200** porque o pé da serra passou a
+    alcançar 914 do centro, ou seja pra fora da placa antiga.
+  - **15 props de telhado flutuavam, o pior a 14,3 m do chão.** Causa: o entulho
+    de cobertura era plantado no `pos` do NÓ, mas várias malhas do kit são
+    deslocadas da origem e quem planta o prédio já desconta esse offset — então
+    a construção aparece em `pos + off` e o prop caía ao lado dela, sobre o
+    vazio. Passou a usar o mesmo offset.
+  - **Cobertura do posto e totem** ficam no ar de propósito (apoiados em pilar e
+    mastro): entraram no grupo `"suspenso"`, que o verificador pula. Marcar na
+    fonte em vez de afrouxar o limiar — afrouxar esconderia flutuação real.
+  - **Chuva** (`scenes/world/RainFX.tscn`): tinha **material declarado e nunca
+    atribuído** — mesma classe do bug do script solto no `MainMenu` (2026-08-02),
+    então a gota caía com material padrão opaco. Além disso a gota era uma caixa
+    de 3 cm × 50 cm (lia como confete). Agora: risco de 0,7 cm × 65 cm com o
+    material na própria malha, ~9 m/s (velocidade terminal real de uma gota),
+    inclinação por vento e não por espalhamento.
+    - **Erro meu no caminho**: usei blend **aditivo**, e 1400 riscos somando luz
+      contra o céu claro viraram uma cortina branca sólida — lia como cachoeira.
+      Blend normal com alpha baixa resolve.
+    - A pedido do usuário, a chuva passou a cobrir **124 m** (era 68) com 2200
+      gotas e alpha 0,16: mais área e menos densidade, pra parecer que chove no
+      mapa todo. Cai de 18 m (era 8) — de 8 m dava pra ver a chuva "começar"
+      logo acima da cabeça e o truque de seguir o jogador ficava óbvio.
+  - **Erro meu de verificador**: a primeira versão media **cada malha isolada**,
+    então acusou 420 "flutuando" — a luminária no alto do poste, o cabelo do
+    pedestre e o telhado do prédio, todos presos a algo acima do chão. Medindo
+    por OBJETO INTEIRO caiu pra 15 reais. Lição: a unidade da pergunta "isso
+    está no chão?" é o objeto, não a peça.
+
 ### Pendências pedidas e ainda NÃO feitas
 
 Nenhuma das três pendências anteriores continua aberta. O que sobrou de
