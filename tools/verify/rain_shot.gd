@@ -42,6 +42,18 @@ func _shot(n: String) -> void:
 	print("  foto: %s" % n)
 
 func _run() -> void:
+	# Grama de PERTO: e a distancia em que o jogador anda, e onde o detalhe fino
+	# do shader tem que aparecer.
+	_look(Vector3(-150, 1.7, 60), Vector3(-150, 0.3, 54))
+	await _shot("00_grama_de_perto")
+	_look(Vector3(-140, 6, 80), Vector3(-150, 0, 40))
+	await _shot("00b_campo")
+	# Patio da oficina, de cima e no chao.
+	_look(Vector3(-160, 14, 22), Vector3(-175, 1, 0))
+	await _shot("06_patio_de_cima")
+	_look(Vector3(-172, 1.7, 12), Vector3(-176, 2, -4))
+	await _shot("07_patio_no_chao")
+
 	# Serra nova, do chao e de longe.
 	_look(Vector3(-120, 3, 150), Vector3(-20, 120, 420))
 	await _shot("01_serra_do_chao")

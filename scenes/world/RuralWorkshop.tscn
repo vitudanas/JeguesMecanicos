@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=13 format=3]
 
 [ext_resource type="Script" path="res://scenes/world/Workshop.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/world/CityBuilding.tscn" id="2"]
@@ -9,6 +9,7 @@
 [ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/dead-tree.glb" id="7"]
 [ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/bush.glb" id="8"]
 [ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/tall-grass.glb" id="9"]
+[ext_resource type="Script" path="res://scripts/WorkshopYard.gd" id="10"]
 
 [sub_resource type="BoxShape3D" id="DropZoneShape"]
 size = Vector3(6.0, 3.0, 6.0)
@@ -86,6 +87,18 @@ decor_count = 5
 decor_min_radius = 7.0
 decor_max_radius = 12.0
 rng_seed = 909
+
+[node name="Yard" type="Node3D" parent="."]
+script = ExtResource("10")
+
+[node name="FenceW1" parent="." instance=ExtResource("6")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -14.5, 0, -6)
+
+[node name="FenceW2" parent="." instance=ExtResource("6")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -14.5, 0, 0)
+
+[node name="FenceW3" parent="." instance=ExtResource("6")]
+transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -14.5, 0, 6)
 
 [node name="DropZone" type="Area3D" parent="."]
 ; Camada 3 = GATILHO. O raycast de interacao do jogador ve areas

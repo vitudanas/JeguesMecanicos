@@ -595,10 +595,16 @@ func _add_rooftop_props(scene: PackedScene, pos: Vector3, rot_deg: float) -> voi
 				maker = StreetFurniture.ac_unit
 		var prop: Node3D = maker.call()
 		add_child(prop)
-		prop.position = Vector3(
-			roof_x + _rng.randf_range(-1.0, 1.0) * maxf(footprint.x * 0.5 - inset, 0.2),
-			top,
-			roof_z + _rng.randf_range(-1.0, 1.0) * maxf(footprint.y * 0.5 - inset, 0.2))
+		var px: float = roof_x + _rng.randf_range(-1.0, 1.0) * maxf(footprint.x * 0.5 - inset, 0.2)
+		var pz: float = roof_z + _rng.randf_range(-1.0, 1.0) * maxf(footprint.y * 0.5 - inset, 0.2)
+		# Pousa na LAJE medida naquele ponto, nao no topo da caixa. O topo da caixa
+		# e o ponto mais alto do modelo INTEIRO — numa torre com casa de maquinas,
+		# num telhado recuado ou num predio com mastro, ele fica bem acima da laje
+		# e a caixa d'agua aparece boiando sobre a construcao. Mesmo erro que ja
+		# tinha posto a gambiarra do capo dentro da lataria: caixa nao e superficie.
+		var surf: float = _roof_world_y(scene, pos, rot_deg, px, pz)
+		var y: float = surf if surf != -INF else top
+		prop.position = Vector3(px, y, pz)
 		prop.rotation_degrees.y = _rng.randf_range(0.0, 360.0)
 
 ## Todos os predios do kit dividem um unico atlas de textura, entao sem isso a
@@ -643,6 +649,52 @@ func _all_mesh_instances(node: Node) -> Array[MeshInstance3D]:
 	for child in node.get_children():
 		result.append_array(_all_mesh_instances(child))
 	return result
+
+## Vertices da malha do modelo, em unidades locais, guardados por cena.
+var _verts_cache: Dictionary = {}
+
+func _model_verts(scene: PackedScene) -> PackedVector3Array:
+	var key := scene.resource_path
+	if _verts_cache.has(key):
+		return _verts_cache[key]
+	var inst := scene.instantiate()
+	var out := PackedVector3Array()
+	_collect_verts(inst, Transform3D.IDENTITY, out)
+	inst.free()
+	_verts_cache[key] = out
+	return out
+
+func _collect_verts(node: Node, accum: Transform3D, out: PackedVector3Array) -> void:
+	var t := accum
+	if node is Node3D:
+		t = accum * (node as Node3D).transform
+	if node is MeshInstance3D and (node as MeshInstance3D).mesh:
+		for v: Vector3 in (node as MeshInstance3D).mesh.get_faces():
+			out.append(t * v)
+	for child in node.get_children():
+		_collect_verts(child, t, out)
+
+## Altura do TELHADO num ponto do MUNDO, medida nos vertices — nao o topo da
+## caixa. O topo da caixa e o ponto mais alto do modelo INTEIRO: numa torre com
+## casa de maquinas ou num telhado recuado ele fica bem acima da laje, e a caixa
+## d'agua aparece boiando sobre a construcao. Mesmo erro que ja tinha posto a
+## gambiarra do capo dentro da lataria — caixa nao e superficie.
+##
+## Os vertices sao levados PRA FRENTE (modelo -> mundo), de proposito. A
+## primeira versao fazia o contrario, convertendo o ponto do mundo pro espaco do
+## modelo com `Vector2.rotated`, e a convencao de sinal do rotated 2D nao bate
+## com a rotacao em Y — o ponto amostrado saia errado, pegava a parte alta do
+## predio e os props subiam ate 27 m no ar.
+func _roof_world_y(scene: PackedScene, base: Vector3, rot_deg: float,
+		px: float, pz: float, radius := 1.2) -> float:
+	var basis := Basis(Vector3.UP, deg_to_rad(rot_deg)).scaled(
+		Vector3(building_scale, building_scale, building_scale))
+	var best := -INF
+	for v: Vector3 in _model_verts(scene):
+		var w: Vector3 = basis * v
+		if absf(base.x + w.x - px) <= radius and absf(base.z + w.z - pz) <= radius:
+			best = maxf(best, base.y + w.y)
+	return best
 
 func _compute_local_aabb(node: Node, accum: Transform3D) -> AABB:
 	var t := accum

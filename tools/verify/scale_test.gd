@@ -133,7 +133,9 @@ func _run() -> void:
 	var meshes: Array[MeshInstance3D] = []
 	_all_meshes(town, meshes)
 	print("    %d malhas visiveis no mundo" % meshes.size())
-	for fam: String in ["CityBlocks", "CityOutskirts", "Workshop", "MountainRange"]:
+	for fam: String in ["CityBlocks", "CityOutskirts", "Workshop", "MountainRange",
+			"Farm1", "Farm2", "Farm3", "Farm4", "Farm5",
+			"Scrapyard1", "Scrapyard2", "Scrapyard3", "Junkyard", "NatureScatter"]:
 		var node := town.get_node_or_null(fam)
 		if node == null:
 			continue
@@ -201,6 +203,12 @@ func _run() -> void:
 		var from := Vector3(box.position.x + box.size.x * 0.5, box.position.y + 0.05,
 			box.position.z + box.size.z * 0.5)
 		var q := PhysicsRayQueryParameters3D.create(from, from - Vector3(0, 60.0, 0))
+		# Sem isto o teste MENTE: o Godot ignora a forma em que o raio nasce
+		# dentro, entao um prop pousado na laje (que fica abaixo do topo da caixa
+		# de colisao do predio) tinha o raio atravessando o predio inteiro e
+		# batendo no chao — 84 props apareceram como "boiando a 33 m" estando
+		# exatamente onde deveriam.
+		q.hit_from_inside = true
 		# O proprio objeto fica de fora: senao o raio bate na colisao dele mesmo
 		# e a sobra da sempre zero.
 		var rids: Array[RID] = []
@@ -211,8 +219,12 @@ func _run() -> void:
 			continue
 		var gap: float = from.y - float(hit["position"].y) - 0.05
 		if gap > FLOAT_TOL:
+			var who := String((hit["collider"] as Node).name)
+			var wp := (hit["collider"] as Node).get_parent()
+			if wp:
+				who = "%s/%s" % [String(wp.name), who]
 			floating.append({"fam": _family(obj, town), "node": String(obj.name),
-				"gap": gap, "pos": from})
+				"gap": gap, "pos": from, "hit": who})
 	print("    %d objetos conferidos | %d suspensos de proposito | %d boiando acima de %.2f m" % [
 		checked, suspended, floating.size(), FLOAT_TOL])
 	floating.sort_custom(func(a, b): return a["gap"] > b["gap"])
@@ -223,8 +235,8 @@ func _run() -> void:
 		print("      %-18s %d" % [fam, per_family[fam]])
 	for i in range(mini(12, floating.size())):
 		var f = floating[i]
-		print("      %6.2f m no ar | %s / %s em (%.0f, %.0f, %.0f)" % [
-			f["gap"], f["fam"], f["node"], f["pos"].x, f["pos"].y, f["pos"].z])
+		print("      %6.2f m no ar | %s / %s em (%.0f, %.0f, %.0f) | raio bateu em %s" % [
+			f["gap"], f["fam"], f["node"], f["pos"].x, f["pos"].y, f["pos"].z, f["hit"]])
 	if floating.size() > 0:
 		fail("%d malhas flutuando (a pior a %.1f m do chao)" % [
 			floating.size(), floating[0]["gap"]])

@@ -17,10 +17,22 @@ uniform vec3 rock_dark : source_color = vec3(0.24, 0.23, 0.24);
 uniform vec3 grass_color : source_color = vec3(0.29, 0.36, 0.21);
 uniform vec3 snow_color : source_color = vec3(0.86, 0.88, 0.92);
 
-uniform float grass_max_height = 42.0;   // ate onde o mato sobe
-uniform float snow_min_height = 104.0;   // de onde a neve comeca
+// Alturas recalibradas quando a serra passou de 138 m pra 320 m: com os valores
+// antigos (mato ate 42, neve a partir de 104) quase todo maciço virava pico
+// nevado e o mato sumia num tapete no pe.
+uniform float grass_max_height = 78.0;   // ate onde o mato sobe
+uniform float snow_min_height = 205.0;   // de onde a neve comeca
 uniform float slope_rock = 0.62;         // acima disso e rocha exposta
 uniform float detail_scale = 0.35;
+// Estratos: a rocha de uma encosta de verdade tem camadas, e e o que dá leitura
+// de "montanha" numa silhueta grande. Sem isso a encosta e uma mancha cinza
+// uniforme, por mais alta que seja.
+uniform float strata_freq = 0.09;
+uniform float strata_strength : hint_range(0.0, 1.0) = 0.34;
+// Detalhe fino de perto (~30 cm), que some com a distancia pra nao cintilar.
+uniform float fine_scale = 3.2;
+uniform float fine_fade_start = 40.0;
+uniform float fine_fade_end = 220.0;
 uniform float normal_strength : hint_range(0.0, 3.0) = 1.4;
 
 varying vec3 world_pos;
@@ -67,7 +79,13 @@ void fragment() {
 	float grain = fbm(p * detail_scale);
 	float macro = fbm(p * 0.035);
 
+	// Camadas de rocha: bandas quase horizontais, onduladas pelo ruido pra nao
+	// virarem linha de nivel perfeita. E o detalhe que mais rende numa encosta
+	// grande, porque aparece de longe.
+	float strata = fract(world_pos.y * strata_freq + macro * 2.4 + grain * 0.6);
+	float band = smoothstep(0.0, 0.45, strata) * smoothstep(1.0, 0.55, strata);
 	vec3 rock = mix(rock_dark, rock_color, grain);
+	rock *= mix(1.0 - strata_strength * 0.5, 1.0 + strata_strength * 0.5, band);
 	// A quebra rocha/mato acompanha o ruido, senao vira uma linha de nivel
 	// perfeita em volta da montanha inteira.
 	float grass_line = grass_max_height * (0.7 + 0.6 * macro);
@@ -89,5 +107,17 @@ void fragment() {
 	float e = 0.7;
 	float hx = fbm((p + vec2(e, 0.0)) * detail_scale) - fbm((p - vec2(e, 0.0)) * detail_scale);
 	float hz = fbm((p + vec2(0.0, e)) * detail_scale) - fbm((p - vec2(0.0, e)) * detail_scale);
-	NORMAL = normalize(NORMAL + (TANGENT * -hx + BINORMAL * -hz) * normal_strength);
+	vec3 nrm = NORMAL + (TANGENT * -hx + BINORMAL * -hz) * normal_strength;
+
+	// Aspereza fina de perto: sem isso, chegar no pe da serra mostra uma parede
+	// lisa, porque o menor detalhe da encosta tinha 3 m.
+	float fine = 1.0 - smoothstep(fine_fade_start, fine_fade_end, length(VERTEX));
+	if (fine > 0.001) {
+		float ef = 0.08;
+		float fx = fbm((p + vec2(ef, 0.0)) * fine_scale) - fbm((p - vec2(ef, 0.0)) * fine_scale);
+		float fz = fbm((p + vec2(0.0, ef)) * fine_scale) - fbm((p - vec2(0.0, ef)) * fine_scale);
+		nrm += (TANGENT * -fx + BINORMAL * -fz) * normal_strength * 0.9 * fine;
+		ALBEDO *= mix(1.0, mix(0.88, 1.12, fbm(p * fine_scale)), fine);
+	}
+	NORMAL = normalize(nrm);
 }

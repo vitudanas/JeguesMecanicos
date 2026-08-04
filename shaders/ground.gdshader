@@ -29,7 +29,16 @@ uniform float city_fade = 115.0;
 uniform float macro_scale = 0.007;   // manchas grandes (~140m)
 uniform float meso_scale = 0.055;    // manchas medias (~18m)
 uniform float micro_scale = 0.9;     // grao (~1m)
+// Escalas FINAS. Sem elas o chao so tinha detalhe de 1 m pra cima: de perto
+// (que e onde o jogador anda) virava um borrao liso, sem nada pra o olho pegar.
+uniform float tuft_scale = 4.5;      // moitas de grama (~22cm)
+uniform float blade_scale = 19.0;    // fio (~5cm)
 uniform float normal_strength : hint_range(0.0, 3.0) = 1.1;
+uniform float detail_strength : hint_range(0.0, 3.0) = 1.5;
+// A partir daqui o detalhe fino some. Ruido de 5 cm visto de 60 m vira ruido de
+// pixel e a tela ferve; sumir com ele e o mesmo que um mipmap faria.
+uniform float detail_fade_start = 18.0;
+uniform float detail_fade_end = 70.0;
 
 varying vec3 world_pos;
 
@@ -89,6 +98,26 @@ void fragment() {
 	// inteiro escurece (mesma armadilha ja documentada no city_surface).
 	base *= mix(0.82, 1.18, micro);
 
+	// ---------------------------------------------------------- detalhe fino
+	// Some com a distancia: ruido de 5 cm a 60 m de distancia vira cintilacao.
+	float view_dist = length(VERTEX);
+	float detail = 1.0 - smoothstep(detail_fade_start, detail_fade_end, view_dist);
+
+	if (detail > 0.001) {
+		float tuft = fbm(p * tuft_scale);
+		float blade = value_noise(p * blade_scale);
+		// Moitas: onde o ruido de moita e alto a grama e mais viva e mais
+		// escura (folha nova), onde e baixo puxa pro seco. E isso que quebra o
+		// aspecto de feltro de perto.
+		vec3 lush = grass_color * 0.82;
+		vec3 dry = grass_dry_color * 1.06;
+		vec3 tufted = mix(dry, lush, smoothstep(0.35, 0.72, tuft));
+		// So no campo: dentro da cidade o chao e terra batida, nao grama.
+		base = mix(base, mix(base, tufted, 0.55), country * detail);
+		// Fio a fio, bem sutil, so pra tirar o liso.
+		base *= mix(0.90, 1.10, blade * detail);
+	}
+
 	ALBEDO = base;
 	METALLIC = 0.0;
 	ROUGHNESS = mix(0.78, 1.0, micro);
@@ -98,5 +127,15 @@ void fragment() {
 	float e = 0.35;
 	float hx = fbm((p + vec2(e, 0.0)) * micro_scale) - fbm((p - vec2(e, 0.0)) * micro_scale);
 	float hz = fbm((p + vec2(0.0, e)) * micro_scale) - fbm((p - vec2(0.0, e)) * micro_scale);
-	NORMAL = normalize(NORMAL + (TANGENT * -hx + BINORMAL * -hz) * normal_strength);
+	vec3 n = NORMAL + (TANGENT * -hx + BINORMAL * -hz) * normal_strength;
+
+	// Relevo das moitas, so de perto: e o que faz a grama pegar sombra propria
+	// e parecer volume em vez de papel de parede.
+	if (detail > 0.001) {
+		float et = 0.06;
+		float tx = fbm((p + vec2(et, 0.0)) * tuft_scale) - fbm((p - vec2(et, 0.0)) * tuft_scale);
+		float tz = fbm((p + vec2(0.0, et)) * tuft_scale) - fbm((p - vec2(0.0, et)) * tuft_scale);
+		n += (TANGENT * -tx + BINORMAL * -tz) * detail_strength * detail;
+	}
+	NORMAL = normalize(n);
 }

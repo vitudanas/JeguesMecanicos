@@ -1523,6 +1523,49 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     por OBJETO INTEIRO caiu pra 15 reais. Lição: a unidade da pergunta "isso
     está no chão?" é o objeto, não a peça.
 
+- **2026-08-04** — Usuário reportou, jogando: coisas flutuando **acima das
+  construções**, grama e montanha sem detalhe nenhum, e construções rurais fora
+  de escala.
+  - **O flutuante era real e o verificador tinha ponto cego.** Os props de
+    telhado pousavam no **topo da caixa** do modelo — que é o ponto mais alto do
+    modelo INTEIRO (mastro, casa de máquinas, telhado recuado), não a laje. A
+    caixa d'água ficava boiando sobre o prédio. Agora `CityBlocks._roof_world_y()`
+    mede a laje **nos vértices da malha** naquele ponto. É o mesmo erro que já
+    tinha posto a gambiarra do capô dentro da lataria: **caixa não é superfície**.
+  - **Dois erros meus seguidos nessa correção**, os dois de conversão de espaço:
+    1. A primeira versão convertia o ponto do mundo para o espaço do modelo com
+       `Vector2.rotated`, e a convenção de sinal do rotated 2D não bate com a
+       rotação em Y — amostrava o lugar errado e os props subiram até 27 m. A
+       versão boa leva os vértices **pra frente** (modelo → mundo), que não tem
+       essa armadilha.
+    2. Com os props pousados na laje (abaixo do topo da caixa de colisão), o raio
+       do verificador passou a **nascer dentro** da caixa do prédio — e o Godot
+       ignora a forma em que o raio nasce dentro. 84 props apareceram como
+       "boiando a 33 m" estando exatamente onde deviam. Resolvido com
+       `hit_from_inside = true`. **Lição**: raio que nasce dentro de um corpo
+       mente calado.
+  - **Grama** (`shaders/ground.gdshader`): o menor detalhe era de ~1 m, então de
+    perto — que é onde o jogador anda — o chão era um borrão liso. Entraram duas
+    escalas finas (moita ~22 cm, fio ~5 cm), com variação de cor entre moitas e
+    relevo próprio na normal, tudo sumindo entre 18 m e 70 m de distância porque
+    ruído de 5 cm visto de longe vira cintilação.
+  - **Montanha** (`shaders/mountain.gdshader`): ganhou **estratos** (bandas
+    quase horizontais onduladas por ruído) — é o detalhe que mais rende numa
+    encosta grande, porque aparece de longe — mais aspereza fina de perto. As
+    alturas de mato e neve foram recalibradas pra serra de 320 m: com os valores
+    antigos (mato até 42, neve a partir de 104) quase todo maciço virava pico
+    nevado.
+  - **Pátio da oficina** (`scripts/WorkshopYard.gd`): era uma laje nua na grama
+    com cerca de um lado só, o cenário mais pobre do mapa e justo o que o jogador
+    mais vê. Ganhou pilha de pneu, tambor de óleo, bancada, carrinho de
+    ferramenta, cavalete, cone e luminária de trabalho, mais cerca no lado oeste.
+    O script **recusa** plantar prop no anel de trabalho em volta da vaga ou no
+    corredor de saída — senão quebra a montagem da gambiarra ou prende o carro,
+    que é o que `yard_test`/`attach_test` cobram.
+  - **Escala rural**: o censo passou a cobrir fazendas, ferros-velhos e natureza.
+    Medido, o rural está coerente (mediana 1,2-5,9 m, máximos 10-16 m em silo e
+    moinho) — o que destoava era a serra, já corrigida.
+
 ### Pendências pedidas e ainda NÃO feitas
 
 Nenhuma das três pendências anteriores continua aberta. O que sobrou de
