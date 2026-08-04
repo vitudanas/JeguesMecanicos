@@ -35,6 +35,18 @@ uniform float fine_fade_start = 40.0;
 uniform float fine_fade_end = 220.0;
 uniform float normal_strength : hint_range(0.0, 3.0) = 1.4;
 
+// PBR de rocha por cima da cor procedural — mesma tecnica ja usada nas fachadas
+// (shaders/city_surface.gdshader): a COR continua saindo da forma (rocha na
+// encosta, mato embaixo, neve no alto), e a textura entra so como grao, normal e
+// rugosidade. Cor vinda de textura estragaria a leitura de altitude, e uma
+// textura de rocha esticada numa encosta de 300 m viraria listra.
+uniform sampler2D detail_color : source_color, filter_linear_mipmap, hint_default_white;
+uniform sampler2D detail_normal : filter_linear_mipmap, hint_normal;
+uniform sampler2D detail_roughness : filter_linear_mipmap, hint_default_white;
+// Metros por repeticao da textura.
+uniform float detail_size = 6.0;
+uniform float detail_strength : hint_range(0.0, 1.0) = 0.55;
+
 varying vec3 world_pos;
 varying vec3 world_normal;
 
@@ -61,6 +73,16 @@ float fbm(vec2 p) {
 		amp *= 0.5;
 	}
 	return total;
+}
+
+// Triplanar: a encosta nao tem UV util (a malha e um campo de altura gerado), e
+// projetar so por XZ esticaria a textura numa parede vertical ate virar listra.
+vec3 triplanar(sampler2D tex, vec3 pos, vec3 n, float scale) {
+	vec3 w = pow(abs(n), vec3(4.0));
+	w /= max(w.x + w.y + w.z, 0.0001);
+	return texture(tex, pos.zy * scale).rgb * w.x
+		+ texture(tex, pos.xz * scale).rgb * w.y
+		+ texture(tex, pos.xy * scale).rgb * w.z;
 }
 
 void vertex() {
@@ -100,9 +122,21 @@ void fragment() {
 		* (1.0 - smoothstep(0.45, 0.75, slope));
 	base = mix(base, snow_color * mix(0.92, 1.05, grain), snowiness);
 
+	// Grao de rocha de verdade por cima. MODULA em torno de 1.0 em vez de
+	// multiplicar direto: multiplicar escurece tudo, porque a luminancia media da
+	// textura e bem abaixo de 1 — armadilha ja documentada no city_surface, onde
+	// a cidade inteira ficou quase preta.
+	float scale = 1.0 / max(detail_size, 0.001);
+	vec3 grain_tex = triplanar(detail_color, world_pos, n, scale);
+	float lum = dot(grain_tex, vec3(0.299, 0.587, 0.114));
+	// So na parte rochosa: neve e mato nao tem cara de concreto.
+	float rocky = (1.0 - snowiness) * (1.0 - grassiness);
+	base *= mix(1.0, mix(0.72, 1.28, lum), detail_strength * rocky);
+
 	ALBEDO = base;
 	METALLIC = 0.0;
-	ROUGHNESS = mix(0.92, 0.55, snowiness);
+	float rough_tex = triplanar(detail_roughness, world_pos, n, scale).r;
+	ROUGHNESS = mix(mix(0.92, 0.55, snowiness), rough_tex, detail_strength * rocky * 0.6);
 
 	float e = 0.7;
 	float hx = fbm((p + vec2(e, 0.0)) * detail_scale) - fbm((p - vec2(e, 0.0)) * detail_scale);
@@ -119,5 +153,10 @@ void fragment() {
 		nrm += (TANGENT * -fx + BINORMAL * -fz) * normal_strength * 0.9 * fine;
 		ALBEDO *= mix(1.0, mix(0.88, 1.12, fbm(p * fine_scale)), fine);
 	}
+	// Normal da textura de rocha, no mesmo triplanar. E o que da relevo de
+	// verdade na encosta: sem ela a superficie so tem o relevo do ruido, que e
+	// suave demais pra ler como pedra.
+	vec3 tex_n = triplanar(detail_normal, world_pos, n, scale) * 2.0 - 1.0;
+	nrm += (TANGENT * tex_n.x + BINORMAL * tex_n.y) * detail_strength * rocky * 1.2;
 	NORMAL = normalize(nrm);
 }

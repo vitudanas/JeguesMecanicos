@@ -1606,6 +1606,24 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     ainda achou feio — **continua em aberto**, é limitação de acabamento por
     ruído procedural, não bug.
 
+- **2026-08-04** — Usuário perguntou se eu não tenho "alguma extensão que crie
+  as coisas em 3D deixando bonito". **Não tenho**, e vale registrar pra não
+  reabrir a pergunta: não existe ferramenta de geração de modelo 3D aqui. O que
+  dá pra fazer é (1) geometria e shader em código, (2) baixar asset CC0 pronto,
+  (3) mexer em luz e pós-processamento — foi assim que tudo neste projeto foi
+  feito.
+  - **Rocha PBR na montanha, sem baixar nada**: o repo já tem 5 conjuntos
+    ambientCG (asfalto, tijolo, concreto, reboco, telha). O `Concrete034` virou
+    grão/normal/rugosidade da encosta, em **triplanar** (a malha é campo de
+    altura, não tem UV útil, e projetar só por XZ virava listra na parede).
+    A **cor continua saindo da forma** — rocha na encosta, mato embaixo, neve no
+    alto — e a textura entra só como acabamento, **modulando em torno de 1.0**
+    (multiplicar direto escurece, armadilha já documentada no `city_surface`).
+    Só na parte rochosa: neve e mato não podem ter cara de concreto.
+  - **Falta pra fechar o terreno**: não há textura de **grama** nem de **rocha
+    natural** no repo. Deixar a grama realmente boa pede baixar 2 conjuntos CC0
+    do ambientCG (~15MB), que é o mesmo caminho já usado nas fachadas.
+
 ### Pendências pedidas e ainda NÃO feitas
 
 Nenhuma das três pendências anteriores continua aberta. O que sobrou de

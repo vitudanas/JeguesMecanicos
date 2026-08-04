@@ -59,6 +59,14 @@ func _ready() -> void:
 	_detail.frequency = 0.05
 	_material = ShaderMaterial.new()
 	_material.shader = MOUNTAIN_SHADER
+	# Grao de rocha PBR (CC0 ambientCG) por cima da cor procedural — o mesmo
+	# conjunto que as fachadas de concreto ja usam, entao nao custa nenhum byte
+	# novo no build. A cor continua saindo da forma; a textura entra so como
+	# grao, normal e rugosidade.
+	const ROCK := "res://assets/ambientcg/Concrete034/Concrete034_1K-JPG_%s.jpg"
+	_material.set_shader_parameter("detail_color", load(ROCK % "Color"))
+	_material.set_shader_parameter("detail_normal", load(ROCK % "NormalGL"))
+	_material.set_shader_parameter("detail_roughness", load(ROCK % "Roughness"))
 
 	# Distribuicao por setor: sorteio livre do angulo deixa buraco de horizonte
 	# de um lado e amontoado do outro, e o anel deixa de fechar.
