@@ -1662,6 +1662,125 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
   - **Rocha PBR na montanha**: `Rock030`/`Concrete034` em triplanar (ver entrada
     anterior).
 
+- **2026-08-04** — Usuário reportou grama gigante, pediu o máximo de qualidade
+  nas construções ("sem se preocupar com armazenamento"), depois um contador de
+  FPS, meta de 50-80 FPS e um menu de config com opções de gráficos.
+  - **A grama gigante era MEDIDA errada, em dois lugares.** O tufo
+    (`tall-grass.glb`) tem **1,87 m** no arquivo, e os dois espalhadores eram
+    configurados em ESCALA CRUA: `GrassField` ia de 0.5 a 1.25 (grama de 0,94 a
+    **2,34 m** — mais alta que o jogador) e o `NatureScatter` do anel rural
+    usava 0.8-1.5 pro pool inteiro, o que fazia a samambaia (9 m de largura no
+    arquivo) virar um leque de **13 m** no mapa todo. Nenhum número na cena
+    dizia nada sobre tamanho, e por isso ninguém notou. Os dois passaram a
+    declarar **altura em METROS**, com a escala saindo da altura medida do
+    modelo — `RuralScatter` ganhou `decor_height_min/max` como arrays paralelos
+    a `decor_scenes` (mesmo padrão de `diagonal_starts`/`_ends`).
+  - **Grama refeita** (`shaders/grass.gdshader` + `GrassField` em 3 camadas):
+    cor vinda da PALETA DO CHÃO (a do modelo é verde-limão e brigava com o
+    terreno), vento com a base presa e a ponta balançando na mesma direção pro
+    campo inteiro, tufo que ENCOLHE até sumir na borda do anel em vez de piscar,
+    e `BACKLIGHT` porque folha fina contra o sol sem isso fica preta. O chão
+    agora é medido numa grade grossa de raios: a grama acompanha o relevo e não
+    nasce em laje, calçada, asfalto nem na estrada de terra (essa não tem
+    colisão, então é lida do próprio nó pelo grupo `dirt_road`).
+  - **Erro meu na distribuição**: usei `dist = u^0.40 * R` querendo adensar
+    perto do jogador. Com `u^p`, a densidade por área fica ∝ `d^(1/p - 2)` —
+    0.40 dá `d^+0.5`, ou seja o OPOSTO, e o primeiro plano (onde o tufo mais
+    aparece) saía pelado. Só acima de 0.5 adensa.
+  - **O chão estava lavado de branco** e a culpa não era da cor: o `Grass004`
+    do ambientCG tem rugosidade média **0,26** (lustroso, feito pra grama
+    molhada de estúdio) e estava sendo usado cru — com o céu HDRI por cima, o
+    campo inteiro ganhava brilho especular. O mapa passou a MODULAR uma faixa
+    fosca, e `SPECULAR` do terreno caiu de 0.5 pra 0.15.
+  - **A faixa térrea de TODOS os prédios renderizava preto puro.** Um quarto do
+    atlas do kit (medido: 65536 dos 262144 pixels) é `(0,0,0)`. Antes de ajustar
+    número, renderizei um modelo do kit com o material ORIGINAL pra ver a
+    intenção do artista — e ela é clara: o preto é o **embasamento térreo**, e a
+    **janela é AZUL**. Então são dois tratamentos diferentes: o preto vira
+    plinto escuro de verdade (recebe luz, grão e sujeira), e o azul vira
+    **vidro** metálico e liso, refletindo o céu HDRI, com emissão fraca e
+    fresnel porque em rua estreita a parede não vê o céu e a janela voltava a
+    ser buraco.
+  - **Como achei que a regra pegava os pixels certos**: pintei o plinto de
+    VERMELHO e renderizei. Mesma lição de 2026-08-03 (provar de qual malha é o
+    defeito antes de ajustar). O vermelho apareceu no lugar exato — o que
+    engolia a faixa era o **SSAO em intensidade 2.0 / potência 2.2** somado ao
+    albedo zero. SSAO baixou pra 1.15 / 1.6 / raio 2.0.
+  - **Vitrines de rua** (`StreetFurniture.storefront_into`): vidro grande com
+    montante, toldo listrado de duas cores com babado, letreiro aceso e porta,
+    em ~72% dos prédios de comércio. É o que transforma a faixa mais morta da
+    cidade no ponto mais interessante da rua. Sem colisão de propósito — a caixa
+    do prédio já fecha a fachada.
+  - **Lotes especiais deixaram de ser retângulo de cor chapada**: praça, posto,
+    estacionamento e feira ganharam piso PBR (`CitySurface` ganhou os conjuntos
+    "grama", "cascalho" e "terra"). E a calçada, que estava em albedo **0,72**
+    (mais clara que tudo na rua), foi pra 0,50 — concreto de verdade reflete
+    ~40%.
+  - **Otimização sem tirar detalhe** (pedido explícito de manter 50-80 FPS):
+    1. `scripts/MeshBatch.gd` junta as vitrines num nó **por quarteirão**, uma
+       superfície por material. Montadas como árvore de nós, cada loja passava
+       de 20 `MeshInstance3D`. Por quarteirão, e não pela cidade toda, pro
+       descarte por frustum continuar valendo.
+    2. `visibility_range_end` nos props pequenos do anel rural (130 m) e nas
+       vitrines (180 m) — a essa distância eles não chegam a um pixel.
+    Medido no mesmo ponto de vista: as vitrines custavam **+700 a +2100**
+    chamadas de desenho; depois disso a cena voltou ao patamar de ANTES delas
+    existirem, com toda a qualidade nova.
+  - **Medir tempo de quadro aqui não funciona** e isso custou uma rodada: com a
+    grama DESLIGADA o quadro saiu mais LENTO (118 ms contra 101 ms). O macOS
+    estrangula a janela fora de foco. Troquei por **chamadas de desenho e
+    primitivas**, que são contagem do renderizador e não dependem disso.
+  - **Contador de FPS** no canto inferior esquerdo (verde acima de 50, amarelo
+    até 30, vermelho abaixo), atualizado 4x por segundo.
+  - **Menu de gráficos** (`autoload/GraphicsSettings.gd` +
+    `scenes/ui/SettingsMenu.tscn`, no menu principal e no pause): presets
+    Baixa/Média/Alta/Ultra mais controles soltos de escala de render (o botão
+    que mais rende — FSR2 a 75% custa metade dos pixels), sombras, SSAO/SSIL,
+    densidade de grama, anti-serrilhado, glow, V-Sync e o próprio contador.
+    Salva em `user://graphics.cfg`.
+    - Bug real que o verificador pegou: **TAA e FSR2 não convivem**. Pedindo os
+      dois, o Godot desliga o TAA sozinho e só avisa no log — a opção ficava
+      marcada na tela sem estar valendo. Agora o TAA é desligado ANTES e religado
+      DEPOIS de mexer na escala (na ordem errada o aviso voltava ao SUBIR de
+      preset), e "alta" usa FXAA porque a 85% quem faz o papel do TAA é o FSR2.
+    - E os valores padrão do autoload não batiam com o preset "alta" campo a
+      campo, então o jogo abria já nessa combinação inválida.
+  - **Verificação**: `tools/verify/settings_test.gd` (novo) aplica cada preset no
+    `Main.tscn` de verdade e cobra que **algo mude** entre presets vizinhos e que
+    a geometria nunca suba ao descer de preset. Minha primeira versão cobrava
+    queda em TODO degrau e reprovou um preset correto: de 'alta' pra 'ultra' só
+    muda custo POR PIXEL (escala, SSIL, TAA), que não aparece em primitiva
+    nenhuma. `tools/verify/quality_shots.gd` (novo) fotografa grama e fachadas do
+    ponto de vista do jogador. `scale_test` ganhou censo de altura da vegetação.
+    - **Armadilha do headless**: `MultiMesh.set_instance_transform` **não guarda
+      nada** com o servidor de render falso — os 24800 tufos voltavam com a
+      matriz identidade mesmo com o espalhamento comprovadamente tendo rodado.
+      Por isso a altura da grama é conferida na CONFIGURAÇÃO (que agora está em
+      metros), e o `scale_test` também cobra que o array de alturas do
+      `RuralScatter` cubra todos os modelos — faltando entrada, aquele modelo
+      volta calado pra escala crua, que é como o defeito nasceu.
+    - Suíte inteira passa: city, drive, loop, attach, scale, yard e settings.
+  - **Dois bugs meus achados só no BUILD e na FOTO, não no código:**
+    1. **`SettingsMenu.tscn` ficou fora do `.pck`.** Um `.tscn` escrito à mão
+       aparece no cache do editor e mesmo assim o exportador não o leva
+       (regravar pelo `ResourceSaver` não resolveu — o arquivo continua sem
+       `uid`). O `preload` dele teria quebrado o menu principal só no binário
+       exportado. Resolvido tirando o arquivo de cena: a tela é montada 100% em
+       código e só depende do `.gd`, que o exportador sempre leva. Daí saiu
+       `tools/verify/pack_audit.py`, que cobra cada `res://` referenciado
+       dentro do pacote — a mesma classe de bug que em 2026-08-02 impediu o jogo
+       de abrir. **Cuidado**: cena entra no `.pck` convertida em
+       `export-<hash>-<Nome>.scn`, então cobrar o caminho original acusa
+       `Main.tscn` como ausente (foi o primeiro resultado do auditor).
+    2. **`set_anchors_preset` não preenche.** Sem o `.tscn`, a tela montava os 9
+       controles e ficava INVISÍVEL, medindo (0, 0): esse método só mexe nas
+       âncoras e recalcula os offsets pra manter o retângulo atual — que num
+       `Control.new()` é zero. Quem preenche é
+       `set_anchors_and_offsets_preset`. Num `.tscn`, `anchors_preset = 15` faz
+       as duas coisas, e por isso o defeito só apareceu ao largar o arquivo de
+       cena. Achado medindo `size` na cena, depois que a contagem de controles
+       (9/9) já dizia que estava tudo lá.
+
 ### Pendências pedidas e ainda NÃO feitas
 
 Nenhuma das três pendências anteriores continua aberta. O que sobrou de

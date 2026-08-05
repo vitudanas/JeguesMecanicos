@@ -55,7 +55,10 @@ extends Node3D
 @export var curb_height := 0.18
 @export var sidewalk_width := 1.2
 @export var road_half_width := 2.4  ## distancia do centro da rua ate o meio-fio
-@export var curb_color := Color(0.72, 0.7, 0.65)
+## Concreto de calcada de verdade reflete ~40% da luz, nao 72%. Com o valor
+## antigo a calcada estourava de branco ao lado do asfalto e virava o elemento
+## mais claro da rua — que nao e o caso em cidade nenhuma.
+@export var curb_color := Color(0.5, 0.49, 0.46)
 ## Asfalto e concreto com material PBR em vez da cor chapada do kit (ver
 ## CitySurface.gd). Chave pra dar pra comparar os dois lado a lado.
 @export var use_pbr_surface := true

@@ -201,3 +201,112 @@ static func ground_patch(size: Vector2, color: Color, key: String) -> MeshInstan
 	inst.set_surface_override_material(0, _material(key, color))
 	inst.position.y = 0.04
 	return inst
+
+# ---------------------------------------------------------------- VITRINE
+# O terreo do kit e uma faixa CEGA de ~3,5 m em toda fachada (a regiao preta do
+# atlas). Mesmo depois de virar plinto escuro de verdade em vez de buraco, ela
+# continua sendo o pedaco mais morto da cidade — e e justamente o que o jogador
+# ve o tempo todo, a pe ou dirigindo.
+#
+# Aqui ela ganha loja: vidro grande com montante, toldo listrado, letreiro aceso
+# e porta. Montada com primitivas, como o resto deste arquivo, pra nao
+# reintroduzir mistura de estilo.
+#
+# SEM COLISAO de proposito. A caixa do predio ja fecha a fachada, entao o vidro
+# e inalcancavel de qualquer jeito; e um corpo a mais projetado sobre a calcada
+# so criaria degrau e risco de parede invisivel — o defeito que a cordilheira ja
+# teve (ver changelog 2026-08-04).
+
+const AWNING_COLORS: Array[Color] = [
+	Color(0.62, 0.16, 0.15), Color(0.16, 0.32, 0.52), Color(0.22, 0.42, 0.27),
+	Color(0.70, 0.48, 0.14), Color(0.44, 0.20, 0.46), Color(0.20, 0.42, 0.46),
+]
+const SIGN_COLORS: Array[Color] = [
+	Color(0.95, 0.72, 0.28), Color(0.90, 0.35, 0.30), Color(0.45, 0.80, 0.85),
+	Color(0.85, 0.85, 0.90), Color(0.55, 0.85, 0.45),
+]
+
+
+## Uma loja de largura `width` encostada na fachada, escrita direto num
+## `MeshBatch` em vez de virar nó.
+##
+## `base` leva do espaco do lote pro espaco onde o lote de malhas esta sendo
+## montado, com o +Z apontando pra RUA. Quem chama junta varias lojas no mesmo
+## batch e constroi UM nó no fim (ver CityBlocks._add_storefront): montada como
+## arvore de nós, cada loja passava de 20 MeshInstance3D.
+static func storefront_into(batch: MeshBatch, base: Transform3D, width: float,
+		rng: RandomNumberGenerator) -> void:
+	# Cabe dentro do lote com folga: vitrine que vaza pro lote do vizinho
+	# aparece na hora numa fileira de predios encostados.
+	var w: float = maxf(width - 0.9, 1.2)
+	var glass_h := 2.35
+	var sill := 0.35
+	var frame := _material("shopfront_frame", Color(0.20, 0.21, 0.23))
+
+	# Vidro: metalico e liso pra refletir o ceu, com um brilho fraco de luz
+	# interna. Vitrine sem luz dentro le como loja fechada — e como buraco, que
+	# e o problema que esta rodada veio resolver.
+	var glass := _material("shopfront_glass", Color(0.20, 0.26, 0.31))
+	glass.metallic = 0.75
+	glass.roughness = 0.10
+	glass.emission_enabled = true
+	glass.emission = Color(0.35, 0.33, 0.26)
+	glass.emission_energy_multiplier = 0.55
+
+	batch.add(_box_mesh("shop_pane_%.2f" % w, Vector3(w, glass_h, 0.10)), glass,
+		base * Transform3D(Basis.IDENTITY, Vector3(0.0, sill + glass_h * 0.5, 0.10)))
+
+	# Peitoril e verga: e o que faz o vidro parecer embutido em vez de colado.
+	for band: Array in [[sill, 0.30], [sill + glass_h, 0.34]]:
+		var y: float = band[0]
+		var t: float = band[1]
+		batch.add(_box_mesh("shop_band_%.2f_%.2f" % [w, t], Vector3(w + 0.35, t, 0.22)),
+			frame, base * Transform3D(Basis.IDENTITY, Vector3(0.0, y, 0.14)))
+
+	# Montantes a cada ~1.6 m: vidro liso de 6 m de largura nao existe em loja
+	# de rua, e o montante e o que da ESCALA a fachada de longe.
+	var bays: int = maxi(int(round(w / 1.6)), 1)
+	for i in range(1, bays):
+		var x: float = -w * 0.5 + w * float(i) / float(bays)
+		batch.add(_box_mesh("shop_mullion", Vector3(0.09, glass_h, 0.16)), frame,
+			base * Transform3D(Basis.IDENTITY, Vector3(x, sill + glass_h * 0.5, 0.15)))
+
+	# Porta numa das pontas, recuada e mais escura que o vidro.
+	var door_x: float = (w * 0.5 - 0.65) * (1.0 if rng.randf() < 0.5 else -1.0)
+	batch.add(_box_mesh("shop_door", Vector3(1.0, 2.15, 0.09)),
+		_material("shopfront_door", Color(0.13, 0.15, 0.17)),
+		base * Transform3D(Basis.IDENTITY, Vector3(door_x, 1.08, 0.13)))
+	batch.add(_box_mesh("shop_handle", Vector3(0.05, 0.34, 0.05)),
+		_material("shopfront_handle", Color(0.72, 0.70, 0.64)),
+		base * Transform3D(Basis.IDENTITY, Vector3(door_x + 0.38, 1.05, 0.19)))
+
+	# Toldo listrado, inclinado pra rua. Listra de duas cores em vez de uma so:
+	# e o detalhe que le como comercio de rua ja a distancia.
+	if rng.randf() < 0.72:
+		var color: Color = AWNING_COLORS[rng.randi() % AWNING_COLORS.size()]
+		var tilt := Transform3D(Basis(Vector3.RIGHT, deg_to_rad(-22.0)),
+			Vector3(0.0, sill + glass_h + 0.34, 0.20))
+		var stripes: int = maxi(int(round(w / 0.45)), 2)
+		var sw: float = w / float(stripes)
+		for i in range(stripes):
+			var x: float = -w * 0.5 + sw * (float(i) + 0.5)
+			var pale := i % 2 == 1
+			var c: Color = color.lightened(0.55) if pale else color
+			batch.add(_box_mesh("awning_slat_%.3f" % sw, Vector3(sw, 0.06, 1.25)),
+				_material("awning_%d_%s" % [color.to_rgba32(), "b" if pale else "a"], c),
+				base * tilt * Transform3D(Basis.IDENTITY, Vector3(x, 0.0, 0.62)))
+		# Babado da ponta: toldo cortado reto entrega que e uma caixa.
+		batch.add(_box_mesh("awning_hem_%.2f" % w, Vector3(w, 0.16, 0.05)),
+			_material("awning_hem_%d" % color.to_rgba32(), color.darkened(0.25)),
+			base * tilt * Transform3D(Basis.IDENTITY, Vector3(0.0, -0.06, 1.24)))
+
+	# Letreiro aceso acima da verga.
+	if rng.randf() < 0.65:
+		var sign_color: Color = SIGN_COLORS[rng.randi() % SIGN_COLORS.size()]
+		var board_w: float = minf(w * 0.72, 3.4)
+		batch.add(_box_mesh("sign_board_%.2f" % board_w, Vector3(board_w, 0.52, 0.10)),
+			_material("sign_back", Color(0.14, 0.14, 0.16)),
+			base * Transform3D(Basis.IDENTITY, Vector3(0.0, sill + glass_h + 0.95, 0.16)))
+		batch.add(_box_mesh("sign_face_%.2f" % board_w, Vector3(board_w - 0.16, 0.32, 0.06)),
+			_material("sign_%d" % sign_color.to_rgba32(), sign_color, true),
+			base * Transform3D(Basis.IDENTITY, Vector3(0.0, sill + glass_h + 0.95, 0.21)))

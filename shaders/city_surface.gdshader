@@ -39,6 +39,43 @@ uniform float normal_strength : hint_range(0.0, 2.0) = 1.0;
 uniform float roughness_min : hint_range(0.0, 1.0) = 0.55;
 uniform float roughness_max : hint_range(0.0, 1.0) = 0.95;
 
+// ------------------------------------------------- PRETO PURO E VIDRO NO KIT
+// Duas regioes do atlas precisam de tratamento proprio, e sao coisas
+// diferentes — renderizar um modelo do kit com o material original mostra a
+// intencao do artista:
+//
+// 1. PRETO PURO ocupa um quarto do atlas (medido: 65536 dos 262144 pixels) e e
+//    o EMBASAMENTO TERREO (a faixa da loja, o batente da porta, as molduras).
+//    Preto puro nao reage a luz nenhuma: no jogo a faixa de baixo de TODOS os
+//    predios lia como um buraco na fachada — o defeito mais grave da cidade
+//    vista do chao. Aqui ele vira um plinto escuro DE VERDADE, que continua
+//    escuro mas recebe luz, grao e sujeira como qualquer parede.
+// 2. AZUL e a JANELA. E nela que entra o vidro: metalico e liso, refletindo o
+//    ceu HDRI. Janela de predio e reflexo, nao cor — e isso e o que mais rende
+//    numa fachada de longe.
+uniform vec3 plinth_color : source_color = vec3(0.26, 0.26, 0.285);
+
+uniform bool glass_enabled = true;
+/// Quanto o azul precisa dominar o vermelho/verde pra contar como janela.
+uniform float glass_blue_min : hint_range(0.0, 0.5) = 0.10;
+uniform float glass_blue_max : hint_range(0.0, 0.5) = 0.22;
+uniform vec3 glass_tint : source_color = vec3(0.46, 0.53, 0.62);
+uniform float glass_roughness : hint_range(0.0, 1.0) = 0.12;
+// Reflexo de ceu sozinho nao basta: numa rua estreita a parede nao ve o ceu e a
+// janela volta a ser um buraco. Duas coisas resolvem, e as duas existem no
+// predio de verdade — a luz de dentro e o brilho rasante do vidro.
+uniform vec3 glass_emission : source_color = vec3(0.055, 0.065, 0.085);
+uniform float glass_fresnel : hint_range(0.0, 1.0) = 0.30;
+
+// ------------------------------------------------------------- ENVELHECIMENTO
+// Fachada limpa e uniforme de baixo a cima e coisa de maquete. Na rua, o metro
+// e meio de baixo pega respingo e fuligem. So vale pra parede (peso pela
+// inclinacao da normal) e so onde for pedido — o asfalto usa o mesmo shader e
+// esta na mesma altura.
+uniform float grime_amount : hint_range(0.0, 1.0) = 0.0;
+uniform float grime_height = 2.6;
+uniform vec3 grime_color : source_color = vec3(0.34, 0.32, 0.29);
+
 // Sombreamento facetado. Medido: 530 das 1252 faces do predio do kit vem
 // marcadas como SUAVES, com a normal de vertice desviando ate 45 graus da
 // normal da face — e dai que vem o aspecto de sabonete, a quina existe na
@@ -67,7 +104,21 @@ vec3 triplanar(sampler2D tex, vec3 p, vec3 n, float scale) {
 }
 
 void fragment() {
-	vec4 base = texture(atlas, UV) * tint;
+	vec4 raw = texture(atlas, UV);
+	// Janela e plinto identificados no atlas CRU: com o tint aplicado, uma
+	// fachada escura ou azulada entraria na conta e o predio inteiro mudaria
+	// de material.
+	float glass = 0.0;
+	if (glass_enabled) {
+		float blue = raw.b - max(raw.r, raw.g);
+		glass = smoothstep(glass_blue_min, glass_blue_max, blue);
+	}
+	// Levanta o preto ANTES do tint, senao um plinto lido como preto continua
+	// preto depois de multiplicado por qualquer cor.
+	float raw_luma = dot(raw.rgb, vec3(0.2126, 0.7152, 0.0722));
+	raw.rgb = max(raw.rgb, plinth_color * (1.0 - smoothstep(0.0, 0.10, raw_luma)));
+
+	vec4 base = raw * tint;
 
 	float luma = dot(base.rgb, vec3(0.2126, 0.7152, 0.0722));
 	base.rgb = mix(vec3(luma), base.rgb, saturation);
@@ -100,10 +151,35 @@ void fragment() {
 	float g = dot(grain, vec3(0.3333));
 	base.rgb *= mix(1.0, g / 0.5, detail_strength);
 
-	ALBEDO = base.rgb;
-	METALLIC = 0.0;
-	NORMAL_MAP = mix(vec3(0.5, 0.5, 1.0),
-		triplanar(detail_normal, world_pos, n, scale), normal_strength);
-	ROUGHNESS = mix(roughness_min, roughness_max,
+	// Sujeira de rua: so na parede (|n.y| pequeno) e so no metro e meio de
+	// baixo, com a borda bagunçada pelo proprio grao — linha reta de sujeira
+	// entrega que foi pintada.
+	if (grime_amount > 0.001) {
+		float wall = 1.0 - clamp(abs(n.y), 0.0, 1.0);
+		float low = 1.0 - smoothstep(0.0, grime_height, world_pos.y + (g - 0.5) * 0.9);
+		base.rgb = mix(base.rgb, grime_color, low * wall * grime_amount * (1.0 - glass));
+	}
+
+	float rough = mix(roughness_min, roughness_max,
 		triplanar(detail_roughness, world_pos, n, scale).r);
+	vec3 nrm_map = mix(vec3(0.5, 0.5, 1.0),
+		triplanar(detail_normal, world_pos, n, scale), normal_strength);
+
+	if (glass > 0.001) {
+		// Metalico: e o que faz o Godot usar a cor como TINGIMENTO do reflexo
+		// do ceu em vez de cor propria. Vidro de predio nao tem cor propria.
+		METALLIC = mix(0.0, 0.82, glass);
+		ROUGHNESS = mix(rough, glass_roughness, glass);
+		// Sem grao de concreto e sem relevo no vidro: os dois denunciam na hora.
+		nrm_map = mix(nrm_map, vec3(0.5, 0.5, 1.0), glass);
+		base.rgb = mix(base.rgb, glass_tint, glass);
+		float fres = pow(1.0 - clamp(dot(normalize(NORMAL), normalize(VIEW)), 0.0, 1.0), 4.0);
+		EMISSION = glass * (glass_emission + vec3(fres) * glass_fresnel);
+	} else {
+		METALLIC = 0.0;
+		ROUGHNESS = rough;
+	}
+
+	ALBEDO = base.rgb;
+	NORMAL_MAP = nrm_map;
 }

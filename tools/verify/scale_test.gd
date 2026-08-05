@@ -25,6 +25,14 @@ const FLOAT_TOL := 0.40
 const SINK_TOL := 0.60
 ## Quanto a colisao pode passar do desenho antes de virar parede invisivel.
 const WALL_TOL := 0.90
+## Altura maxima de um prop de `decor` do anel rural (grama, flor, cogumelo,
+## seixo, samambaia). Sao todos rasteiros; acima disso vira arbusto e devia
+## estar em `solid_scenes`.
+const DECOR_MAX := 1.2
+## Altura maxima de um tufo de grama. Grama alta de campo vai a ~0,8 m; acima
+## disso ja e junco, e passando do joelho do jogador (1,80 m) le como mato
+## gigante — que era o defeito de 2026-08-04.
+const GRASS_MAX := 0.95
 
 var problems: Array[String] = []
 var main: Node
@@ -313,6 +321,69 @@ func _run() -> void:
 	print("    %d macicos com a base acima do chao" % airborne)
 	if airborne > 0:
 		fail("%d montanha(s) com o pe no ar" % airborne)
+
+	# ------------------------------------------------- 6. altura da grama
+	# Esta secao existe por causa de um defeito real: a grama de geometria
+	# nascia com ate 2,34 m — mais alta que o jogador — porque o campo era
+	# configurado em ESCALA (0.5 a 1.25) sobre um modelo de 1,87 m, e nenhum
+	# numero na cena dizia nada sobre tamanho.
+	#
+	# A altura e conferida na CONFIGURACAO, nao instancia por instancia: em
+	# `--headless` o servidor de render e falso e `MultiMesh.set_instance_transform`
+	# nao guarda nada (medido: 24800 tufos voltavam com a matriz identidade,
+	# mesmo com o espalhamento tendo rodado). Como agora a cena declara altura em
+	# METROS e a escala sai da altura medida do modelo, conferir a configuracao
+	# cobre exatamente a regressao que aconteceu.
+	print("\n[6] altura configurada da vegetacao (grama de campo vai ate ~0,8 m)")
+	var field := get_tree().get_first_node_in_group("grass_field")
+	if field == null:
+		fail("nao achei o GrassField (grupo 'grass_field')")
+	else:
+		var layers: int = field.layer_scenes.size()
+		if layers == 0:
+			fail("GrassField sem camada nenhuma configurada")
+		for i in range(layers):
+			var scene: PackedScene = field.layer_scenes[i]
+			if i >= field.layer_height_max.size() or i >= field.layer_height_min.size():
+				fail("GrassField camada %d sem altura declarada (cairia em escala crua)" % i)
+				continue
+			var lo: float = field.layer_height_min[i]
+			var hi: float = field.layer_height_max[i]
+			print("    grama camada %d: %.2f a %.2f m (%s)" % [
+				i, lo, hi, scene.resource_path.get_file() if scene else "-"])
+			if hi > GRASS_MAX:
+				fail("camada %d de grama chega a %.2f m (limite %.2f m)" % [i, hi, GRASS_MAX])
+			if lo > hi:
+				fail("camada %d de grama com minimo maior que o maximo" % i)
+
+	# Props do anel rural: e daqui que vinha a grama de 2 m e a samambaia de 13 m
+	# no mapa inteiro. O array de alturas TEM que cobrir todos os modelos —
+	# faltando entrada, aquele modelo volta calado pra escala crua.
+	for scatter in _scatters(town):
+		var name := String(scatter.name)
+		var n: int = scatter.decor_scenes.size()
+		if n == 0:
+			continue
+		if scatter.decor_height_max.size() != n or scatter.decor_height_min.size() != n:
+			fail("%s: %d modelos de decor mas %d alturas (o que faltar vira escala crua)" % [
+				name, n, scatter.decor_height_max.size()])
+			continue
+		var tallest := 0.0
+		for i in range(n):
+			tallest = maxf(tallest, float(scatter.decor_height_max[i]))
+		print("    %s: %d props pequenos, o mais alto declarado com %.2f m" % [name, n, tallest])
+		if tallest > DECOR_MAX:
+			fail("%s: prop pequeno declarado com %.2f m (limite %.2f m)" % [
+				name, tallest, DECOR_MAX])
+
+## Todo RuralScatter da cena (o anel de natureza e qualquer outro que exista).
+func _scatters(n: Node, out: Array[Node] = []) -> Array[Node]:
+	var script: Script = n.get_script()
+	if script and script.resource_path.ends_with("RuralScatter.gd"):
+		out.append(n)
+	for c in n.get_children():
+		_scatters(c, out)
+	return out
 
 func _all_bodies(n: Node, out: Array[CollisionObject3D] = []) -> Array[CollisionObject3D]:
 	if n is StaticBody3D:

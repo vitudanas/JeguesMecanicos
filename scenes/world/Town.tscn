@@ -185,9 +185,9 @@ tonemap_mode = 3
 tonemap_exposure = 1.05
 tonemap_white = 6.0
 ssao_enabled = true
-ssao_radius = 3.0
-ssao_intensity = 2.0
-ssao_power = 2.2
+ssao_radius = 2.0
+ssao_intensity = 1.15
+ssao_power = 1.6
 ssao_detail = 1.0
 ssao_light_affect = 0.15
 ssil_enabled = true
@@ -274,7 +274,7 @@ directional_shadow_split_3 = 0.45
 directional_shadow_max_distance = 420.0
 directional_shadow_fade_start = 0.9
 
-[node name="Ground" type="StaticBody3D" parent="."]
+[node name="Ground" type="StaticBody3D" parent="." groups=["terreno_natural"]]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
 
 [node name="Mesh" type="MeshInstance3D" parent="Ground"]
@@ -603,12 +603,12 @@ rng_seed = 603
 [node name="NatureScatter" parent="." instance=ExtResource("45")]
 decor_scenes = Array[PackedScene]([ExtResource("64"), ExtResource("65"), ExtResource("66"), ExtResource("67"), ExtResource("68"), ExtResource("69"), ExtResource("70"), ExtResource("71"), ExtResource("75"), ExtResource("76")])
 decor_count = 900
-decor_scale_min = 0.8
-decor_scale_max = 1.5
+decor_height_min = Array[float]([0.30, 0.25, 0.45, 0.14, 0.35, 0.30, 0.14, 0.55, 0.10, 0.12])
+decor_height_max = Array[float]([0.55, 0.45, 0.85, 0.26, 0.60, 0.55, 0.28, 0.95, 0.22, 0.25])
 solid_scenes = Array[PackedScene]([ExtResource("56"), ExtResource("57"), ExtResource("58"), ExtResource("59"), ExtResource("60"), ExtResource("61"), ExtResource("62"), ExtResource("63"), ExtResource("72"), ExtResource("73"), ExtResource("74")])
 solid_count = 230
-solid_scale_min = 0.8
-solid_scale_max = 1.6
+solid_height_min = Array[float]([7.0, 7.0, 8.0, 9.0, 8.0, 12.0, 1.0, 0.9, 1.2, 1.4, 1.4])
+solid_height_max = Array[float]([13.0, 13.0, 16.0, 18.0, 14.0, 20.0, 2.0, 1.8, 3.2, 3.6, 3.8])
 inner_extent = 140.0
 outer_radius = 228.0
 exclude_points = Array[Vector3]([Vector3(188, 0, 55), Vector3(-55, 0, 190), Vector3(190, 0, -60), Vector3(-190, 0, -60), Vector3(50, 0, 192), Vector3(105, 0, 175), Vector3(55, 0, -190), Vector3(-100, 0, -172), Vector3(-175, 0, 0), Vector3(-175, 0, 40)])
@@ -636,13 +636,15 @@ ground_path = NodePath("../Ground/Mesh")
 ; Grama de geometria em volta do jogador. Textura plana de grama le como
 ; carpete da altura dos olhos; sao os tufos que dao volume. MultiMesh: os
 ; milhares de tufos saem numa chamada de desenho so.
-[node name="GrassField" type="MultiMeshInstance3D" parent="."]
+[node name="GrassField" type="Node3D" parent="."]
 script = ExtResource("404")
-tuft_scene = ExtResource("66")
-count = 2600
-radius = 38.0
+layer_scenes = Array[PackedScene]([ExtResource("64"), ExtResource("66"), ExtResource("65")])
+layer_counts = Array[int]([17000, 5200, 2600])
+layer_height_min = Array[float]([0.14, 0.34, 0.20])
+layer_height_max = Array[float]([0.26, 0.62, 0.40])
+layer_radius = Array[float]([26.0, 34.0, 30.0])
 
-[node name="DirtRoadWorkshop" type="Node3D" parent="."]
+[node name="DirtRoadWorkshop" type="Node3D" parent="." groups=["dirt_road"]]
 script = ExtResource("402")
 points = Array[Vector2]([Vector2(-113, 0), Vector2(-122, 1.5), Vector2(-131, 3), Vector2(-140, 2), Vector2(-149, -0.5), Vector2(-158, -1), Vector2(-166, 0), Vector2(-172, 1)])
 

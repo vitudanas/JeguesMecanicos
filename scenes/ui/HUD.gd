@@ -10,6 +10,12 @@ extends CanvasLayer
 @onready var persuasion_bar: ProgressBar = $Margin/VBox/PersuasionBar
 @onready var objective_label: Label = $Margin/VBox/ObjectiveLabel
 @onready var compass_arrow: Label = $CompassArrow
+@onready var fps_label: Label = $FpsLabel
+
+## O contador de FPS e atualizado 4x por segundo, nao a cada quadro: texto
+## trocando 60 vezes por segundo e ilegivel (e cada troca remonta o Label).
+const FPS_REFRESH := 0.25
+var _fps_timer := 0.0
 
 var objective_position: Vector3 = Vector3.ZERO
 var has_objective := false
@@ -44,7 +50,8 @@ func set_prompt(text: String) -> void:
 	prompt_label.text = text
 	prompt_label.visible = text != ""
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_update_fps(delta)
 	if not has_objective:
 		return
 	if player == null:
@@ -59,3 +66,27 @@ func _process(_delta: float) -> void:
 	forward.y = 0.0
 	var angle: float = forward.signed_angle_to(to_target, Vector3.UP)
 	compass_arrow.rotation = -angle
+
+## Contador de FPS no canto inferior esquerdo. Verde acima de 50, amarelo entre
+## 30 e 50, vermelho abaixo — assim da pra ver de relance, jogando, ONDE o mapa
+## fica pesado, sem precisar ler o numero.
+func _update_fps(delta: float) -> void:
+	# Respeita o menu de graficos, mas so mexe na visibilidade quando ela muda:
+	# escrever `visible` todo quadro forca o Label a revalidar o layout.
+	var want: bool = GraphicsSettings.show_fps
+	if fps_label.visible != want:
+		fps_label.visible = want
+	if not want:
+		return
+	_fps_timer += delta
+	if _fps_timer < FPS_REFRESH:
+		return
+	_fps_timer = 0.0
+	var fps: int = int(round(Engine.get_frames_per_second()))
+	fps_label.text = "%d FPS" % fps
+	if fps >= 50:
+		fps_label.add_theme_color_override("font_color", Color(0.72, 1.0, 0.72))
+	elif fps >= 30:
+		fps_label.add_theme_color_override("font_color", Color(1.0, 0.86, 0.45))
+	else:
+		fps_label.add_theme_color_override("font_color", Color(1.0, 0.5, 0.45))

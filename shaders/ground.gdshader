@@ -53,6 +53,9 @@ uniform float tex_macro_ratio = 3.7;
 uniform float tex_strength : hint_range(0.0, 1.0) = 1.0;
 uniform float detail_fade_start = 60.0;
 uniform float detail_fade_end = 200.0;
+// Piso de rugosidade: ver o comentario no fragment.
+uniform float rough_floor : hint_range(0.0, 1.0) = 0.74;
+uniform float ground_specular : hint_range(0.0, 1.0) = 0.15;
 
 varying vec3 world_pos;
 
@@ -171,12 +174,20 @@ void fragment() {
 		vec3 tn = mix(detiled(dirt_nrm, p, scale * 1.15, blend),
 			detiled(grass_a_nrm, p, scale, blend), country) * 2.0 - 1.0;
 		nrm += (TANGENT * tn.x + BINORMAL * tn.y) * amount * 1.3;
+		// O mapa de rugosidade entra MODULANDO uma faixa fosca, nao como valor
+		// absoluto. O Grass004 do ambientCG tem rugosidade media 0.26 (bem
+		// lustroso, feito pra grama molhada de estudio): usado cru, com o ceu
+		// HDRI por cima, o campo inteiro ganhava um brilho especular branco e
+		// lia como carpete lavado. Terra e grama sao foscas.
 		float rgh = mix(detiled(dirt_rgh, p, scale * 1.15, blend).r,
 			detiled(grass_a_rgh, p, scale, blend).r, country);
-		ROUGHNESS = mix(ROUGHNESS, rgh, amount * 0.85);
+		ROUGHNESS = mix(ROUGHNESS, mix(rough_floor, 1.0, rgh), amount * 0.9);
 	}
 
 	ALBEDO = base;
 	METALLIC = 0.0;
+	// Chao de campo nao espelha. O padrao (0.5) somado ao ceu claro era metade
+	// do aspecto de "plastico" que sobrava depois da textura entrar.
+	SPECULAR = ground_specular;
 	NORMAL = normalize(nrm);
 }

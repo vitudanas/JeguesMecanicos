@@ -86,9 +86,19 @@ static var _footprint_cache: Dictionary = {}
 @export var use_pbr_surface := true
 @export var facade_texture_size := 2.4
 @export var facade_saturation := 0.62
+## Fuligem/respingo no pe da parede (ver shaders/city_surface.gdshader). E o que
+## tira o aspecto de maquete recem-pintada da fachada vista da calcada.
+@export var facade_grime := 0.38
 ## Entulho de cobertura (ver _add_rooftop_props).
 @export var rooftop_props_enabled := true
 @export var rooftop_prop_chance := 0.55
+## Loja no terreo (ver _add_storefront). Nem todo predio tem loja — quarteirao
+## inteiro com vitrine em fileira le como shopping, nao como cidade.
+@export var storefronts_enabled := true
+@export var storefront_chance := 0.72
+## Distancia em que a vitrine some. Nao e economia de detalhe: a essa distancia
+## a loja inteira ocupa poucos pixels, e o que sobra e so custo de desenho.
+@export var storefront_visible_range := 180.0
 
 ## Raio (Chebyshev, a partir do centro) de cada anel de zoneamento. Eram
 ## numeros magicos casados com o espacamento de rua antigo (25); virando
@@ -102,6 +112,8 @@ static var _footprint_cache: Dictionary = {}
 @export var rng_seed := 1
 
 var _rng := RandomNumberGenerator.new()
+## Lote de malhas das vitrines do quarteirao em construcao (ver _build_block).
+var _shop_batch: MeshBatch = MeshBatch.new()
 
 func _ready() -> void:
 	_rng.seed = rng_seed
@@ -148,6 +160,12 @@ func _build_block(x_street_a: float, x_street_b: float, z_street_a: float, z_str
 	var depth_budget_z := (z_max - z_min) * 0.5 - lot_gap
 	var depth_budget_x := (x_max - x_min) * 0.5 - lot_gap
 
+	# Um lote de malhas POR QUARTEIRAO pras vitrines: elas sao dezenas de pecas
+	# pequenas cada, e viraram o maior custo de chamada de desenho da cidade
+	# (ver MeshBatch.gd). Por quarteirao, e nao pela cidade toda, pra o descarte
+	# por frustum continuar valendo.
+	_shop_batch = MeshBatch.new()
+
 	# Norte/sul ocupam a largura toda; guardamos a profundidade usada pra
 	# recuar as laterais e nao sobrepor nos cantos.
 	var depth_south := _fill_edge(pool, x_min, x_max, z_min, true, false, depth_budget_z)
@@ -158,6 +176,14 @@ func _build_block(x_street_a: float, x_street_b: float, z_street_a: float, z_str
 	if z_side_max - z_side_min > 2.0:
 		_fill_edge(pool, z_side_min, z_side_max, x_min, false, false, depth_budget_x)
 		_fill_edge(pool, z_side_min, z_side_max, x_max, false, true, depth_budget_x)
+
+	var shops := _shop_batch.build("Vitrines")
+	if shops != null:
+		shops.add_to_group("storefront")
+		# Detalhe de calcada: alem de ~180 m ele ocupa poucos pixels e so custa.
+		shops.visibility_range_end = storefront_visible_range
+		shops.visibility_range_end_margin = 20.0
+		add_child(shops)
 
 const GRASS := Color(0.44, 0.58, 0.36)
 const PATH := Color(0.78, 0.75, 0.68)
@@ -186,9 +212,9 @@ func _lot_kind() -> String:
 func _build_park(x_min: float, x_max: float, z_min: float, z_max: float) -> void:
 	var center := Vector3((x_min + x_max) * 0.5, 0.0, (z_min + z_max) * 0.5)
 	var size := Vector2(x_max - x_min, z_max - z_min)
-	_patch(center, size, GRASS, "grass", 0.04, "lote_praca")
-	_patch(center, Vector2(size.x, 2.4), PATH, "path", 0.05)
-	_patch(center, Vector2(2.4, size.y), PATH, "path", 0.05)
+	_patch(center, size, GRASS, "grass", 0.04, "lote_praca", "grama")
+	_patch(center, Vector2(size.x, 2.4), PATH, "path", 0.05, "", "concreto")
+	_patch(center, Vector2(2.4, size.y), PATH, "path", 0.05, "", "concreto")
 
 	# Arvores numa grade com sacudida, nao em posicao puramente sorteada: com
 	# sorteio livre duas caem uma dentro da outra (a verificacao pegou 8 pares
@@ -234,7 +260,7 @@ func _build_park(x_min: float, x_max: float, z_min: float, z_max: float) -> void
 func _build_gas_station(x_min: float, x_max: float, z_min: float, z_max: float) -> void:
 	var center := Vector3((x_min + x_max) * 0.5, 0.0, (z_min + z_max) * 0.5)
 	var size := Vector2(x_max - x_min, z_max - z_min)
-	_patch(center, size, CONCRETE, "concrete", 0.04, "lote_posto")
+	_patch(center, size, CONCRETE, "concrete", 0.04, "lote_posto", "concreto")
 
 	var canopy_w: float = minf(size.x * 0.8, 11.0)
 	var canopy_d: float = minf(size.y * 0.5, 7.0)
@@ -315,7 +341,7 @@ func _build_gas_station(x_min: float, x_max: float, z_min: float, z_max: float) 
 func _build_parking(x_min: float, x_max: float, z_min: float, z_max: float) -> void:
 	var center := Vector3((x_min + x_max) * 0.5, 0.0, (z_min + z_max) * 0.5)
 	var size := Vector2(x_max - x_min, z_max - z_min)
-	_patch(center, size, ASPHALT, "asphalt", 0.04, "lote_estacionamento")
+	_patch(center, size, ASPHALT, "asphalt", 0.04, "lote_estacionamento", "asfalto")
 	if parked_car_scenes.is_empty():
 		return
 	# Vaga medida a partir do carro mais largo do pool, na escala em que ele e
@@ -341,7 +367,7 @@ func _build_parking(x_min: float, x_max: float, z_min: float, z_max: float) -> v
 func _build_market(x_min: float, x_max: float, z_min: float, z_max: float) -> void:
 	var center := Vector3((x_min + x_max) * 0.5, 0.0, (z_min + z_max) * 0.5)
 	var size := Vector2(x_max - x_min, z_max - z_min)
-	_patch(center, size, PATH, "path", 0.04, "lote_feira")
+	_patch(center, size, PATH, "path", 0.04, "lote_feira", "cascalho")
 	if parasol_scenes.is_empty():
 		return
 	# Passo tirado da largura real do guarda-sol, senao duas barracas vizinhas
@@ -370,9 +396,16 @@ func _build_market(x_min: float, x_max: float, z_min: float, z_max: float) -> vo
 			add_child(stall)
 			stall.position = Vector3(x, 0.45, z)
 
+## `kind` e o acabamento PBR do piso (ver CitySurface.SETS). Vazio = cor
+## chapada, que so serve pra faixa de demarcacao — um lote inteiro de cor
+## chapada le como feltro no meio de uma cidade texturizada.
 func _patch(center: Vector3, size: Vector2, color: Color, key: String, y: float,
-		group := "") -> void:
+		group := "", kind := "") -> void:
 	var patch := StreetFurniture.ground_patch(size, color, key)
+	if kind != "":
+		# Textura grande e grao forte: o piso e visto de cima e de perto, entao
+		# repeticao curta vira xadrez e grao fraco nao aparece.
+		CitySurface.apply(patch, color, kind, 3.2, 0.85, 0.8)
 	if group != "":
 		# Marca o lote pelo tipo: serve pra achar praca/posto/feira depois, sem
 		# depender do nome do no (irmaos repetidos viram "@Node3D@N").
@@ -402,7 +435,7 @@ func _place_prop(scene: PackedScene, pos: Vector3, rot_deg: float, prop_scale: f
 	# meio de uma cidade toda facetada.
 	if surface_kind != "" and use_pbr_surface:
 		CitySurface.apply(body, Color(0.92, 0.9, 0.86), surface_kind, facade_texture_size,
-			facade_saturation)
+			facade_saturation, 0.45, facade_grime)
 	return body
 
 ## Percorre uma borda colocando predios lado a lado, todos virados pra fora
@@ -458,9 +491,27 @@ func _fill_edge(pool: Array, run_min: float, run_max: float, edge_coord: float, 
 			var body := _place(scene, pos, rot_deg)
 			if body != null and scene in house_scenes:
 				_register_house(body, slot_pos, rot_deg, depth)
+			if body != null and not (scene in house_scenes):
+				_add_storefront(slot_pos, rot_deg, width, depth)
 			max_depth = maxf(max_depth, depth)
 		cursor += width + lot_gap
 	return max_depth
+
+## Loja no terreo, encostada na fachada que da pra rua (ver
+## StreetFurniture.storefront). So em predio de comercio/torre/galpao: casa de
+## bairro nao tem vitrine, e o kit suburbano ja desenha porta e janela terrea.
+##
+## O ponto sai do MESMO calculo do ponto de entrega (`_register_house`) — o
+## plano da fachada e o centro do lote deslocado meia profundidade pra rua —
+## entao os dois nao podem divergir quando alguem mexer na geracao.
+func _add_storefront(slot_pos: Vector3, rot_deg: float, width: float, depth: float) -> void:
+	if not storefronts_enabled or _rng.randf() > storefront_chance:
+		return
+	var dir := Vector3(0.0, 0.0, -1.0).rotated(Vector3.UP, deg_to_rad(rot_deg))
+	var origin := Vector3(slot_pos.x, 0.0, slot_pos.z) + dir * (depth * 0.5)
+	# O +Z da vitrine olha pra rua; `dir` ja e a direcao da rua.
+	var base := Transform3D(Basis(Vector3.UP, atan2(dir.x, dir.z)), origin)
+	StreetFurniture.storefront_into(_shop_batch, base, width, _rng)
 
 ## Marca a casa como destino possivel de entrega e guarda, no proprio no, o
 ## ponto da calcada bem na frente dela e pra que lado ela olha. O
@@ -623,7 +674,8 @@ func _tint(body: Node3D) -> void:
 		# material combina com o TIPO de construcao: tijolo em arranha-ceu
 		# ficou errado no primeiro teste — torre e concreto, casa e que pode
 		# ser tijolo ou reboco.
-		CitySurface.apply(body, color, kind, facade_texture_size, facade_saturation)
+		CitySurface.apply(body, color, kind, facade_texture_size, facade_saturation,
+			0.45, facade_grime)
 		return
 	for mesh_inst in _all_mesh_instances(body):
 		for surface in range(mesh_inst.get_surface_override_material_count()):

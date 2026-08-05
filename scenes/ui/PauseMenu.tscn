@@ -33,6 +33,10 @@ text = "PAUSADO"
 custom_minimum_size = Vector2(220, 44)
 text = "Continuar"
 
+[node name="SettingsButton" type="Button" parent="Panel/VBox"]
+custom_minimum_size = Vector2(220, 44)
+text = "Gráficos"
+
 [node name="MainMenuButton" type="Button" parent="Panel/VBox"]
 custom_minimum_size = Vector2(220, 44)
 text = "Sair para o Menu"

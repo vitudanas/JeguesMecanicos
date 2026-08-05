@@ -160,7 +160,7 @@ func _tint(body: Node3D) -> void:
 	# num deles mudaria o cinturao INTEIRO ao ligar a chave.
 	var kind := "tijolo" if _rng.randf() < 0.3 else "reboco"
 	if use_pbr_surface:
-		CitySurface.apply(body, color, kind, 2.4, 0.62)
+		CitySurface.apply(body, color, kind, 2.4, 0.62, 0.45, 0.35)
 		return
 	for mesh_inst in _all_meshes(body):
 		for surface in range(mesh_inst.get_surface_override_material_count()):
