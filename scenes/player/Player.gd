@@ -1,15 +1,26 @@
 extends CharacterBody3D
-## Controlador do jogador em 1a pessoa. WASD anda, Shift corre, Space
-## pula, E interage (olhando via raycast), F sai do carro quando dirigindo.
-## Ao entrar num veiculo, some (visible=false) e cede o controle/camera
-## para o Vehicle.gd (terceira pessoa).
+## Controlador do jogador. WASD anda, Shift corre, Space pula, E interage
+## (olhando via raycast), **V troca entre 1a e 3a pessoa**, F sai do carro
+## quando dirigindo. Ao entrar num veiculo, some e cede o controle/camera para
+## o Vehicle.gd.
+##
+## O corpo e a mulher de cabeca de jegue montada por `PlayerVisual.gd`.
 
 const WALK_SPEED := 4.0
 const SPRINT_SPEED := 7.5
 const JUMP_VELOCITY := 4.5
 const MOUSE_SENSITIVITY := 0.0025
 
+## Acima disso o corpo troca de parado pra andando; acima do segundo, pra
+## correndo. Saem da velocidade real do corpo, nao da tecla: assim empurrado ou
+## escorregando o boneco tambem se mexe.
+const WALK_ANIM_SPEED := 0.6
+const RUN_ANIM_SPEED := 5.6
+
+@onready var head: Node3D = $Head
 @onready var camera: Camera3D = $Head/Camera3D
+@onready var third_person_arm: SpringArm3D = $Head/ThirdPersonArm
+@onready var third_person_camera: Camera3D = $Head/ThirdPersonArm/ThirdPersonCamera
 @onready var interact_ray: RayCast3D = $Head/Camera3D/InteractRay
 @onready var tow_hook: Node3D = $TowHook
 
@@ -17,7 +28,11 @@ var gravity: float = ProjectSettings.get_setting("physics/3d/default_gravity", 1
 var current_interactable: Node = null
 var driving_vehicle: Node = null
 var hud: Node = null
+var visual: Node3D = null
+var third_person := false
 var _e_prev := false
+var _v_prev := false
+var _anim: AnimationPlayer = null
 
 func _ready() -> void:
 	add_to_group("player")
@@ -28,19 +43,35 @@ func _ready() -> void:
 	# acontecia.
 	interact_ray.add_exception(self)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	camera.current = true
 	hud = get_tree().get_first_node_in_group("hud")
+	visual = PlayerVisual.build(self)
+	if visual:
+		_anim = visual.get_node_or_null("AnimationPlayer")
+	# A mola da 3a pessoa nao pode se apoiar no proprio jogador, senao a camera
+	# gruda nas costas dele e nunca recua.
+	third_person_arm.add_excluded_object(get_rid())
+	_apply_camera_mode()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
-		camera.rotate_x(-event.relative.y * MOUSE_SENSITIVITY)
-		camera.rotation.x = clamp(camera.rotation.x, deg_to_rad(-80), deg_to_rad(80))
+		# A inclinacao vai na CABECA, nao na camera de 1a pessoa: a mola da 3a
+		# pessoa e irma dela debaixo do mesmo no, entao assim as duas cameras
+		# olham pra cima e pra baixo juntas. Aplicada so na camera (como era
+		# antes), a de 3a pessoa ficava presa na horizontal.
+		head.rotate_x(-event.relative.y * MOUSE_SENSITIVITY)
+		head.rotation.x = clamp(head.rotation.x, deg_to_rad(-80), deg_to_rad(80))
 
 func _physics_process(delta: float) -> void:
 	var e_now := Input.is_key_pressed(KEY_E)
 	var e_just := e_now and not _e_prev
 	_e_prev = e_now
+
+	# V alterna 1a/3a pessoa, na borda de subida (mesmo padrao do E).
+	var v_now := Input.is_key_pressed(KEY_V)
+	if v_now and not _v_prev:
+		toggle_camera_mode()
+	_v_prev = v_now
 
 	if driving_vehicle:
 		if Input.is_key_pressed(KEY_F):
@@ -73,6 +104,7 @@ func _physics_process(delta: float) -> void:
 		velocity.z = move_toward(velocity.z, 0.0, speed)
 
 	move_and_slide()
+	_update_animation()
 	_update_interaction()
 	if e_just:
 		_try_interact()
@@ -94,10 +126,53 @@ func _try_interact() -> void:
 	if current_interactable and current_interactable.is_in_group("interactable") and current_interactable.has_method("interact"):
 		current_interactable.interact(self)
 
+## V. Guardado como estado proprio (e nao lido da camera) pra sobreviver a
+## entrar e sair do carro: quem estava em 3a pessoa a pe volta em 3a pessoa.
+func toggle_camera_mode() -> void:
+	third_person = not third_person
+	_apply_camera_mode()
+
+func _apply_camera_mode() -> void:
+	if driving_vehicle:
+		return
+	camera.current = not third_person
+	third_person_camera.current = third_person
+	if visual == null:
+		return
+	# Em 1a pessoa o corpo nao some: ele passa a SO PROJETAR SOMBRA. Escondido
+	# de vez, o jogador perde a propria sombra no chao — que e a unica pista de
+	# onde ele esta parado. Visivel de vez, a camera fica dentro da cabeca de
+	# jegue e o focinho toma a tela.
+	var mode := GeometryInstance3D.SHADOW_CASTING_SETTING_ON if third_person \
+		else GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
+	_set_shadow_mode(visual, mode)
+
+func _set_shadow_mode(node: Node, mode: int) -> void:
+	if node is GeometryInstance3D:
+		(node as GeometryInstance3D).cast_shadow = mode
+	for c in node.get_children():
+		_set_shadow_mode(c, mode)
+
+## Corpo parado, andando ou correndo, decidido pela velocidade REAL do corpo.
+func _update_animation() -> void:
+	if _anim == null:
+		return
+	var speed := Vector2(velocity.x, velocity.z).length()
+	var wanted := "idle"
+	if speed > RUN_ANIM_SPEED:
+		wanted = "run"
+	elif speed > WALK_ANIM_SPEED:
+		wanted = "walk"
+	if not _anim.has_animation(wanted):
+		return
+	if _anim.current_animation != wanted:
+		_anim.play(wanted, 0.15)
+
 func enter_vehicle(vehicle: Node) -> void:
 	driving_vehicle = vehicle
 	visible = false
 	camera.current = false
+	third_person_camera.current = false
 	# A capsula tem que SAIR do mundo, nao so ficar invisivel. CharacterBody3D e
 	# cinematico: pra um RigidBody ele e uma parede que nao cede. Como o jogador
 	# para de andar ao dirigir, o corpo ficava plantado exatamente onde ele
@@ -113,8 +188,8 @@ func exit_vehicle() -> void:
 		v.exit_to_driver()
 	driving_vehicle = null
 	visible = true
-	camera.current = true
 	_set_body_solid(true)
+	_apply_camera_mode()
 
 ## Liga/desliga a colisao do jogador. `set_deferred` porque isso e chamado de
 ## dentro do passo de fisica, e mexer em forma de colisao ali e erro no Godot.

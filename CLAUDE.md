@@ -1781,6 +1781,64 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
        cena. Achado medindo `size` na cena, depois que a contagem de controles
        (9/9) já dizia que estava tudo lá.
 
+- **2026-08-04** — Usuário pediu que o jogador seja uma **mulher com cabeça de
+  jegue**, bunda grande (mas não exagerada) e peito médio, e que **V troque
+  entre 1ª e 3ª pessoa**. Implementado; **falta conferir na tela** (ver o aviso
+  no fim desta entrada).
+  - **Corpo**: reaproveita o mesmo `Female_Dressed.glb` dos pedestres (corpo +
+    roupa + cabelo num arquivo só, gerado por `tools/build_characters.py`) — não
+    traz modelo novo e não reintroduz mistura de estilo. A diferença é que as
+    formas são **fixas**, não sorteadas: `Bust = 0.50` (o meio dos 5 degraus que
+    os NPCs usam) e `Butt = 0.72` (o 3º dos 4 degraus), com `Hips = Butt * 0.7`
+    pelo mesmo motivo do NPC — glúteo grande com quadril estreito lê como
+    deformidade. Ou seja: acima da média da cidade, sem ir no máximo.
+  - **Cabeça de jegue** (`scripts/DonkeyHead.gd`): montada com esfera, cápsula e
+    caixa, como o mobiliário urbano e as gambiarras — não existe modelo CC0
+    disso e não há ferramenta de geração 3D aqui (registrado em 2026-08-04).
+    Crânio, focinho de duas peças, ventas, olhos **para o lado da cabeça** (olho
+    de frente lê como pessoa fantasiada), pálpebra clara, orelhas longas em
+    cápsula com miolo claro, crina descendo a nuca e topete.
+    - **Medido antes de montar**: o osso `Head` fica em y = 1.55 do modelo, com
+      os eixos praticamente alinhados ao mundo e **o rosto olhando pro +Z**; a
+      cabeça humana ocupa x ±0.12, y 1.50..1.78, z -0.16..0.11.
+    - A cabeça humana **não pode ser escondida sozinha** — ela faz parte da
+      mesma malha do corpo (`Superhero_Female`). Por isso o crânio do jegue é
+      generoso de propósito: ele ENGOLE a cabeça. Cabelo, olhos e sobrancelha
+      são malhas separadas e esses sim somem (`DonkeyHead.HIDE_MESHES`).
+    - Presa num `BoneAttachment3D` do osso `Head`, então acompanha a animação —
+      é exatamente o bug do cabelo dos NPCs de 2026-08-03 (malha transplantada
+      sem reatribuir o vínculo fica parada no ar).
+  - **1ª/3ª pessoa** (`Player.gd` + `SpringArm3D` em `Player.tscn`): V alterna,
+    na borda de subida (mesmo padrão do E). Dois detalhes que não são óbvios:
+    1. A **inclinação do olhar passou da câmera pra CABEÇA** (`$Head`). As duas
+       câmeras são irmãs debaixo dela; aplicada só na câmera de 1ª pessoa (como
+       era), a de 3ª ficaria presa na horizontal.
+    2. Em 1ª pessoa o corpo **não some** — passa a `SHADOW_CASTING_SETTING_SHADOWS_ONLY`.
+       Escondido de vez, o jogador perde a própria sombra no chão; visível de
+       vez, a câmera fica dentro da cabeça de jegue e o focinho toma a tela.
+    - O estado (`third_person`) é do jogador, não da câmera, pra sobreviver a
+      entrar e sair do carro.
+    - A mola exclui o próprio corpo do jogador (`add_excluded_object`), senão
+      ela se apoia nele e a câmera nunca recua.
+  - **Animação**: idle/walk/run da UAL1, escolhidas pela velocidade REAL do
+    corpo (não pela tecla), então empurrado ou escorregando o boneco também se
+    mexe.
+  - **ATENÇÃO PRA PRÓXIMA SESSÃO — o que ainda NÃO foi verificado:** o projeto
+    carrega sem erro e o `class_name` novo foi registrado (precisou de
+    `godot --headless --path . --editor --quit` pra isso — `.gd` criado fora do
+    editor não entra no cache de classes sozinho, mesma pegadinha do
+    `MeshBatch`). Mas **as fotos da personagem não chegaram a ser conferidas**.
+    Rodar e OLHAR antes de dar como pronto:
+    ```
+    godot --path . tools/verify/quality_shots.tscn
+    ```
+    e um roteiro de fotos do jogador (frente, cabeça em close, costas, perfil,
+    3ª pessoa) — o que provavelmente vai precisar de ajuste é (a) se o crânio
+    engole mesmo a cabeça humana de todos os ângulos, (b) a escala da cabeça
+    contra o corpo de 1.77 m, (c) o enquadramento da câmera de 3ª pessoa
+    (`spring_length` 3.2, ombro em x = 0.5). Builds **não** foram reexportados
+    nesta rodada.
+
 ### Pendências pedidas e ainda NÃO feitas
 
 Nenhuma das três pendências anteriores continua aberta. O que sobrou de
