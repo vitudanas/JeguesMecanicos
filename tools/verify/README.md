@@ -17,7 +17,20 @@ godot --headless --path . tools/verify/attach_test.tscn # mira nos pontos de gam
 godot --headless --path . tools/verify/scale_test.tscn  # escala, flutuação, vegetação
 godot --headless --path . tools/verify/yard_test.tscn   # dá pra sair do pátio
 godot --headless --path . tools/verify/audio_test.tscn  # som carrega e dispara
+godot --headless --path . tools/verify/obstacles_test.tscn  # parede invisível e estrada
+godot --headless --path . tools/verify/save_test.tscn   # progresso salva e volta
+godot --headless --path . tools/verify/loading_test.tscn # a tela de carregamento chega ao fim
 ```
+
+`obstacles_test` faz a pergunta que o `scale_test` não fazia. Ele compara caixa
+de COLISÃO com caixa de DESENHO — e por isso era cego pro pior caso: uma
+**árvore** tem colisão de 9×9 m que casa perfeitamente com o desenho e mesmo
+assim é parede invisível, porque na altura do carro só existe o tronco. A
+pergunta certa é "a colisão é maior que a MALHA na altura em que se trafega?".
+Foi assim que 426 corpos apareceram, o pior com 18 m de colisão para 1,6 m de
+tronco. Ele também varre o corredor da estrada de terra com uma caixa do tamanho
+do carro, que responde "o carro passa aqui?" — outra coisa que comparar caixas
+não responde.
 
 `audio_test` existe por uma limitação honesta: **não dá pra ouvir numa sessão
 automatizada**. Então ele cobre o que se prova sem ouvido — todo som declarado

@@ -646,7 +646,7 @@ layer_radius = Array[float]([26.0, 34.0, 30.0])
 
 [node name="DirtRoadWorkshop" type="Node3D" parent="." groups=["dirt_road"]]
 script = ExtResource("402")
-points = Array[Vector2]([Vector2(-113, 0), Vector2(-122, 1.5), Vector2(-131, 3), Vector2(-140, 2), Vector2(-149, -0.5), Vector2(-158, -1), Vector2(-166, 0), Vector2(-172, 1)])
+points = Array[Vector2]([Vector2(-137, 2.6), Vector2(-140, 2), Vector2(-149, -0.5), Vector2(-158, -1), Vector2(-166, 0), Vector2(-172, 1)])
 
 [node name="MountainRange" type="Node3D" parent="."]
 script = ExtResource("401")

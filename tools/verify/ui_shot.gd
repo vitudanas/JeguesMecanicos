@@ -52,6 +52,32 @@ func _ready() -> void:
 			await get_tree().process_frame
 		await _shot("03_configuracoes_som")
 
+	menu.queue_free()
+	await get_tree().process_frame
+
+	# ---------------------------------------- menu com progresso salvo
+	# Grava um save de mentira so pra foto, e devolve o estado no fim: a partida
+	# do usuario nao pode ser vitima do roteiro de fotos.
+	var tinha := SaveGame.has_save
+	GameManager.money = 1240
+	GameManager.cars_sold = 4
+	SaveGame.save()
+	var menu3 := (load("res://scenes/ui/MainMenu.tscn") as PackedScene).instantiate()
+	add_child(menu3)
+	for i in range(20):
+		await get_tree().process_frame
+	await _shot("04_menu_com_continuar")
+
+	# ------------------------------------------- tela de carregamento
+	# Fotografada NO MEIO do carregamento: quando ele termina, a tela troca de
+	# cena e leva este roteiro junto. Por isso e a ultima foto.
+	menu3.get_node("VBox/PlayButton").emit_signal("pressed")
+	for i in range(6):
+		await get_tree().process_frame
+	await _shot("05_carregando")
+	if not tinha:
+		SaveGame.clear()
+
 	print("")
 	if problems.is_empty():
 		print("=== RESULTADO ===")

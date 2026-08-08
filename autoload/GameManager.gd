@@ -16,6 +16,16 @@ var cars_sold: int = 0
 var objective_position: Vector3 = Vector3.ZERO
 var objective_label: String = ""
 
+## Volta pros valores de inicio de partida. Necessario porque os autoloads
+## SOBREVIVEM a troca de cena: sem isto, sair pro menu e escolher "Novo jogo"
+## continuaria com o dinheiro da partida anterior.
+func reset() -> void:
+	money = 150
+	cars_sold = 0
+	objective_position = Vector3.ZERO
+	objective_label = ""
+	money_changed.emit(money)
+
 func add_money(amount: int) -> void:
 	money += amount
 	money_changed.emit(money)

@@ -53,6 +53,12 @@ extends Node3D
 
 @export var rng_seed := 1
 
+## Folga alem da meia-pista da estrada de terra.
+const ROAD_CLEARANCE := 3.0
+
+var _road_rects: Array[Rect2] = []
+var _roads_read := false
+
 const CITY_BUILDING_SCENE := preload("res://scenes/world/CityBuilding.tscn")
 
 ## Altura medida do modelo em escala 1.0, guardada por cena (medir instanciando
@@ -141,7 +147,33 @@ func _is_valid(pos: Vector3) -> bool:
 	for e in exclude_points:
 		if Vector2(pos.x - e.x, pos.z - e.z).length() < exclude_radius:
 			return false
+	if _on_dirt_road(Vector2(pos.x, pos.z)):
+		return false
 	return true
+
+## A estrada de terra nao tem colisao (de proposito), entao nada impedia este
+## espalhador de plantar arvore no meio dela — e uma arvore no meio da pista e
+## exatamente o que o jogador sente como parede no caminho da oficina. Mesma
+## leitura que o `GrassField` ja faz do grupo `dirt_road`, em vez de uma lista de
+## exclusao escrita a mao que envelhece quando a estrada muda de traçado.
+func _on_dirt_road(p: Vector2) -> bool:
+	if not _roads_read:
+		_roads_read = true
+		for node in get_tree().get_nodes_in_group("dirt_road"):
+			var pts: Array = node.get("points")
+			if pts == null or pts.size() < 2:
+				continue
+			# Folga alem da meia-pista: o que barra o carro e a BORDA do tronco,
+			# nao o centro dele.
+			var w: float = float(node.get("width")) * 0.5 + ROAD_CLEARANCE
+			var base := Vector2(node.global_position.x, node.global_position.z)
+			for i in range(pts.size() - 1):
+				_road_rects.append(
+					Rect2(base + pts[i], Vector2.ZERO).expand(base + pts[i + 1]).grow(w))
+	for r in _road_rects:
+		if r.has_point(p):
+			return true
+	return false
 
 func _place_decor(scene: PackedScene, pos: Vector3, rot_deg: float, s: float) -> void:
 	var inst := scene.instantiate()
@@ -167,6 +199,8 @@ func _mesh_instances(node: Node) -> Array[MeshInstance3D]:
 
 func _place_solid(scene: PackedScene, pos: Vector3, rot_deg: float, s: float) -> void:
 	var body := CITY_BUILDING_SCENE.instantiate()
+	# Arvore: colisao pelo TRONCO, nao pela copa (ver AutoCollisionBody).
+	body.slim_collision = true
 	body.visual_scene = scene
 	body.visual_scale = s
 	body.visual_rotation_y_degrees = rot_deg

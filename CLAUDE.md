@@ -189,7 +189,8 @@ autoload/               GameManager.gd, Economy.gd, WeatherManager.gd (clima/chu
                         EventManager.gd (eventos procedurais),
                         DeliveryManager.gd (sorteia a casa da entrega da vez),
                         GraphicsSettings.gd, AudioManager.gd (biblioteca de sons,
-                        barramentos, piscina de vozes e volume)
+                        barramentos, piscina de vozes e volume),
+                        SaveGame.gd (progresso em user://progresso.cfg)
 shaders/                city_surface.gdshader (fachada/asfalto: atlas do kit +
                         PBR triplanar + sombreamento facetado),
                         ground.gdshader (chao do mundo por ruido, sem textura),
@@ -1963,6 +1964,72 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     ui). Builds reexportados, auditor limpo, binário exportado sobe sem nenhum
     aviso de som ausente — que é a prova de que os 47 `.ogg` entraram no `.pck` —
     e o `.app` foi reextraído.
+
+- **2026-08-08** — Usuário pediu tela de carregamento, análise das paredes
+  invisíveis e das sobreposições na estrada de terra; no meio da rodada apontou
+  **uma parede invisível na ponta da pista de terra perto da oficina**, lembrou
+  de manter a escala real e perguntou se havia salvamento.
+  - **A parede existia, e o verificador dizia que não.** O `scale_test` compara
+    caixa de COLISÃO com caixa de DESENHO, e por isso era cego pro pior caso de
+    todos: uma **árvore**. O `AutoCollisionBody` gera a colisão a partir do AABB
+    da malha, então pra uma árvore a colisão é um bloco de 9×9 m que casa
+    PERFEITAMENTE com o desenho ("sobra 0.00 m") e mesmo assim é parede: na
+    altura do carro só existe um tronco fino, e o resto é ar que barra. A
+    pergunta certa não é "a colisão é maior que o desenho?", é **"a colisão é
+    maior que a MALHA na altura em que se trafega?"**.
+  - **Medido: 426 corpos**, o pior com **18 m de colisão para 1,6 m de tronco**
+    (16 m de ar sólido) — dava pra bater numa árvore a 8 m dela, vendo o caminho
+    livre. Agora a largura da colisão sai da silhueta na faixa 0,15–2,0 m e a
+    altura continua a do modelo inteiro (senão dava pra passar por cima).
+    **426 → 2.**
+  - **Encolher é opt-in (`slim_collision`), e a razão é uma troca medida**:
+    ligado automaticamente em PRÉDIO, a colisão deixa de cobrir a laje e os
+    props de cobertura (caixa d'água, ar condicionado) passam a não ter nada
+    sólido embaixo — o `scale_test` acusou 9 boiando a até 11,6 m. Quem planta
+    vegetação liga (RuralScatter, FarmCluster, ScrapyardCluster, os props do
+    CityBlocks); quem planta construção, não. Os 2 restantes são o mesmo modelo
+    de prédio com térreo recuado 2,5 m — ficam listados e não reprovam.
+  - **Sobreposição na estrada de terra**: a fita começava em x = -113, mas o
+    `extent = 22.5` do `CityStreets` leva o asfalto até **x ≈ -138,8** — ou seja,
+    ~25 m de terra pintados POR CIMA do asfalto e do meio-fio. A estrada passou a
+    começar onde o asfalto acaba (36 m em vez de 60). E o `RuralScatter` agora lê
+    o grupo `dirt_road` igual o `GrassField` já fazia, então não planta mais
+    árvore na pista.
+  - **Tela de carregamento** (`scenes/ui/LoadingScreen.gd`): entrar no jogo era
+    um congelamento seco de vários segundos, sem sinal de vida. Agora tem barra
+    (que acompanha de verdade a carga em thread), dica de jogo e legenda. Montada
+    em código, sem `.tscn`, pelo motivo já conhecido aqui.
+    - **Erro meu**: usei `await RenderingServer.frame_post_draw` pra garantir que
+      o texto fosse pintado antes do congelamento. Esse sinal **não é emitido com
+      o servidor de render falso**, então em headless o await ficava pendurado
+      pra sempre e a tela nunca chegava no jogo. Dois quadros de processo fazem o
+      mesmo efeito e funcionam nos dois modos.
+  - **Salvamento** (`autoload/SaveGame.gd`): o jogo não guardava NADA da partida
+    — quem vendia cinco carros e fechava voltava com os R$ 150 iniciais. Agora
+    salva dinheiro e carros vendidos, com **autosave no fim de cada venda** (o
+    único ponto do loop em que o jogador ganha algo, e onde dói perder) e ao sair
+    pro menu. O menu principal ganhou **Continuar** com o resumo do progresso, e
+    "Jogar" virou "Novo jogo", que apaga o save. Só o PROGRESSO é salvo, não o
+    estado do mundo: a cidade é gerada com semente fixa e volta idêntica sozinha,
+    e a posição de cada carcaça/entrega é justamente o que o jogo sorteia.
+  - **Erros meus de arnês, os dois de "quem morre no meio do await"**:
+    1. O `loading_test` esperava o jogador aparecer, mas
+       `change_scene_to_packed` **libera a cena atual** — que era o próprio nó de
+       teste. Ele era liberado no meio do await e o teste ficava pendurado (90 s
+       até desistir). Passou a esperar o sinal `finished`, emitido logo antes da
+       troca.
+    2. Vi erros de parse de `Town.tscn` no fim do `ui_shot` e quase fui caçar um
+       bug de cena: eram da árvore sendo destruída com a carga em thread ainda em
+       voo, depois do resultado já impresso.
+  - **Escala** (lembrete do usuário): reconferida, segue coerente — pedestre
+    1,94 m, carro 3,93 m, jogador 1,80 m, prédio mediano 7,7 m, mais alto 33,6 m,
+    serra até 320 m. As mudanças desta rodada são de COLISÃO, não mexem em
+    tamanho de nada desenhado.
+  - **Novos verificadores**: `obstacles_test` (parede invisível pela silhueta na
+    altura de trânsito + entulho na estrada + varredura do corredor com a caixa
+    do carro), `save_test` (progresso passa pelo DISCO de verdade em cada etapa)
+    e `loading_test`. Suíte inteira passa: city, drive, loop, attach, scale,
+    yard, settings, audio, ui, obstacles, save e loading.
 
 ### Pendências pedidas e ainda NÃO feitas
 

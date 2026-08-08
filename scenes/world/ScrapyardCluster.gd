@@ -97,6 +97,8 @@ func _scatter_decor(rng: RandomNumberGenerator) -> void:
 		var pos := _ring_point(rng, decor_min_radius, decor_max_radius)
 		var scene: PackedScene = decor_scenes[rng.randi() % decor_scenes.size()]
 		var body := CITY_BUILDING_SCENE.instantiate()
+		# Arvore: colisao pelo TRONCO, nao pela copa (ver AutoCollisionBody).
+		body.slim_collision = true
 		body.visual_scene = scene
 		body.visual_scale = rng.randf_range(0.8, 1.3)
 		body.visual_rotation_y_degrees = rng.randf_range(0.0, 360.0)

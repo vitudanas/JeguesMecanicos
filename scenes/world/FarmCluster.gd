@@ -114,6 +114,8 @@ func _inside_rect(pos: Vector3, half_size: Vector2, rect_center: Vector3) -> boo
 
 func _place_solid(scene: PackedScene, pos: Vector3, rot_deg: float, s: float) -> void:
 	var body := CITY_BUILDING_SCENE.instantiate()
+	# Arvore: colisao pelo TRONCO, nao pela copa (ver AutoCollisionBody).
+	body.slim_collision = true
 	body.visual_scene = scene
 	body.visual_scale = s
 	body.visual_rotation_y_degrees = rot_deg

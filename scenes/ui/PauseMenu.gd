@@ -60,6 +60,9 @@ func _resume() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 func _go_to_main_menu() -> void:
+	# Salva ao sair: o autosave normal e no fim de cada venda, entao sem isto
+	# quem vende e depois volta pro menu perderia o que acabou de ganhar.
+	SaveGame.save()
 	get_tree().paused = false
 	get_tree().change_scene_to_file("res://scenes/ui/MainMenu.tscn")
 

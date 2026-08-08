@@ -418,6 +418,10 @@ func _patch(center: Vector3, size: Vector2, color: Color, key: String, y: float,
 func _place_prop(scene: PackedScene, pos: Vector3, rot_deg: float, prop_scale: float,
 		surface_kind := "") -> Node3D:
 	var body := CITY_BUILDING_SCENE.instantiate()
+	# Colisao pela silhueta na altura de trafego: arvore barra pelo TRONCO e
+	# guarda-sol pela HASTE, em vez de pela copa (ver AutoCollisionBody). Carro
+	# e quiosque sao macicos e ficam abaixo do limiar sozinhos, sem excecao.
+	body.slim_collision = true
 	body.visual_scene = scene
 	body.visual_scale = prop_scale
 	body.visual_rotation_y_degrees = rot_deg
