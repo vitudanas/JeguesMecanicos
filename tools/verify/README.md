@@ -26,6 +26,7 @@ rasterizar não há foto nem contagem de desenho):
 ```bash
 godot --path . tools/verify/quality_shots.tscn   # fotos + chamadas de desenho
 godot --path . tools/verify/settings_test.tscn   # o menu de gráficos faz efeito?
+godot --path . tools/verify/player_shots.tscn    # a jogadora de cabeça de jegue
 ```
 
 `quality_shots` fotografa grama e fachadas do ponto de vista do jogador e
@@ -33,6 +34,20 @@ imprime **chamadas de desenho e primitivas** por foto — não milissegundos: te
 de quadro medido aqui saiu sem relação nenhuma com o conteúdo (com a grama
 DESLIGADA o quadro saiu mais lento), porque o macOS estrangula a janela fora de
 foco. Contagem do renderizador não depende disso.
+
+`player_shots` fotografa a personagem dos quatro lados, a cabeça em close, e
+pelas câmeras do próprio jogo em 1ª e 3ª pessoa. Duas coisas dele valem saber:
+
+- **Ele entra em 3ª pessoa antes de fotografar o corpo.** Em 1ª pessoa o corpo
+  fica em `SHADOW_CASTING_SETTING_SHADOWS_ONLY`, então fotografá-lo ali rende 15
+  fotos de campo vazio — foi o primeiro resultado deste roteiro.
+- **As fotos 16-19 pintam o corpo humano de magenta chapado** e deixam a cabeça
+  de jegue normal. É assim que se prova se sobra cabeça humana pra fora do
+  crânio: qualquer pedaço aparece como mancha berrante, sem chance de confundir
+  com sombra ou com o pelo cinza. A conta de vértices que o script imprime junto
+  é **grossa de propósito** (os vértices do `.glb` estão na pose de bind, que não
+  é a pose de skin do renderizador — ela acusa uns 2 cm de "exposição" com a
+  cabeça inteiramente coberta). Serve de tendência; **quem decide é a foto**.
 
 E um auditor do build, em Python, que confere que **tudo que o jogo referencia
 está dentro do `.pck` exportado**:

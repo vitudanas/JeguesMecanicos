@@ -31,7 +31,30 @@ const MUZZLE := Color(0.82, 0.78, 0.72)     ## focinho e volta dos olhos claros
 const MANE := Color(0.19, 0.16, 0.15)
 const EYE := Color(0.06, 0.05, 0.05)
 const WHITE := Color(0.94, 0.94, 0.92)
-const NOSTRIL := Color(0.12, 0.10, 0.10)
+const NOSTRIL := Color(0.16, 0.13, 0.12)
+
+## Crânio. A crina é montada A PARTIR destes números (não de uma curva escrita
+## à mão do lado), então ela continua colada na cabeça se o crânio mudar.
+const SKULL_CENTER := Vector3(0.0, 0.10, 0.01)
+const SKULL_RADII := Vector3(0.15, 0.17, 0.18)
+const SKULL_TILT := -8.0
+
+## Contas da crina. Precisa ser denso o bastante pro raio de cada esfera passar
+## do passo entre elas — é isso que funde a fileira numa crista só.
+const MANE_SEGMENTS := 26
+## Varredura da crina sobre o crânio, em graus: 0 é o alto da cabeça, negativo
+## vai descendo por trás. Começa um pouco à frente do topo (onde nasce o
+## topete) e morre embaixo da nuca.
+const MANE_FROM := 25.0
+const MANE_TO := -140.0
+
+## Ponto na superfície do crânio para um ângulo da varredura acima.
+## `lift` > 1 põe o ponto pra fora da casca — é o que faz a crina se destacar
+## em vez de sumir dentro do crânio.
+static func _skull_point(angle_deg: float, lift: float) -> Vector3:
+	var a := deg_to_rad(angle_deg)
+	var offset := Vector3(0.0, SKULL_RADII.y * cos(a), SKULL_RADII.z * sin(a)) * lift
+	return SKULL_CENTER + offset.rotated(Vector3.RIGHT, deg_to_rad(SKULL_TILT))
 
 static func _material(color: Color, rough := 0.72) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
@@ -76,32 +99,47 @@ static func build() -> Node3D:
 	# ------------------------------------------------------------- crânio
 	# Engole a cabeca humana (ver o comentario do topo). Ligeiramente ovalado e
 	# inclinado pra frente, que e o formato de cabeca de equino.
-	_sphere(root, Vector3(0.30, 0.34, 0.36), Vector3(0.0, 0.10, 0.01), FUR,
-		Vector3(deg_to_rad(-8.0), 0.0, 0.0))
+	# A escala de `_sphere` é o DIÂMETRO (a esfera base tem raio 0.5), por isso
+	# o dobro dos raios.
+	_sphere(root, SKULL_RADII * 2.0, SKULL_CENTER, FUR,
+		Vector3(deg_to_rad(SKULL_TILT), 0.0, 0.0))
 	# Testa/topete: a saliencia entre as orelhas.
 	_sphere(root, Vector3(0.22, 0.14, 0.20), Vector3(0.0, 0.235, 0.03), FUR)
 
 	# ------------------------------------------------------------- focinho
-	# Duas peças: o cano do nariz (mais fino) e a boca/venta (mais larga e
-	# clara). Um focinho de peça só sai como bico e não lê como jegue.
-	_sphere(root, Vector3(0.19, 0.18, 0.30), Vector3(0.0, 0.045, 0.20), FUR,
-		Vector3(deg_to_rad(6.0), 0.0, 0.0))
-	_sphere(root, Vector3(0.20, 0.17, 0.20), Vector3(0.0, 0.005, 0.31), MUZZLE)
+	# Duas peças: o cano do nariz (mais fino) e a boca/venta (mais clara). Um
+	# focinho de peça só sai como bico e não lê como jegue.
+	#
+	# A ponta tem que ser MAIS ESTREITA que o cano: na primeira versão ela era
+	# mais larga (0.20 contra 0.19) e formava um degrau, então lia como um bulbo
+	# pálido grudado na cara em vez de focinho. Ela também recuou pra sobrepor
+	# mais o cano — o que emenda as duas peças em uma forma só.
+	# O cano CAI da testa pra ponta (12°, era 6°) e ficou mais curto: esticado e
+	# quase na horizontal, o focinho lia como tubo de tamanduá. Cabeça de equino
+	# tem a linha do nariz descendo.
+	_sphere(root, Vector3(0.185, 0.175, 0.27), Vector3(0.0, 0.038, 0.185), FUR,
+		Vector3(deg_to_rad(12.0), 0.0, 0.0))
+	_sphere(root, Vector3(0.170, 0.155, 0.175), Vector3(0.0, -0.005, 0.272), MUZZLE)
 	# Beiço de baixo, um pouco solto — é o detalhe que dá o ar bocó do bicho.
-	_sphere(root, Vector3(0.15, 0.09, 0.14), Vector3(0.0, -0.055, 0.315), MUZZLE)
+	_sphere(root, Vector3(0.128, 0.078, 0.118), Vector3(0.0, -0.050, 0.272), MUZZLE)
 
 	for side in [-1.0, 1.0]:
-		# Ventas
-		_sphere(root, Vector3(0.045, 0.055, 0.04), Vector3(side * 0.052, 0.02, 0.395),
-			NOSTRIL, Vector3.ZERO, 0.45)
+		# Ventas. Pequenas DE PROPÓSITO: na primeira versão mediam 4.5 x 5.5 cm
+		# e, quase pretas sobre o focinho claro, liam como um SEGUNDO par de
+		# olhos no meio da cara (o bicho parecia ter quatro). Inclinadas pra
+		# fora, que é o desenho da venta de equino.
+		_sphere(root, Vector3(0.030, 0.040, 0.032), Vector3(side * 0.044, 0.010, 0.340),
+			NOSTRIL, Vector3(0.0, 0.0, deg_to_rad(side * 18.0)), 0.45)
 		# ------------------------------------------------------------ olhos
 		# Bem pro lado da cabeça, como em qualquer herbívoro — olho de frente
 		# lê como pessoa fantasiada.
 		_sphere(root, Vector3(0.075, 0.085, 0.075), Vector3(side * 0.125, 0.145, 0.115),
 			EYE, Vector3.ZERO, 0.18)
 		# Brilho: sem ele o olho preto vira buraco (a mesma lição da fachada).
-		_sphere(root, Vector3(0.026, 0.026, 0.026),
-			Vector3(side * 0.142, 0.175, 0.145), WHITE, Vector3.ZERO, 0.1)
+		# Pequeno — a 2.6 cm ele tomava metade do olho e virava olho esbugalhado
+		# de desenho, não reflexo.
+		_sphere(root, Vector3(0.018, 0.018, 0.018),
+			Vector3(side * 0.140, 0.172, 0.142), WHITE, Vector3.ZERO, 0.1)
 		# Pálpebra clara por cima, que é o que marca a cara de jegue.
 		_sphere(root, Vector3(0.095, 0.045, 0.09), Vector3(side * 0.122, 0.185, 0.11),
 			MUZZLE)
@@ -139,24 +177,32 @@ static func build() -> Node3D:
 		ear.add_child(inner_mi)
 
 	# --------------------------------------------------------------- crina
-	# Faixa escura descendo da testa pela nuca. Vai encolhendo, senão vira uma
-	# crista reta de brinquedo.
-	var mane_steps := [
-		[Vector3(0.055, 0.12, 0.075), Vector3(0.0, 0.275, -0.045), 0.0],
-		[Vector3(0.06, 0.13, 0.09), Vector3(0.0, 0.245, -0.105), -18.0],
-		[Vector3(0.06, 0.12, 0.09), Vector3(0.0, 0.175, -0.155), -34.0],
-		[Vector3(0.055, 0.10, 0.08), Vector3(0.0, 0.09, -0.175), -52.0],
-		[Vector3(0.05, 0.08, 0.07), Vector3(0.0, 0.01, -0.175), -66.0],
-	]
-	for step: Array in mane_steps:
-		_sphere(root, step[0], step[1], MANE, Vector3(deg_to_rad(step[2]), 0.0, 0.0), 0.85)
+	# Faixa escura descendo da testa pela nuca.
+	#
+	# Duas versões erradas antes desta, as duas pelo mesmo motivo — a crina
+	# ficava SOLTA da cabeça em vez de nascer nela:
+	#   1. 5 esferas espaçadas e inclinadas uma a uma: girar cada uma afastava
+	#      as pontas do eixo longo e saía um colar de contas soltas.
+	#   2. contas densas ao longo de uma curva escrita à mão: virou um tubo
+	#      levantado no meio da nuca, tipo lagarta.
+	# Agora os pontos saem da PRÓPRIA casca do crânio (`_skull_point`), só um
+	# pouco pra fora: metade de cada esfera fica enterrada, então o que aparece
+	# é uma crista rente à cabeça — que é como crina de burro se comporta.
+	for i in range(MANE_SEGMENTS):
+		var t := float(i) / float(MANE_SEGMENTS - 1)
+		# Larga em cima e afinando pra nuca, senão a crista sai reta.
+		var wide := lerpf(0.105, 0.052, t)
+		var thick := lerpf(0.058, 0.034, t)
+		_sphere(root, Vector3(wide, thick, thick),
+			_skull_point(lerpf(MANE_FROM, MANE_TO, t), 1.02), MANE, Vector3.ZERO, 0.85)
 
-	# Topete caído na testa, entre as orelhas.
-	_sphere(root, Vector3(0.10, 0.06, 0.09), Vector3(0.0, 0.275, 0.055), MANE,
-		Vector3(deg_to_rad(28.0), 0.0, 0.0), 0.85)
+	# Topete caído na testa, entre as orelhas. Achatado: alto demais ele lia
+	# como um chifre no meio do crânio.
+	_sphere(root, Vector3(0.105, 0.048, 0.10), Vector3(0.0, 0.272, 0.064), MANE,
+		Vector3(deg_to_rad(32.0), 0.0, 0.0), 0.85)
 
 	# ----------------------------------------------------------------- boca
-	_box(root, Vector3(0.115, 0.012, 0.055), Vector3(0.0, -0.028, 0.365), FUR_DARK,
-		Vector3(deg_to_rad(6.0), 0.0, 0.0))
+	_box(root, Vector3(0.090, 0.011, 0.046), Vector3(0.0, -0.028, 0.326), FUR_DARK,
+		Vector3(deg_to_rad(12.0), 0.0, 0.0))
 
 	return root

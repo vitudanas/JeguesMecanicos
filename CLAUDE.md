@@ -1823,7 +1823,8 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
   - **Animação**: idle/walk/run da UAL1, escolhidas pela velocidade REAL do
     corpo (não pela tecla), então empurrado ou escorregando o boneco também se
     mexe.
-  - **ATENÇÃO PRA PRÓXIMA SESSÃO — o que ainda NÃO foi verificado:** o projeto
+  - **[RESOLVIDO em 2026-08-08 — ver a entrada seguinte.]**
+    **ATENÇÃO PRA PRÓXIMA SESSÃO — o que ainda NÃO foi verificado:** o projeto
     carrega sem erro e o `class_name` novo foi registrado (precisou de
     `godot --headless --path . --editor --quit` pra isso — `.gd` criado fora do
     editor não entra no cache de classes sozinho, mesma pegadinha do
@@ -1838,6 +1839,60 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     contra o corpo de 1.77 m, (c) o enquadramento da câmera de 3ª pessoa
     (`spring_length` 3.2, ombro em x = 0.5). Builds **não** foram reexportados
     nesta rodada.
+
+- **2026-08-08** — Fechada a pendência que a sessão anterior deixou explícita: a
+  jogadora de cabeça de jegue tinha sido montada e **nunca olhada**. Criado
+  `tools/verify/player_shots.tscn` (fotos da personagem + medida da cabeça) e,
+  com ele, três defeitos reais apareceram — nenhum deles visível em número.
+  - **As 15 primeiras fotos saíram de um campo VAZIO**, e o defeito era do
+    arnês, não do jogo: o jogo abre em **1ª pessoa**, e nela o corpo fica em
+    `SHADOW_CASTING_SETTING_SHADOWS_ONLY` (decisão correta, de 2026-08-04).
+    Fotografar o corpo exige entrar no modo em que ele existe na tela. Vale como
+    lição geral: **quando a foto sai vazia, primeiro provar de que lado está o
+    defeito** — é a mesma armadilha de arnês de 2026-08-04.
+  - **As ventas liam como um SEGUNDO par de olhos.** Mediam 4,5 × 5,5 cm, quase
+    pretas sobre o focinho claro: de frente e de baixo o bicho parecia ter
+    quatro olhos. Reduzidas pra 3,0 × 4,0 cm, inclinadas pra fora e menos
+    escuras. Foi o defeito mais danoso dos três, e o mais barato de corrigir.
+  - **A crina era um colar de contas soltas**, e a primeira correção não
+    resolveu — virou um tubo levantado no meio da nuca, tipo lagarta. As duas
+    versões erravam pelo mesmo motivo: a crina era desenhada num caminho
+    escrito à mão, **solta da cabeça**. Agora os pontos saem da própria casca do
+    crânio (`_skull_point`, com `lift = 1.02`), então metade de cada esfera fica
+    enterrada e o que aparece é uma crista rente — que é como crina de burro se
+    comporta. O crânio virou constante (`SKULL_CENTER`/`SKULL_RADII`/
+    `SKULL_TILT`) e a crina lê dele: mudar o crânio não descola mais a crina.
+  - **O focinho era um tubo de tamanduá**: quase horizontal (6°) e com a ponta
+    pálida MAIS LARGA que o cano (0.20 contra 0.19), o que formava um degrau e
+    lia como bulbo grudado na cara. Agora cai 12° da testa pra ponta, mais curto,
+    e a ponta é mais estreita que o cano.
+  - **A medida numérica da cobertura do crânio é GROSSA, e isso está documentado
+    no próprio teste.** Ela compara vértice a vértice contra as esferas lidas do
+    `DonkeyHead` montado, mas os vértices do `.glb` estão na pose de **bind** e
+    são levados pro mundo pela transformada do `MeshInstance3D`, que não é a
+    mesma coisa que a pose de skin do renderizador. Medido: com o crânio
+    cobrindo a cabeça INTEIRA, ela ainda acusava 67 vértices "expostos" até
+    2,2 cm. Quem decide são as **fotos de prova** (16-19), que pintam o corpo
+    humano de **magenta chapado** e deixam a cabeça de jegue normal — qualquer
+    pedaço de cabeça humana escapando apareceria como mancha berrante, e não
+    aparece nenhuma. É a mesma técnica que resolveu o retalho do ombro dos NPCs
+    em 2026-08-03, agora persistida no repo em vez de improvisada. O limiar
+    ficou folgado de propósito (>12% ou >6 cm): apertar só geraria alarme falso.
+    O número continua útil como **tendência** — foi de 363 → 88 → 67 conforme a
+    cabeça foi corrigida.
+  - **O que estava certo e não precisou de nada**: a cabeça acompanha o osso
+    `Head` na animação (sem o bug do cabelo de 2026-08-03), a 1ª pessoa não tem
+    focinho na tela, o enquadramento da 3ª pessoa está bom como está
+    (`spring_length` 3.2, ombro em 0.5) e a escala fecha — 2,07 m até a ponta
+    da orelha, ou seja a mulher de 1,77 m mais orelha em pé.
+  - **Suíte inteira reconferida** depois das mudanças (city, drive, loop,
+    attach, scale, yard, settings): tudo passa, o loop continua fechando de
+    ponta a ponta. Builds reexportados, `pack_audit` confirma as 67 referências
+    `res://` dentro do `.pck`, e o binário exportado sobe limpo. **O `.app`
+    extraído foi apagado e reextraído** — ele não se atualiza sozinho quando o
+    zip é regravado (lição de 2026-08-04). Não cheguei a clicar "Jogar" no
+    binário exportado pra ver a cidade renderizada: não dá pra clicar em janela
+    nativa nesta sessão.
 
 ### Pendências pedidas e ainda NÃO feitas
 
@@ -1859,6 +1914,13 @@ observação pra uma próxima rodada (nada disso foi pedido):
    dessatura verde puro (`green_tame`), mas a cor vive dentro do atlas.
 4. **Câmera 04 do roteiro de fotos** ficava em (30, 2.2, 30), que com a grade
    nova cai DENTRO de um quarteirão — se recriar o script de fotos, reposicionar.
+5. **FPS baixo nas fotos de 2026-08-08** (3 a 22 FPS no contador do HUD, durante
+   `player_shots`). **Não investigado, e não dá pra concluir nada daí**: o
+   roteiro renderiza numa janela de 2940×1846 com o preset padrão, com a câmera
+   quase colada no personagem e com o macOS estrangulando janela fora de foco —
+   que é exatamente o motivo pelo qual 2026-08-04 trocou "medir tempo de quadro"
+   por "contar chamadas de desenho". Se for medir de verdade a meta de 50-80 FPS,
+   medir jogando, em tela cheia e com a janela em foco.
 
 ## Roadmap (fora de escopo desta vertical slice)
 
