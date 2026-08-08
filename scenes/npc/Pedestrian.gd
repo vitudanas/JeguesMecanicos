@@ -138,6 +138,7 @@ func _on_body_entered(body: Node) -> void:
 
 func _go_ragdoll(body: Node) -> void:
 	_is_ragdolled = true
+	AudioManager.play_at("corpo", global_position, -2.0, randf_range(0.9, 1.1), 60.0)
 	freeze = false
 	if _anim_player:
 		_anim_player.stop()

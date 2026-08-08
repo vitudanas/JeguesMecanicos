@@ -66,4 +66,7 @@ func _detach(force: float) -> void:
 	freeze = false
 	apply_central_impulse(Vector3(randf_range(-1.0, 1.0), randf_range(0.6, 1.6), randf_range(-1.0, 1.0)) * force * 0.15)
 	apply_torque_impulse(Vector3(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * force * 0.05)
+	# Lataria fina se soltando: e o som que conta a piada do jogo, entao vem
+	# alto e um tom acima, pra sobressair no meio da batida que o causou.
+	AudioManager.play_at("lataria", global_position, -2.0, randf_range(1.05, 1.25), 65.0)
 	broke.emit()

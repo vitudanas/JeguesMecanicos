@@ -72,6 +72,15 @@ def in_pack(ref: str, data: bytes) -> bool:
     return ("-%s%s" % (stem, converted)).encode("utf-8") in data
 
 
+PLACEHOLDER = re.compile(r"%0?\d*[ds]")
+
+
+def expand_pattern(ref: str) -> list:
+    """`res://.../som_%03d.ogg` -> os arquivos reais que casam com o padrao."""
+    rel = PLACEHOLDER.sub("*", ref[len("res://"):])
+    return sorted(ROOT.glob(rel))
+
+
 def collect_refs() -> set:
     refs = set()
     files = [ROOT / f for f in SOURCE_FILES]
@@ -96,8 +105,22 @@ def main() -> int:
 
     missing = []
     skipped = 0
+    expanded = 0
     for ref in sorted(refs):
         ext = pathlib.Path(ref).suffix.lower()
+        # Caminho montado em runtime (o AudioManager usa "..._%03d.ogg" pra
+        # varrer as variacoes de um som). O nome literal nao existe em disco,
+        # entao a checagem normal nao diria nada — e como .ogg ainda por cima
+        # cai em IMPORTED_EXT, o padrao passaria 100% calado. Aqui ele e
+        # EXPANDIDO e cobra-se que case com pelo menos um arquivo de verdade,
+        # que e o que pega um erro de digitacao no padrao.
+        if PLACEHOLDER.search(ref):
+            hits = expand_pattern(ref)
+            if not hits:
+                missing.append((ref, "padrao nao casa com nenhum arquivo"))
+            else:
+                expanded += len(hits)
+            continue
         if ext in IMPORTED_EXT:
             skipped += 1
             continue
@@ -111,6 +134,8 @@ def main() -> int:
 
     print("pacote: %.0f MB" % (len(data) / 1e6))
     print("referencias conferidas: %d (%d importadas, puladas)" % (len(refs) - skipped, skipped))
+    if expanded:
+        print("caminhos montados em runtime: %d arquivos casados" % expanded)
     if missing:
         print("\n%d PROBLEMA(S):" % len(missing))
         for ref, why in missing:

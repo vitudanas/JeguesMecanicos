@@ -16,7 +16,16 @@ godot --headless --path . tools/verify/loop_test.tscn   # core loop com input re
 godot --headless --path . tools/verify/attach_test.tscn # mira nos pontos de gambiarra
 godot --headless --path . tools/verify/scale_test.tscn  # escala, flutuação, vegetação
 godot --headless --path . tools/verify/yard_test.tscn   # dá pra sair do pátio
+godot --headless --path . tools/verify/audio_test.tscn  # som carrega e dispara
 ```
+
+`audio_test` existe por uma limitação honesta: **não dá pra ouvir numa sessão
+automatizada**. Então ele cobre o que se prova sem ouvido — todo som declarado
+existe e carrega, os barramentos respondem ao volume, os dois laços sintetizados
+(motor e chuva) têm pico e **emenda medida** (fim comparado com começo; laço que
+estala é o pior defeito possível num som que repete), e cada evento do jogo faz
+uma voz sair do repouso, chamando os métodos reais. Se o motor *soa* como motor,
+só ouvindo.
 
 Todos saem com código 0 quando não acham problema.
 
@@ -27,7 +36,13 @@ rasterizar não há foto nem contagem de desenho):
 godot --path . tools/verify/quality_shots.tscn   # fotos + chamadas de desenho
 godot --path . tools/verify/settings_test.tscn   # o menu de gráficos faz efeito?
 godot --path . tools/verify/player_shots.tscn    # a jogadora de cabeça de jegue
+godot --path . tools/verify/ui_shot.tscn         # menu principal e configuração
 ```
+
+`ui_shot` existe porque a tela de configuração é montada **em código** e já
+falhou renderizando invisível (0x0) com todos os controles montados certinho —
+nenhum teste de contagem pegava. Ele fotografa e ainda cobra o tamanho medido,
+pra falhar alto em vez de gerar uma foto preta que alguém precisa reparar.
 
 `quality_shots` fotografa grama e fachadas do ponto de vista do jogador e
 imprime **chamadas de desenho e primitivas** por foto — não milissegundos: tempo

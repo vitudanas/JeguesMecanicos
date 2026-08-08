@@ -20,6 +20,7 @@ WeatherManager="*res://autoload/WeatherManager.gd"
 EventManager="*res://autoload/EventManager.gd"
 DeliveryManager="*res://autoload/DeliveryManager.gd"
 GraphicsSettings="*res://autoload/GraphicsSettings.gd"
+AudioManager="*res://autoload/AudioManager.gd"
 
 [display]
 

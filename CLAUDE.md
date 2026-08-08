@@ -187,7 +187,9 @@ project.godot          # config do Godot, autoloads, display/fullscreen
 export_presets.cfg     # presets Windows Desktop + macOS (testados e funcionando)
 autoload/               GameManager.gd, Economy.gd, WeatherManager.gd (clima/chuva),
                         EventManager.gd (eventos procedurais),
-                        DeliveryManager.gd (sorteia a casa da entrega da vez)
+                        DeliveryManager.gd (sorteia a casa da entrega da vez),
+                        GraphicsSettings.gd, AudioManager.gd (biblioteca de sons,
+                        barramentos, piscina de vozes e volume)
 shaders/                city_surface.gdshader (fachada/asfalto: atlas do kit +
                         PBR triplanar + sombreamento facetado),
                         ground.gdshader (chao do mundo por ruido, sem textura),
@@ -1894,6 +1896,74 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     binário exportado pra ver a cidade renderizada: não dá pra clicar em janela
     nativa nesta sessão.
 
+- **2026-08-08** — Usuário pediu pra seguir com o andamento geral. Fechado o
+  maior buraco que sobrava: **o jogo não tinha UMA linha de áudio** — nenhum
+  arquivo, nenhum `AudioStreamPlayer`, nada. Estava no Roadmap desde o começo.
+  - **Assets**: mais dois pacotes CC0 do Kenney (`impact-sounds` e
+    `interface-sounds`), a mesma fonte do resto do jogo. Só os 47 arquivos
+    usados entraram no repo (440KB), como já se faz com os outros pacotes.
+  - **Motor e chuva são SINTETIZADOS** (`scripts/ProceduralAudio.gd`): o Kenney
+    não tem pacote de motor nem de chuva, e som contínuo é justamente o que
+    sintetiza bem (é harmônico e ruído, não gravação). Custa zero byte no build,
+    e o motor ganha de graça o que uma gravação não dá: como o ciclo é
+    sintético, `pitch_scale` sobe a rotação sem soar picotado. O motor tem
+    explosões deliberadamente **irregulares** — com todas iguais soava zumbido,
+    não motor.
+  - **`autoload/AudioManager.gd`**: barramentos (Master/SFX/UI) criados **em
+    código**, não num `default_bus_layout.tres` — recurso escrito à mão já ficou
+    fora do `.pck` uma vez neste projeto e só quebrou no binário exportado.
+    Piscina de vozes (16 em 3D, 6 em 2D) em vez de instanciar nó por som: batida
+    em cadeia é o normal aqui (gambiarra caindo, carro batendo) e criaria
+    dezenas de nós por segundo.
+  - **Som de interface se liga SOZINHO** em todo `BaseButton`/`Slider` que entra
+    na árvore (mesmo padrão de `node_added` que o `GraphicsSettings` já usava).
+    Além de não repetir código nos 3 menus, isso cobre a tela de configuração,
+    que é montada 100% em código e cujos controles nasceriam mudos.
+  - **Ligado no jogo**: motor por velocidade+acelerador (só no carro DIRIGIDO —
+    42 carros de IA custariam um tocador cada, e uma carcaça no ferro-velho
+    ficaria roncando parada), batida de lataria por força de impacto, buraco,
+    gambiarra encaixando e arrebentando, passo do jogador, queda, reboque
+    engatando, pedestre atropelado, venda fechada, venda perdida e a chuva.
+  - **Passo sabe a superfície** reusando o critério do `GrassField` (grupo
+    `terreno_natural`), então passo e grama concordam por construção — asfalto,
+    meio-fio, laje e prédio soam duro sem precisar de lista de exceção. E a
+    passada é por METRO ANDADO, não por tempo: assim a cadência acompanha
+    sozinha o andar e a corrida.
+  - **Menu de configuração** ganhou seção "Som" com três controles (geral,
+    efeitos, interface), com a porcentagem escrita do lado — a alça sozinha não
+    diz nada, ainda mais com o som mudo.
+  - **Erros meus nesta rodada**:
+    1. *Separei os campos da biblioteca por `:`* — e `res://` tem dois-pontos,
+       então o primeiro campo saía como "res" e nenhum som carregava. Virou
+       struct explícita.
+    2. *`class_name` novo não registrado*: `VehicleAudio` criado fora do editor
+       não entra no cache de classes, e o `Vehicle.gd` parou de compilar. É a
+       pegadinha já documentada do `MeshBatch` — precisa de
+       `godot --headless --path . --editor --quit`.
+    3. *Montei os caminhos da biblioteca por concatenação* (`IMPACT + "..."`), e
+       com isso os 47 sons ficaram **invisíveis pro auditor do build**, que acha
+       dependência varrendo literais `res://`. Passaram a ir inteiros, verbosos
+       de propósito. O auditor foi de 24 pra **71** caminhos casados.
+  - **Verificação** — e aqui vale a ressalva honesta: **não dá pra ouvir nesta
+    sessão**, então `tools/verify/audio_test.tscn` cobre tudo o que se prova sem
+    ouvido: todo som declarado existe e carrega (47/47), os barramentos
+    respondem ao volume (e zero MUDA de verdade), os laços sintetizados têm
+    pico e **emenda medida** (o fim comparado com o começo — laço que estala é o
+    defeito mais audível possível num som que repete), e cada evento do jogo
+    realmente faz uma voz sair do repouso, chamando os métodos reais. O que ele
+    **não** cobre é se o motor soa como motor; isso é ouvido.
+    - Uma primeira versão do teste da chuva era fraca: mediu nível 0.08 e
+      passou, o que deixaria passar um defeito que travasse a chuva em 10% do
+      volume. Agora espera a transição inteira e cobra 100% e 0%.
+  - **`tools/verify/ui_shot.tscn`** (novo): fotografa menu principal e
+    configuração, porque essa tela é montada em código e já falhou renderizando
+    **invisível** (0x0) com os 9 controles montados certinho. Confere também o
+    tamanho medido, pra falhar alto em vez de gerar foto preta.
+  - Suíte inteira passa (city, drive, loop, attach, scale, yard, settings, audio,
+    ui). Builds reexportados, auditor limpo, binário exportado sobe sem nenhum
+    aviso de som ausente — que é a prova de que os 47 `.ogg` entraram no `.pck` —
+    e o `.app` foi reextraído.
+
 ### Pendências pedidas e ainda NÃO feitas
 
 Nenhuma das três pendências anteriores continua aberta. O que sobrou de
@@ -1940,8 +2010,11 @@ observação pra uma próxima rodada (nada disso foi pedido):
   inventário em vez de item fixo por ponto de fixação).
 - Economia mais profunda (preços variáveis, múltiplos compradores com personalidades
   diferentes, negociação).
-- Sons, música, efeitos de UI/menu (menu principal e de pause já existem — ver
-  changelog 2026-08-02 —, mas ainda sem áudio nenhum no jogo).
+- ~~Sons e efeitos de UI/menu.~~ **Feito em 2026-08-08** (ver changelog): efeitos
+  do mundo e da interface com pacotes CC0 do Kenney, motor e chuva sintetizados
+  em código, e volume ajustável no menu. Falta ainda **MÚSICA** (não há nenhuma
+  trilha no jogo) e o **motor dos carros de IA**, deixado de fora de propósito:
+  42 tocadores simultâneos custam caro e uma carcaça parada ficaria roncando.
 - **Prédios do Quaternius (Downtown City MegaKit)**: usados em `Town.tscn` por um
   tempo (2 dos 3 prédios prontos; `Building_Medium_2_001` tem um bug visual), mas
   retirados do layout ativo no redesenho de 2026-08-02 pra manter um único estilo

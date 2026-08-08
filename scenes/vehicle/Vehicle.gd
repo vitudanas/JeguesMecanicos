@@ -102,6 +102,7 @@ var at_workshop := false
 var rig: CarRig
 var wheels: Array[RayCast3D] = []
 var _steer_angle := 0.0
+var audio: VehicleAudio = null
 var _spring_k := 0.0
 var _spring_c := 0.0
 var _rest_length := 0.0
@@ -117,6 +118,10 @@ func _ready() -> void:
 	# parava de responder ao acelerador depois de qualquer paradinha.
 	can_sleep = false
 	body_entered.connect(_on_body_entered)
+
+	audio = VehicleAudio.new()
+	audio.name = "VehicleAudio"
+	add_child(audio)
 
 	rig = CarRig.new()
 	rig.name = "CarRig"
@@ -363,8 +368,12 @@ func install_part(point_name: String, part: Node, marker: Node3D) -> bool:
 	part.install(self, point_name, anchor)
 	part.broke.connect(_on_part_broke.bind(point_name))
 	part_attached.emit(point_name)
+	AudioManager.play_at("encaixa", anchor.global_position, -3.0, 1.0, 25.0)
 	if installed_parts.size() >= attach_points.size():
 		is_wrecked = false
+		# Carro pronto: um toque de confirmacao, porque terminar as 4 gambiarras
+		# e o unico momento do loop sem nenhum outro retorno na tela.
+		AudioManager.play_ui("confirma", -3.0)
 		var buyer := get_tree().get_first_node_in_group("buyer")
 		if buyer:
 			GameManager.set_objective(buyer.global_position, "Entregue o carro na CASA marcada (placa verde), na cidade")
@@ -396,9 +405,13 @@ func _current_traction() -> float:
 func hit_pothole(force: float) -> void:
 	apply_central_impulse(Vector3.UP * force * 0.35)
 	_stress_all_parts(force)
+	if audio:
+		audio.pothole()
 
 func _on_body_entered(_body: Node) -> void:
 	var impact: float = linear_velocity.length()
+	if audio:
+		audio.impact(impact)
 	if impact > 3.0:
 		_stress_all_parts(impact * 1.5)
 

@@ -31,7 +31,16 @@ const OPTIONS: Array = [
 	["show_fps", "Contador de FPS", [["Escondido", false], ["Visível", true]]],
 ]
 
+## Volumes. Nome interno (o mesmo campo do AudioManager) e rotulo.
+const VOLUMES: Array = [
+	["master", "Volume geral"],
+	["sfx", "Efeitos e mundo"],
+	["ui", "Interface"],
+]
+
 var _pickers: Dictionary = {}
+var _sliders: Dictionary = {}
+var _slider_labels: Dictionary = {}
 var _building := false
 
 func _ready() -> void:
@@ -77,7 +86,7 @@ func _build() -> void:
 	center.add_child(box)
 
 	var title := Label.new()
-	title.text = "Gráficos"
+	title.text = "Configurações"
 	title.add_theme_font_size_override("font_size", 34)
 	title.add_theme_color_override("font_color", Color(1, 0.85, 0.2))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -91,6 +100,7 @@ func _build() -> void:
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	box.add_child(hint)
 	box.add_child(_spacer(10))
+	box.add_child(_section("Gráficos"))
 
 	for entry: Array in OPTIONS:
 		var key: String = entry[0]
@@ -114,6 +124,40 @@ func _build() -> void:
 		row.add_child(picker)
 		_pickers[key] = picker
 
+	box.add_child(_spacer(14))
+	box.add_child(_section("Som"))
+	for entry: Array in VOLUMES:
+		var key: String = entry[0]
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 16)
+		box.add_child(row)
+
+		var label := Label.new()
+		label.text = entry[1]
+		label.add_theme_font_size_override("font_size", 18)
+		label.custom_minimum_size = Vector2(300, 0)
+		row.add_child(label)
+
+		var slider := HSlider.new()
+		slider.min_value = 0.0
+		slider.max_value = 1.0
+		slider.step = 0.05
+		slider.custom_minimum_size = Vector2(240, 40)
+		slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		slider.value_changed.connect(_on_volume.bind(key))
+		row.add_child(slider)
+		_sliders[key] = slider
+
+		# Numero do lado: sem ele o jogador nao sabe se esta em 20% ou 80% —
+		# a alca sozinha nao diz, ainda mais com o som mudo.
+		var pct := Label.new()
+		pct.add_theme_font_size_override("font_size", 16)
+		pct.custom_minimum_size = Vector2(56, 0)
+		pct.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		row.add_child(pct)
+		_slider_labels[key] = pct
+
 	box.add_child(_spacer(18))
 	var back := Button.new()
 	back.text = "Voltar"
@@ -126,6 +170,28 @@ func _spacer(h: int) -> Control:
 	var c := Control.new()
 	c.custom_minimum_size = Vector2(0, h)
 	return c
+
+func _section(text: String) -> Control:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_font_size_override("font_size", 22)
+	l.add_theme_color_override("font_color", Color(0.65, 0.82, 1.0))
+	return l
+
+func _on_volume(value: float, key: String) -> void:
+	# Mesma trava do `_on_selected`: `_refresh` escreve nos sliders, e sem isto
+	# cada escrita voltaria aqui como se o jogador tivesse arrastado.
+	if _building:
+		return
+	AudioManager.set(key, clampf(value, 0.0, 1.0))
+	AudioManager.apply()
+	AudioManager.save_settings()
+	_refresh_volume_labels()
+
+func _refresh_volume_labels() -> void:
+	for key: String in _slider_labels:
+		var pct: Label = _slider_labels[key]
+		pct.text = "%d%%" % int(round(float(AudioManager.get(key)) * 100.0))
 
 func _values(key: String) -> Array:
 	for entry: Array in OPTIONS:
@@ -168,4 +234,7 @@ func _refresh() -> void:
 		# "custom" (combinacao propria) nao esta na lista: nesse caso nenhum item
 		# fica marcado, que e a leitura honesta.
 		picker.select(found)
+	for key: String in _sliders:
+		(_sliders[key] as HSlider).value = float(AudioManager.get(key))
+	_refresh_volume_labels()
 	_building = false

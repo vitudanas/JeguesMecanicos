@@ -82,6 +82,9 @@ func _process(delta: float) -> void:
 
 func _on_success() -> void:
 	minigame_running = false
+	# Fechar a venda e o unico momento em que o loop inteiro se paga — e o som
+	# que confirma isso, entao vem mais alto que o resto da interface.
+	AudioManager.play_ui("confirma", 0.0)
 	var amount := 200
 	if nearby_vehicle:
 		amount = Economy.estimate_sale_price(nearby_vehicle.intact_part_count(), nearby_vehicle.total_attach_points())
@@ -97,6 +100,7 @@ func _on_success() -> void:
 
 func _on_failed() -> void:
 	minigame_running = false
+	AudioManager.play_ui("erro", -4.0)
 	GameManager.persuasion_updated.emit(false, 0.0)
 
 func _on_car_entered(body: Node) -> void:

@@ -26,6 +26,7 @@ func attach(body: RigidBody3D) -> void:
 	towed_body = body
 	if body.has_method("set_towed"):
 		body.set_towed(true)
+	AudioManager.play_at("batida_leve", body.global_position, -8.0, 0.9, 30.0)
 	_effective_distance = pull_distance
 	# Meio comprimento real do carro + folga: assim a traseira nunca alcanca o
 	# jogador, seja qual for o modelo.

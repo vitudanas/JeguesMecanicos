@@ -17,6 +17,11 @@ const MOUSE_SENSITIVITY := 0.0025
 const WALK_ANIM_SPEED := 0.6
 const RUN_ANIM_SPEED := 5.6
 
+## Passada, em metros. Correndo a passada ABRE (nao so acelera) — por isso duas
+## medidas em vez de uma cadencia por tempo.
+const STEP_STRIDE_WALK := 0.78
+const STEP_STRIDE_RUN := 1.15
+
 @onready var head: Node3D = $Head
 @onready var camera: Camera3D = $Head/Camera3D
 @onready var third_person_arm: SpringArm3D = $Head/ThirdPersonArm
@@ -32,6 +37,7 @@ var visual: Node3D = null
 var third_person := false
 var _e_prev := false
 var _v_prev := false
+var _step_accum := 0.0
 var _anim: AnimationPlayer = null
 
 func _ready() -> void:
@@ -103,11 +109,51 @@ func _physics_process(delta: float) -> void:
 		velocity.x = move_toward(velocity.x, 0.0, speed)
 		velocity.z = move_toward(velocity.z, 0.0, speed)
 
+	var was_on_floor := is_on_floor()
+	var fall_speed := -velocity.y
 	move_and_slide()
+	_update_steps(delta)
+	if not was_on_floor and is_on_floor() and fall_speed > 3.0:
+		AudioManager.play_at(_surface_sound(), global_position,
+			lerpf(-14.0, -5.0, clampf(fall_speed / 12.0, 0.0, 1.0)), 0.85, 22.0)
 	_update_animation()
 	_update_interaction()
 	if e_just:
 		_try_interact()
+
+## Passo a cada tanto de CHAO ANDADO, nao a cada tanto de tempo: assim a
+## cadencia acompanha sozinha o andar e a corrida, sem um segundo temporizador
+## pra manter em sincronia com a animacao.
+func _update_steps(_delta: float) -> void:
+	if not is_on_floor():
+		return
+	var speed := Vector2(velocity.x, velocity.z).length()
+	if speed < WALK_ANIM_SPEED:
+		_step_accum = STEP_STRIDE_WALK * 0.6   # o proximo passo sai quase de cara
+		return
+	_step_accum += speed * _delta
+	var stride: float = lerpf(STEP_STRIDE_WALK, STEP_STRIDE_RUN,
+		clampf((speed - WALK_SPEED) / maxf(SPRINT_SPEED - WALK_SPEED, 0.01), 0.0, 1.0))
+	if _step_accum < stride:
+		return
+	_step_accum = 0.0
+	AudioManager.play_at(_surface_sound(), global_position, -13.0,
+		randf_range(0.92, 1.08), 18.0)
+
+## Mato ou piso duro, decidido pelo que esta DEBAIXO do pe. Usa o mesmo criterio
+## do `GrassField` (grupo `terreno_natural`), entao passo e grama concordam por
+## construcao — asfalto, meio-fio, laje e predio nao estao no grupo e por isso
+## soam duro sem precisar de lista de excecao.
+func _surface_sound() -> String:
+	var space := get_world_3d().direct_space_state
+	var from := global_position + Vector3.UP * 0.4
+	var q := PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * 1.6)
+	q.exclude = [get_rid()]
+	var hit := space.intersect_ray(q)
+	if hit.is_empty():
+		return "passo_duro"
+	var body: Node = hit["collider"]
+	return "passo_mato" if body.is_in_group("terreno_natural") else "passo_duro"
 
 func _update_interaction() -> void:
 	if hud == null:
