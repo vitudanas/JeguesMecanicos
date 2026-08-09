@@ -64,7 +64,16 @@ godot --path . tools/verify/ui_shot.tscn         # menu principal e configuraç�
 godot --path . tools/verify/yard_shots.tscn      # vagas pintadas e o mecânico
 godot --path . tools/verify/gambiarra_shot.tscn  # a gambiarra com o carro ANDANDO
 godot --path . tools/verify/gambiarra_sheet.tscn # os 12 itens do catálogo lado a lado
+godot --path . tools/verify/building_sheet.tscn  # os prédios GERADOS (ver BuildingFactory)
 ```
+
+`building_sheet` imprime os triângulos **por superfície** (parede/moldura/vidro)
+e renderiza um prédio sozinho de perto. As duas coisas existem por causa do
+mesmo defeito: as quatro paredes saíram viradas pra dentro e o prédio ficava
+vazado, dava pra ver o interior pela fachada. Contagem por superfície separa
+"não foi gerada" de "está virada", e `SEM_CULL=1` troca a parede por um material
+de dupla face — se ela aparecer assim, é winding. **O Godot usa winding horário
+pra face frontal**, o contrário da regra da mão direita.
 
 `gambiarra_sheet` existe porque os itens são **geometria montada em código** e
 nenhum número diz se "arame de cabide" lê como arame de cabide. Ele pegou dois
