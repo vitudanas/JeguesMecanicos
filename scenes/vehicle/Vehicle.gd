@@ -103,6 +103,22 @@ var rig: CarRig
 var wheels: Array[RayCast3D] = []
 var _steer_angle := 0.0
 var audio: VehicleAudio = null
+
+# ------------------------------------------------------- negocio da carcaca
+## Estado permanente deste carro (km, lataria, pintura) e o modelo — e deles que
+## sai o valor. Ate agora todo carro valia os mesmos R$ 220 e vinha DE GRACA:
+## o dinheiro so subia, entao nao havia decisao nenhuma no ferro-velho.
+var model_key := ""
+var condition: Dictionary = {}
+## Preco pedido pela carcaca e se ela ja e do jogador.
+var asking_price := 0
+var owned := false
+## A vistoria revela o estado. Sem ela o jogador so ve o preco, e nao sabe se
+## esta fazendo uma barganha ou levando um abacaxi.
+var inspected := false
+var haggles_left := 0
+var _haggle_locked := false
+
 var _r_prev := false
 var _spring_k := 0.0
 var _spring_c := 0.0
@@ -134,6 +150,13 @@ func _ready() -> void:
 	var model := car_model
 	if model == null and not car_pool.is_empty():
 		model = car_pool[rng.randi() % car_pool.size()]
+	if model:
+		model_key = model.resource_path.get_file().get_basename()
+	condition = Economy.roll_condition(rng)
+	asking_price = Economy.wreck_asking_price(model_key, condition, rng)
+	haggles_left = Economy.HAGGLE_TRIES
+	# Carro que nasce ja consertado (nao e carcaca) e do jogador por definicao.
+	owned = not is_wrecked
 	if not rig.build(model):
 		push_warning("Vehicle: sem modelo de carro, usando so a colisao")
 	elif not paint_colors.is_empty():
@@ -324,8 +347,67 @@ func get_interact_prompt() -> String:
 			# a dica de onde a acao esta.
 			var missing: int = attach_points.size() - installed_parts.size()
 			return "Faltam %d gambiarra(s) — mire nos pontos coloridos" % missing
+		if not owned:
+			return _deal_prompt()
 		return "Rebocar [E]"
 	return "Entrar no carro [E]"
+
+## O que aparece enquanto a carcaca ainda e do ferro-velho.
+func _deal_prompt() -> String:
+	var linha := "%s — pedem R$ %d  [E] comprar" % [_model_name(), asking_price]
+	if not inspected:
+		return linha + "  ·  [Q] vistoriar"
+	# Depois da vistoria o jogador ve o que esta comprando E o teto do negocio.
+	var vale: int = Economy.repaired_value(model_key, condition)
+	linha += "\n%s  ·  vale ~R$ %d consertado" % [condition_text(), vale]
+	if _haggle_locked:
+		return linha + "  ·  o dono nao desce mais"
+	if haggles_left > 0:
+		return linha + "  ·  [Q] pechinchar (%d)" % haggles_left
+	return linha
+
+func _model_name() -> String:
+	return model_key.capitalize() if model_key != "" else "Carcaça"
+
+## Estado em texto, do jeito que um anuncio de carro velho descreve.
+func condition_text() -> String:
+	var km: float = float(condition.get("km", 0.0))
+	return "%.0f mil km · lataria %s · pintura %s" % [
+		km, _grade(float(condition.get("lataria", 0.0))),
+		_grade(float(condition.get("pintura", 0.0)))]
+
+func _grade(v: float) -> String:
+	if v < 0.25:
+		return "boa"
+	if v < 0.55:
+		return "ok"
+	if v < 0.8:
+		return "ruim"
+	return "detonada"
+
+## [Q] em cima da carcaca: primeiro vistoria, depois pechincha. Uma tecla so,
+## contextual — o prompt sempre diz o que ela faz agora.
+func negotiate() -> void:
+	if owned or not is_wrecked:
+		return
+	if not inspected:
+		inspected = true
+		AudioManager.play_ui("passar", -6.0)
+		return
+	if _haggle_locked or haggles_left <= 0:
+		AudioManager.play_ui("erro", -10.0)
+		return
+	haggles_left -= 1
+	# Pechinchar tem RISCO: sem risco a decisao certa seria sempre pechinchar
+	# ate o fundo, e o botao viraria burocracia.
+	if randf() < Economy.HAGGLE_RISK:
+		_haggle_locked = true
+		AudioManager.play_ui("erro", -6.0)
+		return
+	var floor_price: int = Economy.haggle_floor(asking_price)
+	asking_price = maxi(floor_price,
+		int(round(float(asking_price) * (1.0 - Economy.HAGGLE_STEP))))
+	AudioManager.play_ui("confirma", -8.0)
 
 func interact(player: Node) -> void:
 	if driver == player:
@@ -334,6 +416,10 @@ func interact(player: Node) -> void:
 		# Na oficina o carro ja chegou: reengatar o reboque so o arrastaria pra
 		# longe dos marcadores que o jogador esta tentando acertar.
 		if at_workshop:
+			return
+		# Carcaca do ferro-velho tem dono: primeiro compra, depois reboca.
+		if not owned:
+			_try_buy()
 			return
 		if player.has_method("start_towing"):
 			player.start_towing(self)
@@ -344,6 +430,19 @@ func interact(player: Node) -> void:
 			GameManager.set_active_vehicle(self)
 			player.enter_vehicle(self)
 			chase_camera.current = true
+
+## Fecha a compra da carcaca. O dinheiro sai do bolso do jogador — e a primeira
+## vez no jogo em que ele pode DIMINUIR, e e isso que faz garimpar valer algo.
+func _try_buy() -> void:
+	if GameManager.money < asking_price:
+		AudioManager.play_ui("erro", -4.0)
+		GameManager.set_objective(global_position,
+			"Sem dinheiro para esta carcaça (R$ %d)" % asking_price)
+		return
+	GameManager.add_money(-asking_price)
+	owned = true
+	GameManager.set_active_vehicle(self)
+	AudioManager.play_ui("confirma", -2.0)
 
 ## Chamado pelo TowHook ao engatar/soltar.
 func set_towed(towed: bool) -> void:

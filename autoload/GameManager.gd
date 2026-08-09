@@ -7,7 +7,16 @@ signal car_sold(amount: int)
 signal persuasion_updated(active: bool, progress: float)
 signal objective_changed(position: Vector3, label: String)
 
-var money: int = 150
+## Capital inicial. Subiu de 150 quando a carcaca deixou de ser de graca: com
+## 150 no bolso nao dava pra comprar carcaca nenhuma e o jogo nascia travado. O
+## `economy_test` cobra que ele banque a primeira compra.
+##
+## CONSTANTE, e nao um numero repetido: o `save_test` conferia "150" escrito na
+## mao e reprovou sozinho quando este valor mudou. Valor com dois donos vira
+## dois valores.
+const STARTING_MONEY := 450
+
+var money: int = STARTING_MONEY
 var cars_sold: int = 0
 
 ## Guardados (nao so emitidos) porque o HUD pode terminar seu _ready() e
@@ -28,7 +37,7 @@ func set_active_vehicle(v: Node) -> void:
 	active_vehicle = v
 
 func reset() -> void:
-	money = 150
+	money = STARTING_MONEY
 	cars_sold = 0
 	objective_position = Vector3.ZERO
 	objective_label = ""

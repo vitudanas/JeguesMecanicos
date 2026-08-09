@@ -37,6 +37,7 @@ var visual: Node3D = null
 var third_person := false
 var _e_prev := false
 var _v_prev := false
+var _q_prev := false
 var _step_accum := 0.0
 var _anim: AnimationPlayer = null
 
@@ -72,6 +73,12 @@ func _physics_process(delta: float) -> void:
 	var e_now := Input.is_key_pressed(KEY_E)
 	var e_just := e_now and not _e_prev
 	_e_prev = e_now
+
+	# Q negocia com o que estiver na mira (vistoriar/pechinchar uma carcaca).
+	# Borda de subida, como o E e o V.
+	var q_now := Input.is_key_pressed(KEY_Q)
+	var q_just := q_now and not _q_prev
+	_q_prev = q_now
 
 	# V alterna 1a/3a pessoa, na borda de subida (mesmo padrao do E).
 	var v_now := Input.is_key_pressed(KEY_V)
@@ -120,6 +127,8 @@ func _physics_process(delta: float) -> void:
 	_update_interaction()
 	if e_just:
 		_try_interact()
+	if q_just:
+		_try_negotiate()
 
 ## Passo a cada tanto de CHAO ANDADO, nao a cada tanto de tempo: assim a
 ## cadencia acompanha sozinha o andar e a corrida, sem um segundo temporizador
@@ -167,6 +176,13 @@ func _update_interaction() -> void:
 			hud.set_prompt(collider.get_interact_prompt())
 		else:
 			hud.set_prompt("")
+
+## Q no alvo da mira. Separado do E de proposito: comprar e negociar sao acoes
+## diferentes, e juntar as duas na mesma tecla faria o jogador comprar sem
+## querer no meio de uma pechincha.
+func _try_negotiate() -> void:
+	if current_interactable and current_interactable.has_method("negotiate"):
+		current_interactable.negotiate()
 
 func _try_interact() -> void:
 	if current_interactable and current_interactable.is_in_group("interactable") and current_interactable.has_method("interact"):

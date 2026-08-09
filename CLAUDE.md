@@ -174,6 +174,9 @@ local hard-coded sempre que possível.
 
 - **A pé:** W/A/S/D anda, Shift corre, Space pula, E interage (olhando para o alvo),
   Esc abre/fecha o menu de pause.
+- **Ferro-velho:** mire na carcaça — **Q vistoria** (revela km, lataria, pintura
+  e quanto ela vale consertada), **Q de novo pechincha** (3 tentativas, com risco
+  de o dono se fechar) e **E compra**. Sem comprar não dá pra rebocar.
 - **Dirigindo:** W/S acelera/ré, A/D vira, Space freio de mão, F sai do carro,
   **R desvira/reassenta o carro** (também vale rebocando a carcaça a pé).
 - **Venda:** a entrega é numa casa sorteada da cidade (placa verde ENTREGA);
@@ -2153,6 +2156,49 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     posição (campo: vento −25 dB / cidade muda; centro: cidade −19 dB / vento
     mudo) e que o custo do trânsito é fixo. Se o zumbido *soa* como cidade, só
     ouvindo.
+
+- **2026-08-09** — Usuário mandou a página do **Car For Sale Simulator 2023** e
+  depois do **Car Dealer Simulator** (Garage Monkeys), dizendo que são as
+  inspirações principais depois do "Totally Legit", e pediu as mecânicas deles:
+  consertos realistas, evolução da oficina, contratar funcionários, evolução do
+  terreno. **Não dá pra assistir gameplay nesta sessão** (não há como ver vídeo);
+  a pesquisa foi por página da Steam, guias e wikis — está tudo referenciado no
+  resumo abaixo.
+  - **O que os dois jogos têm em comum** (e que este projeto não tinha): valor
+    por carro com modificadores aleatórios; **compra com pechincha** (no CFS23 a
+    perícia dá 5/10/20% de desconto extra e nunca se negocia acima do pedido);
+    vistoria antes de comprar; conserto que muda o valor; anúncio com preço
+    definido pelo jogador; clientes bons (93-107% do valor) e **lowballers**
+    (65-88%). O Car Dealer Simulator acrescenta o eixo de progressão: **oficina
+    em 4 níveis** (nv.1 bateria e escapamento; nv.2 elevador, freio e suspensão;
+    nv.3 motor, radiador e embreagem; nv.4 recepcionista), **funcionários**
+    (mecânico, recepcionista) e reputação.
+  - **Feito nesta rodada — a fundação, que é o valor de verdade por carro:**
+    `Economy` ganhou valor-base **por modelo** (táxi 210 a esportivo 430) e
+    estado permanente sorteado por carcaça (km 60-340 mil, lataria, pintura).
+    Medido: um esportivo impecável vale **5,8x** um táxi detonado. Antes todo
+    carro valia os mesmos R$ 220 e tanto fazia qual carcaça rebocar.
+  - **A carcaça deixou de ser de graça.** O ferro-velho pede um preço (32-72% do
+    que o carro vale consertado, faixa larga de propósito: é ela que faz existir
+    barganha e abacaxi no mesmo lote). **[Q] vistoria** — sem ela o jogador só vê
+    o preço e não sabe de que lado do negócio está; depois de vistoriar aparecem
+    km, lataria, pintura e o teto do negócio. **[Q] de novo pechincha**, 3
+    tentativas, 9% de desconto cada, piso em 68% do pedido e **25% de risco de o
+    dono se fechar** — sem risco, pechinchar até o fundo seria sempre certo e o
+    botão viraria burocracia. **[E] compra**, e o dinheiro sai do bolso: é a
+    primeira vez no jogo em que ele pode DIMINUIR.
+  - **Capital inicial 150 → 450**, senão o jogo nascia travado (não dava pra
+    comprar carcaça nenhuma). Virou `GameManager.STARTING_MONEY`, constante com
+    dono único: o `save_test` conferia "150" escrito na mão e reprovou sozinho
+    quando o valor mudou — valor com dois donos vira dois valores.
+  - **Erro meu, de arnês:** o `loop_test` perdia a mira entre uma tecla e outra
+    (o `RayCast3D` que o `Player` lê é o do passo anterior e a pose não se
+    mantém), então "comprar" e "rebocar" chegavam com alvo `<null>` e pareciam
+    não funcionar. Agora ele reaponta antes de cada ação.
+  - O `economy_test` cobra o que importa aqui: que o lote tenha **barganha E
+    abacaxi**, que pechinchar desconte de verdade mas respeite o piso, que
+    pechinchar tenha risco, e que o capital inicial banque a primeira compra
+    (medido: 0% das carcaças ficam fora do alcance).
 
 ### Pendências pedidas e ainda NÃO feitas
 

@@ -53,7 +53,8 @@ func _ready() -> void:
 
 	print("[4] Continuar devolve o progresso pro jogo")
 	GameManager.reset()
-	check(GameManager.money == 150, "reset voltou pro inicio")
+	check(GameManager.money == GameManager.STARTING_MONEY, "reset voltou pro inicio",
+		"R$ %d" % GameManager.money)
 	var avisado := [0]
 	var conn := func(v: int) -> void: avisado[0] = v
 	GameManager.money_changed.connect(conn)

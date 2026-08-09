@@ -169,11 +169,50 @@ func _run() -> void:
 	if not wreck.is_wrecked:
 		fail("o carro do ferro-velho nao comeca sucateado")
 	await _stand_and_aim(wreck.global_position + Vector3(0, 0.7, 0), 2.4)
+
+	# A carcaca tem DONO: primeiro vistoria, pechincha e compra; so depois
+	# reboca. Antes ela era de graca e o dinheiro do jogador so subia.
+	if wreck.owned:
+		fail("a carcaca do ferro-velho ja nasce do jogador")
+		return
+	await _tap(KEY_Q)
+	await _stand_and_aim(wreck.global_position + Vector3(0, 0.7, 0), 2.4)
+	if not wreck.inspected:
+		fail("Q na carcaca nao fez a vistoria")
+		return
+	ok("vistoria revelou o estado: %s" % wreck.condition_text())
+	var pedido_inicial: int = wreck.asking_price
+	await _tap(KEY_Q)
+	ok("pechincha: pediam R$ %d, agora R$ %d%s" % [pedido_inicial, wreck.asking_price,
+		"" if wreck.asking_price < pedido_inicial else " (o dono se fechou — tem risco)"])
+
+	# REAPONTA antes de cada acao. A pose nao se mantem sozinha, e o raycast que
+	# o Player le e o do passo ANTERIOR: depois de dois toques de Q a mira ja
+	# tinha escorregado e o alvo vinha <null>, entao o E "nao comprava". Era o
+	# arnes, nao o jogo.
+	await _stand_and_aim(wreck.global_position + Vector3(0, 0.7, 0), 2.4)
+
+	# Rebocar SEM comprar nao pode funcionar, senao a compra e decorativa.
+	var carteira: int = GameManager.money
+	await _tap(KEY_E)
+	if player.tow_hook.is_towing():
+		fail("deu pra rebocar a carcaca SEM comprar")
+		return
+	if GameManager.money != carteira - wreck.asking_price:
+		fail("comprar nao tirou o dinheiro certo (R$ %d -> R$ %d, pedido R$ %d)"
+			% [carteira, GameManager.money, wreck.asking_price])
+		return
+	ok("comprou por R$ %d (carteira %d -> %d)" % [
+		carteira - GameManager.money, carteira, GameManager.money])
 	var seen := _aimed_at()
 	if seen != wreck:
 		fail("mirando na carcaca o raycast pegou %s" % [seen])
 	else:
 		ok("o raycast de interacao acha a carcaca (prompt: '%s')" % wreck.get_interact_prompt())
+	# De novo: cada acao precisa da sua mira. `_aimed_at()` acima le o raycast do
+	# passo anterior e nao SEGURA a pose — sem reapontar, o E do reboque chegava
+	# com o alvo ja perdido.
+	await _stand_and_aim(wreck.global_position + Vector3(0, 0.7, 0), 2.4)
 	await _tap(KEY_E)
 	var hook = player.get_node("TowHook")
 	if not hook.is_towing():

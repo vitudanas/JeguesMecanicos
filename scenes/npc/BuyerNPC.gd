@@ -83,8 +83,12 @@ func client_label() -> String:
 func _offer() -> int:
 	if nearby_vehicle == null:
 		return 0
-	return Economy.offer(client, nearby_vehicle.intact_part_count(),
+	# Valor do CARRO (modelo + km + lataria + pintura), nao mais um preco fixo
+	# igual pra qualquer carcaca.
+	var market: int = Economy.market_value(nearby_vehicle.model_key,
+		nearby_vehicle.condition, nearby_vehicle.intact_part_count(),
 		nearby_vehicle.total_attach_points())
+	return Economy.offer(client, market)
 
 func interact(player: Node) -> void:
 	if nearby_vehicle == null or minigame_running:
