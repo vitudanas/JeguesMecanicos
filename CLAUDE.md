@@ -2118,6 +2118,42 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     (`PersuasionMinigame`, o mesmo objeto do jogo) por tipo, em vez de conferir
     a tabela contra ela mesma.
 
+- **2026-08-09** — Segunda frente da mesma rodada: a cidade era densa de olhar e
+  **muda de ouvir**. 42 carros de IA e 26 pedestres em silêncio absoluto, e o
+  único som do mundo era o carro do próprio jogador.
+  - **Duas camas de ambiente sintetizadas** (`ProceduralAudio.city_hum()` e
+    `wind()`), cruzadas pela posição: zumbido de trânsito distante na cidade,
+    vento no campo. Ruído filtrado com ondulação lenta — o que separa "cidade ao
+    longe" de "chiado" é a VARIAÇÃO, porque trânsito real vai e vem. Custo zero
+    de arquivo, como a chuva e o motor.
+  - **Detalhe que teria virado defeito**: as frequências da ondulação têm que
+    caber um número INTEIRO de vezes no laço; se não couberem, a emenda pula no
+    meio da onda e vira um "tum" audível a cada volta. O teste mede a emenda das
+    quatro camas (motor, chuva, cidade, vento).
+  - **Som de trânsito com CUSTO FIXO**: em vez de um tocador por carro (que foi
+    justamente a razão de o trânsito ter ficado mudo em 2026-08-08), há
+    `TRAFFIC_VOICES = 4` vozes **emprestadas aos carros mais próximos** da
+    câmera, reapontadas a cada 0,35 s (reapontar todo quadro faz a voz pular de
+    carro em carro e soar picotado). Cada voz num tom diferente, senão os 4
+    soam como um motor multiplicado.
+  - `audio_test` ganhou uma trava de regressão que importa: ele **reprova se
+    algum `TrafficCar` tiver tocador próprio**. Se alguém "simplificar" o
+    empréstimo de vozes trocando por um player em cada carro, o custo volta a
+    escalar com o trânsito e o teste avisa.
+  - **Dois erros meus no verificador, os dois de medir o mundo errado**:
+    1. Carreguei um segundo `Main.tscn` numa checagem que rodava depois de outra
+       que já tinha carregado um: **84 carros de IA em vez de 42**, duas câmeras,
+       e eu teleportava um jogador enquanto media a câmera do outro.
+    2. Supus que o jogador nascia na oficina (campo) e medi só uma vez — neste
+       contexto ele nasce em (0, 0, 6), ou seja no meio da cidade. O teste
+       reprovou código CORRETO por causa da suposição. Agora ele teleporta de
+       propósito para os dois lugares e cobra os dois lados do cruzamento.
+  - **Ressalva honesta, a mesma de sempre**: não dá pra ouvir nesta sessão. O
+    que está provado é que os laços não estalam, que as camas trocam pela
+    posição (campo: vento −25 dB / cidade muda; centro: cidade −19 dB / vento
+    mudo) e que o custo do trânsito é fixo. Se o zumbido *soa* como cidade, só
+    ouvindo.
+
 ### Pendências pedidas e ainda NÃO feitas
 
 Nenhuma das três pendências anteriores continua aberta. O que sobrou de
@@ -2166,9 +2202,12 @@ observação pra uma próxima rodada (nada disso foi pedido):
   diferentes, negociação).
 - ~~Sons e efeitos de UI/menu.~~ **Feito em 2026-08-08** (ver changelog): efeitos
   do mundo e da interface com pacotes CC0 do Kenney, motor e chuva sintetizados
-  em código, e volume ajustável no menu. Falta ainda **MÚSICA** (não há nenhuma
-  trilha no jogo) e o **motor dos carros de IA**, deixado de fora de propósito:
-  42 tocadores simultâneos custam caro e uma carcaça parada ficaria roncando.
+  em código, e volume ajustável no menu. O **motor dos carros de IA** e o
+  **ambiente da cidade** foram fechados em 2026-08-09 (4 vozes emprestadas aos
+  carros mais próximos, custo fixo). Falta ainda **MÚSICA**.
+- **MÚSICA**: o jogo segue sem nenhuma trilha. Efeitos, ambiente e motor estão
+  cobertos (ver changelog 2026-08-08 e 2026-08-09), mas não há música — e é o
+  item que menos dá pra decidir sem ouvir, então ficou de fora de propósito.
 - **Prédios do Quaternius (Downtown City MegaKit)**: usados em `Town.tscn` por um
   tempo (2 dos 3 prédios prontos; `Building_Medium_2_001` tem um bug visual), mas
   retirados do layout ativo no redesenho de 2026-08-02 pra manter um único estilo

@@ -23,6 +23,7 @@ func _ready() -> void:
 	_check_buses()
 	_check_synth()
 	await _check_events()
+	await _check_ambience()
 	print("")
 	if problems.is_empty():
 		print("=== RESULTADO ===")
@@ -82,7 +83,8 @@ func _check_buses() -> void:
 # ------------------------------------------------------------------ sintetico
 
 func _check_synth() -> void:
-	for entry in [["motor", AudioManager.engine_stream()], ["chuva", AudioManager.rain_stream()]]:
+	for entry in [["motor", AudioManager.engine_stream()], ["chuva", AudioManager.rain_stream()],
+			["cidade", ProceduralAudio.city_hum()], ["vento", ProceduralAudio.wind()]]:
 		var nome: String = entry[0]
 		var s: AudioStreamWAV = entry[1]
 		if s == null or s.data.size() == 0:
@@ -107,6 +109,69 @@ func _check_synth() -> void:
 			problems.append("laco '%s' quase mudo (pico %.2f)" % [nome, pico])
 		if salto > 0.35:
 			problems.append("laco '%s' estala na volta (salto de %.2f)" % [nome, salto])
+
+# ------------------------------------------------------------------ ambiente
+
+## O ambiente e o transito tem CUSTO FIXO, e e isso que precisa ser cobrado: a
+## razao de o transito ter ficado mudo ate agora era um tocador por carro. Se
+## alguem trocar o emprestimo de vozes por "um AudioStreamPlayer3D em cada
+## TrafficCar", isto reprova.
+func _check_ambience() -> void:
+	# REUSA o mundo que `_check_events` ja carregou. Carregar um segundo Main
+	# punha DOIS mundos na arvore: 84 carros de IA em vez de 42, duas cameras, e
+	# eu teleportava um jogador enquanto media a camera do outro — o teste
+	# acusou "a cidade nao cede pro vento" medindo o mundo errado.
+	if get_tree().get_first_node_in_group("player") == null:
+		problems.append("nenhum mundo carregado pra medir o ambiente")
+		return
+	for i in range(10):
+		await get_tree().process_frame
+		await get_tree().physics_frame
+
+	var carros := get_tree().get_nodes_in_group("traffic_car").size()
+	var tocadores := 0
+	for car in get_tree().get_nodes_in_group("traffic_car"):
+		for c in (car as Node).get_children():
+			if c is AudioStreamPlayer3D:
+				tocadores += 1
+	print("\n[5] %d carros de IA na cidade | %d tocadores presos a eles | %d vozes emprestadas"
+		% [carros, tocadores, AudioManager.TRAFFIC_VOICES])
+	if tocadores > 0:
+		problems.append("%d carro(s) de IA com tocador proprio — o custo tem que ser fixo" % tocadores)
+	if carros < 10:
+		problems.append("quase nao ha carro de IA na cena (%d)" % carros)
+
+	# Mede nos DOIS lugares de proposito, teleportando o jogador (a camera e
+	# filha dele). A primeira versao supunha que ele nascia na oficina e media
+	# so uma vez — mas neste contexto ele nasce em (0, 0, 6), ou seja no meio da
+	# cidade, e o teste reprovou o codigo certo por causa da suposicao.
+	var player := get_tree().get_first_node_in_group("player") as Node3D
+	var cam := get_viewport().get_camera_3d()
+	if player == null or cam == null:
+		problems.append("sem jogador/camera pra medir o ambiente")
+		return
+
+	var campo := await _ambience_at(player, Vector3(-320.0, 2.0, 0.0))
+	print("    campo  (chebyshev 320): vento %.0f dB, cidade %.0f dB" % [campo[1], campo[0]])
+	if campo[1] <= campo[0]:
+		problems.append("no campo a cama de cidade nao cede pro vento (%.0f vs %.0f dB)"
+			% [campo[0], campo[1]])
+
+	var centro := await _ambience_at(player, Vector3(0.0, 2.0, 0.0))
+	print("    centro (chebyshev 0):   vento %.0f dB, cidade %.0f dB" % [centro[1], centro[0]])
+	if centro[0] <= centro[1]:
+		problems.append("no centro a cama de cidade nao assume (%.0f vs %.0f dB)"
+			% [centro[0], centro[1]])
+
+## Leva o jogador pra `onde`, espera a transicao inteira e devolve
+## [cidade_db, vento_db].
+func _ambience_at(player: Node3D, onde: Vector3) -> Array:
+	player.global_position = onde
+	player.force_update_transform()
+	# Folga sobre AMBIENCE_FADE: a transicao e por tempo, nao por quadro.
+	for i in range(260):
+		await get_tree().process_frame
+	return [AudioManager._city.volume_db, AudioManager._wind.volume_db]
 
 # -------------------------------------------------------------------- eventos
 

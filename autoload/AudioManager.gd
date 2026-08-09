@@ -87,6 +87,7 @@ func _ready() -> void:
 	_load_library()
 	_build_voices()
 	_build_rain()
+	_build_ambience()
 	load_settings()
 	apply()
 	# Som de interface e ligado SOZINHO em todo controle que entra na arvore, em
@@ -127,6 +128,114 @@ func _on_ui_slider(_value: float) -> void:
 	_last_slider = now
 	play_ui("troca", -18.0)
 
+# ------------------------------------------------------------------ ambiente
+
+## A cidade era densa de olhar e MUDA de ouvir: 42 carros de IA e 26 pedestres
+## em silencio absoluto, e o unico som do mundo era o carro do proprio jogador.
+##
+## Duas camas cruzadas pela posicao (zumbido de transito na cidade, vento no
+## campo) mais um punhado de vozes emprestadas aos carros de IA MAIS PROXIMOS.
+## Custo FIXO: 2 tocadores de ambiente + `TRAFFIC_VOICES`, e nao um por carro —
+## 42 tocadores era o motivo de o transito ter ficado mudo ate agora.
+
+## Meia-largura da cidade (a grade vai de -112.5 a 112.5, ver CityStreets).
+const CITY_EXTENT := 118.0
+## Faixa de transicao entre cidade e campo.
+const CITY_FADE := 70.0
+const CITY_DB := -19.0
+const WIND_DB := -25.0
+const AMBIENCE_FADE := 1.5
+
+## Carros de IA que ganham som ao mesmo tempo. Sao emprestadas aos mais
+## proximos e reapontadas conforme o transito passa.
+const TRAFFIC_VOICES := 4
+## Alem disto o carro nao ganha voz: nao adianta gastar tocador com quem esta
+## longe demais pra ser ouvido.
+const TRAFFIC_RANGE := 42.0
+const TRAFFIC_DB := -21.0
+## Reapontar toda hora faz a voz "pular" de carro em carro e soar picotado.
+const TRAFFIC_REFRESH := 0.35
+
+var _city: AudioStreamPlayer = null
+var _wind: AudioStreamPlayer = null
+var _city_level := 0.0
+var _traffic: Array[AudioStreamPlayer3D] = []
+var _traffic_wait := 0.0
+
+func _build_ambience() -> void:
+	_city = _bed_player(ProceduralAudio.city_hum())
+	_wind = _bed_player(ProceduralAudio.wind())
+	for i in range(TRAFFIC_VOICES):
+		var p := AudioStreamPlayer3D.new()
+		p.stream = engine_stream()
+		p.bus = BUS_SFX
+		p.max_distance = TRAFFIC_RANGE
+		p.unit_size = 4.0
+		p.volume_db = -80.0
+		# Cada voz num tom diferente, senao os 4 carros soam como um so motor
+		# multiplicado.
+		p.pitch_scale = randf_range(0.72, 1.05)
+		p.process_mode = Node.PROCESS_MODE_ALWAYS
+		add_child(p)
+		p.play()
+		_traffic.append(p)
+
+func _bed_player(stream: AudioStreamWAV) -> AudioStreamPlayer:
+	var p := AudioStreamPlayer.new()
+	p.stream = stream
+	p.bus = BUS_SFX
+	p.volume_db = -80.0
+	p.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(p)
+	p.play()
+	return p
+
+## Cidade ou campo, pela distancia Chebyshev ao centro — a mesma medida que o
+## resto do projeto usa pra area da cidade, porque a malha viaria e um QUADRADO
+## (com distancia euclidiana o canto da grade cairia como "campo").
+func _update_ambience(delta: float, cam: Camera3D) -> void:
+	if _city == null:
+		return
+	var in_world := cam != null and get_tree().get_first_node_in_group("player") != null
+	var wanted := 0.0
+	if in_world:
+		var p := cam.global_position
+		var d: float = maxf(absf(p.x), absf(p.z))
+		wanted = clampf(1.0 - (d - CITY_EXTENT) / CITY_FADE, 0.0, 1.0)
+	var step := delta / AMBIENCE_FADE
+	_city_level = move_toward(_city_level, wanted, step)
+	var presence := 1.0 if in_world else 0.0
+	_city.volume_db = lerpf(-80.0, CITY_DB, _city_level * presence)
+	# O vento e o complemento: fora da cidade ele assume.
+	_wind.volume_db = lerpf(-80.0, WIND_DB, (1.0 - _city_level) * presence)
+
+## Empresta as vozes aos carros de IA mais proximos da camera.
+func _update_traffic(delta: float, cam: Camera3D) -> void:
+	_traffic_wait -= delta
+	if _traffic_wait > 0.0 or _traffic.is_empty():
+		return
+	_traffic_wait = TRAFFIC_REFRESH
+	if cam == null:
+		for v in _traffic:
+			v.volume_db = -80.0
+		return
+	var here := cam.global_position
+	var perto: Array = []
+	for car in get_tree().get_nodes_in_group("traffic_car"):
+		if not (car is Node3D):
+			continue
+		var d := (car as Node3D).global_position.distance_to(here)
+		if d < TRAFFIC_RANGE:
+			perto.append([d, car])
+	perto.sort_custom(func(a, b): return a[0] < b[0])
+	for i in range(_traffic.size()):
+		var v := _traffic[i]
+		if i < perto.size():
+			v.global_position = (perto[i][1] as Node3D).global_position
+			v.volume_db = TRAFFIC_DB
+		else:
+			v.volume_db = -80.0
+
 # ---------------------------------------------------------------------- chuva
 
 ## Volume da chuva no auge. Ela toca o tempo todo e so muda de nivel — ligar e
@@ -155,6 +264,10 @@ func _process(delta: float) -> void:
 	var wanted := 1.0 if (in_world and WeatherManager.is_raining) else 0.0
 	_rain_level = move_toward(_rain_level, wanted, delta / RAIN_FADE)
 	_rain_player.volume_db = lerpf(-80.0, RAIN_DB, _rain_level)
+
+	var cam := get_viewport().get_camera_3d()
+	_update_ambience(delta, cam)
+	_update_traffic(delta, cam)
 
 # ---------------------------------------------------------------- barramentos
 

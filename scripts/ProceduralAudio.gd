@@ -107,6 +107,61 @@ static func rain() -> AudioStreamWAV:
 	_normalize(buf, 0.7)
 	return _to_wav(buf, RATE)
 
+# --------------------------------------------------------------- ambiente
+
+const AMBIENCE_SECONDS := 4.0
+## Emenda cruzada, mesma tecnica da chuva: ruido cruzado nao da pra ouvir, e sem
+## cruzar o laco estala a cada volta.
+const AMBIENCE_CROSSFADE := 0.4
+
+## Zumbido de cidade: o ronco distante de transito que existe em qualquer rua
+## movimentada, sem nenhum carro identificavel. Ruido bem grave com uma
+## ondulacao lenta por cima — o que separa "cidade ao longe" de "chiado" e a
+## VARIACAO, porque transito real vai e vem.
+static func city_hum() -> AudioStreamWAV:
+	return _bed(AMBIENCE_SECONDS, 20260809, 0.10, 0.55, [
+		[0.07, 0.34], [0.13, 0.20],
+	], 0.55)
+
+## Vento do campo: mais agudo que o zumbido da cidade e com rajada mais lenta.
+static func wind() -> AudioStreamWAV:
+	return _bed(AMBIENCE_SECONDS, 20260810, 0.26, 0.40, [
+		[0.05, 0.42], [0.11, 0.22],
+	], 0.45)
+
+## Cama de ruido em laco: filtra, ondula em algumas frequencias lentas e emenda.
+## `cut` e o passa-baixa (grave -> agudo), `swell` a profundidade da ondulacao.
+static func _bed(seconds: float, seed_value: int, cut: float, swell: float,
+		waves: Array, peak: float) -> AudioStreamWAV:
+	var frames := int(seconds * RATE)
+	var fade := int(AMBIENCE_CROSSFADE * RATE)
+	var total := frames + fade
+	var buf := PackedFloat32Array()
+	buf.resize(total)
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value
+	for i in range(total):
+		buf[i] = rng.randf() * 2.0 - 1.0
+	_lowpass_looped(buf, cut)
+
+	# Ondulacao. As frequencias tem que caber um numero INTEIRO de vezes no
+	# laco, senao a emenda pula no meio da onda e vira um "tum" audivel a cada
+	# volta.
+	for i in range(total):
+		var env := 1.0 - swell
+		for w: Array in waves:
+			var cycles: float = maxf(round(float(w[0]) * seconds), 1.0)
+			env += swell * float(w[1]) * (0.5 + 0.5 * sin(
+				TAU * cycles * float(i) / float(frames)))
+		buf[i] = buf[i] * env
+
+	for k in range(fade):
+		var t := float(k) / float(fade)
+		buf[k] = lerpf(buf[frames + k], buf[k], t)
+	buf.resize(frames)
+	_normalize(buf, peak)
+	return _to_wav(buf, RATE)
+
 # ------------------------------------------------------------------ filtros
 
 ## Passa-baixa de 1 polo. Roda o buffer DUAS vezes e so guarda a segunda: assim
