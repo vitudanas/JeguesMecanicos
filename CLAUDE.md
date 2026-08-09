@@ -2733,7 +2733,97 @@ referências lavar e abastecer **não mudam valor**), e negociação de verdade
 Não implementado de propósito (e por quê): lavar/abastecer, que nas duas
 referências **não mudam valor** — seria trabalho sem consequência.
 
-## Prédios realistas: 14 pacotes já baixados
+## Prédios realistas: 15 pacotes baixados, medidos e AINDA NÃO integrados
+
+**Estado em 2026-08-09, fim da sessão.** Se você está retomando depois de um
+`/clear`, é daqui que se continua.
+
+### O que já existe
+
+- `assets/realistas/` — 15 pacotes, 478 MB, **fora do git** (`.gitignore`): são
+  downloads crus, re-baixáveis pela lista, com normal maps de até 40 MB num
+  arquivo só. Entram no repo depois de processados.
+- Todos **CC-BY 4.0**: uso comercial liberado, **crédito obrigatório**.
+  `tools/creditos.py` gera [docs/creditos.md](docs/creditos.md) lendo o
+  `license.txt` de dentro de cada pacote. **Falta transformar isso numa tela de
+  créditos no menu** — sem ela o jogo está fora da licença.
+- `tools/garimpo_sketchfab.py` — garimpa a API pública do Sketchfab (não precisa
+  login) filtrando por licença e faces. Já rendeu **261 candidatos**, listados
+  com link em [docs/garimpo-sketchfab.md](docs/garimpo-sketchfab.md). Ainda há
+  ~247 não baixados.
+- `tools/receber_modelos.sh` — recolhe os zips que o navegador salva na raiz.
+- `tools/verify/analisar_realistas.tscn` — mede o que veio dentro de cada
+  pacote. **Rode isto antes de mexer em qualquer modelo novo.**
+
+### O que a medição mostrou (e por que o trabalho é maior do que parece)
+
+```
+bordeaux_flat_1              1 malha  |   2409 tri | 7.7 x 18.4 x 11.3 m
+bordeaux_flat_2              1 malha  |   1372 tri | 26.8 x 18.6 x 11.2 m
+brownstone_building_set     70 malhas |  38320 tri | 318.9 x 22.8 x 159.3 m
+city_pack_7                104 malhas |  17002 tri | 69100 x 10570 x 46782 m
+downtown_buildings          43 malhas |  25429 tri | 358.9 x 102.6 x 255.1 m
+european_buildings_pack3  1427 malhas |  12591 tri | 200.9 x 17.4 x 87.1 m
+factory_low_poly             4 malhas |   2498 tri | 10008 x 2793 x 3321 m
+industrial_buildings_sets   49 malhas |  16696 tri | 426.6 x 90.6 x 344.8 m
+low_poly_city_buildings     22 malhas |   4290 tri | 5.7 x 2.8 x 4.6 m
+new_york_buildings          22 malhas |   3257 tri | 10.3 x 5.3 x 22.1 m
+old_building_pack_lowpoly   24 malhas |   5532 tri | 7.2 x 6.6 x 21.4 m
+old_industrial_building      5 malhas |  37331 tri | 1161 x 1517 x 3450 m
+simple_low_poly_village     44 malhas |  15110 tri | 4.8 x 1.0 x 4.4 m
+tenement_house              10 malhas |  10800 tri | 20.9 x 17.0 x 75.4 m
+warehouses                   1 malha  |   1010 tri | 246.8 x 42.9 x 107.6 m
+```
+
+Três problemas, todos reais:
+
+1. **Nenhum está em metros.** Varia de 4,8 m (village) a **69 km** (city_pack_7)
+   pra caixa inteira. Cada pacote precisa de um fator próprio, medido — não dá
+   pra usar um `building_scale` global como o kit Kenney usa.
+2. **Quase todos são uma CENA com vários prédios**, não um prédio. O
+   `brownstone` tem 70 malhas espalhadas por 319 m: é um quarteirão inteiro. Pra
+   entrar no `CityBlocks` (que instancia uma cena por lote) é preciso **fatiar**
+   — agrupar malhas por proximidade e salvar cada aglomerado como um prédio.
+3. **Dois não dão pra fatiar por código**: `warehouses` é UMA malha de 246 m
+   (vários galpões fundidos) e `factory_low_poly` são 4 malhas de 10 km. Esses
+   precisariam do Blender, ou entram inteiros como cenário de fundo.
+
+### O caminho a seguir (nesta ordem)
+
+1. **Fatiador** (`tools/fatiar_realistas.gd`, a escrever): carrega cada
+   `scene.gltf`, agrupa as `MeshInstance3D` por proximidade em XZ (aglomerado =
+   prédio), e salva cada grupo como uma cena própria em
+   `assets/realistas_prontos/<pacote>_<n>.tscn`, já com: escala normalizada pra
+   metros (altura de andar ~3 m como referência), origem no CENTRO da planta ao
+   nível do chão, e rotação com a fachada no -Z (é o que o `CityBlocks` espera).
+2. **Reduzir textura**: há normal maps de 40 MB. Alvo 2K, como o resto do
+   projeto. (O `tools/build_characters.py` já faz isso pros personagens, serve
+   de modelo.)
+3. **Filtrar o que sobrou**: descartar o que ficar fora dos limites de
+   [docs/modelos-realistas.md](docs/modelos-realistas.md) — profundidade
+   ≤ 13,8 m é o que mais elimina.
+4. **Piloto medido**: pôr ~6 no `CityBlocks` (pool novo, por zona) e medir
+   chamadas de desenho, triângulos e VRAM no nível da rua, contra as ~2.500 de
+   hoje. Só então escalar.
+5. **Tela de créditos** no menu, alimentada por `docs/creditos.md`.
+
+### Decisão de design ainda em aberto
+
+O `BuildingFactory` (prédios GERADOS, com janela rebaixada de verdade — ver
+changelog) está pronto e **também não está ligado na cidade**. As duas frentes
+resolvem o mesmo problema por caminhos diferentes:
+
+- **gerado**: variedade infinita, 3 chamadas de desenho por prédio, sem
+  repetição, mas o estilo é o que eu consigo montar com primitivas;
+- **baixado**: aparência de verdade, mas 15 pacotes viram talvez 30-40 prédios
+  distintos repetidos ~20 vezes cada — e realismo PIORA a repetição.
+
+A recomendação registrada é **usar os dois**: gerado como base da cidade
+inteira, baixado no miolo (onde o jogador dirige). A ordem prática é ligar o
+gerador primeiro (não depende de mais nada) e ir substituindo por realista no
+centro conforme os pacotes forem sendo fatiados.
+
+## Prédios realistas: notas sobre os sites
 
 Em `assets/realistas/` (476 MB, **fora do git** — ver `.gitignore`; são downloads
 crus, entram no repo depois de normalizados e são re-baixáveis pela lista).
@@ -2763,7 +2853,7 @@ downtown tem uma fileira inteira. Fatiar em prédios individuais, normalizar
 escala/origem/colisão e reduzir textura (há normal maps de 40 MB) é o que falta
 pra isso entrar no `CityBlocks`.
 
-## Prédios realistas: o que já foi apurado
+### Notas sobre os sites (apuradas mexendo neles)
 
 **Lista de compras e requisitos:** [docs/modelos-realistas.md](docs/modelos-realistas.md).
 **Candidatos já garimpados (160 modelos, links prontos):**
