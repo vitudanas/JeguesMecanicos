@@ -3,6 +3,7 @@ extends Node
 ## Autoload (singleton) — registrado em project.godot [autoload].
 
 signal money_changed(new_amount: int)
+signal reputation_changed(value: int)
 signal car_sold(amount: int)
 signal persuasion_updated(active: bool, progress: float)
 signal objective_changed(position: Vector3, label: String)
@@ -17,6 +18,15 @@ signal objective_changed(position: Vector3, label: String)
 const STARTING_MONEY := 450
 
 var money: int = STARTING_MONEY
+
+## Reputação, 0 a 100. Começa no meio.
+##
+## Entregar carro com defeito ESCONDIDO (peça quebrada que o cliente vai
+## descobrir depois) derruba; entregar carro em ordem levanta. É o que dá
+## consequência a vender abacaxi — sem isso, esconder defeito seria sempre a
+## jogada certa, e o diagnóstico viraria enfeite.
+const REPUTATION_START := 50
+var reputation: int = REPUTATION_START
 var cars_sold: int = 0
 
 ## Guardados (nao so emitidos) porque o HUD pode terminar seu _ready() e
@@ -42,7 +52,16 @@ func reset() -> void:
 	objective_position = Vector3.ZERO
 	objective_label = ""
 	active_vehicle = null
+	reputation = REPUTATION_START
 	money_changed.emit(money)
+	reputation_changed.emit(reputation)
+
+## Mexe na reputação e devolve quanto de fato mudou (ela satura em 0 e 100).
+func add_reputation(delta: int) -> int:
+	var antes := reputation
+	reputation = clampi(reputation + delta, 0, 100)
+	reputation_changed.emit(reputation)
+	return reputation - antes
 
 func add_money(amount: int) -> void:
 	money += amount

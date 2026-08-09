@@ -220,7 +220,26 @@ const CLIENTS: Array[Dictionary] = [
 		"nome": "Colecionador", "dica": "paga bem por carro inteiro",
 		"paga": 1.60, "enche": 0.30, "esvazia": 0.25, "paciencia": 9.0, "implica": 3.0,
 	},
+	# O LOWBALLER das duas inspiracoes: oferece bem abaixo do valor e nao se
+	# mexe. Existe pra que anunciar caro nem sempre seja a jogada — com ele na
+	# porta, o jogador escolhe entre aceitar pouco ou esperar outro cliente.
+	{
+		"nome": "Abutre", "dica": "oferece uma miséria e não sobe",
+		"paga": 0.62, "enche": 0.55, "esvazia": 0.12, "paciencia": 10.0, "implica": 0.5,
+	},
 ]
+
+## Reputação mexe na oferta: 0 tira 18%, 100 acrescenta 18%.
+const REPUTATION_SWING := 0.18
+
+func reputation_bonus() -> float:
+	return 1.0 + REPUTATION_SWING * ((float(GameManager.reputation) / 50.0) - 1.0)
+
+## Quanto a reputação cai por entregar um carro com defeito ESCONDIDO. Peso da
+## peça vira ponto de reputação — esconder um motor quebrado dói mais que uma
+## bateria.
+func reputation_hit(parts: Dictionary) -> int:
+	return int(round(parts_penalty(parts) * 40.0))
 
 func random_client() -> Dictionary:
 	return CLIENTS[randi() % CLIENTS.size()]

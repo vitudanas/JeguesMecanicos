@@ -25,6 +25,7 @@ var cars_sold := 0
 var saved_at := 0
 ## Niveis de cada area da loja (ver Dealership).
 var areas: Dictionary = {}
+var reputation := GameManager.REPUTATION_START
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -45,6 +46,7 @@ func save() -> void:
 	cfg.set_value("jogo", "carros_vendidos", GameManager.cars_sold)
 	cfg.set_value("jogo", "salvo_em", int(Time.get_unix_time_from_system()))
 	cfg.set_value("jogo", "loja", Dealership.to_dict())
+	cfg.set_value("jogo", "reputacao", GameManager.reputation)
 	if cfg.save(PATH) != OK:
 		push_warning("SaveGame: nao consegui gravar em %s" % PATH)
 		return
@@ -53,6 +55,7 @@ func save() -> void:
 	cars_sold = GameManager.cars_sold
 	saved_at = int(Time.get_unix_time_from_system())
 	areas = Dealership.to_dict()
+	reputation = GameManager.reputation
 	saved.emit()
 
 ## Joga o progresso salvo dentro do GameManager. Chamado ao entrar no jogo por
@@ -62,6 +65,8 @@ func apply_to_game() -> void:
 		return
 	GameManager.money = money
 	GameManager.cars_sold = cars_sold
+	GameManager.reputation = reputation
+	GameManager.reputation_changed.emit(reputation)
 	Dealership.from_dict(areas)
 	# Emitir o sinal e o que faz o HUD mostrar o valor certo: ele nao le o campo,
 	# ele escuta a mudanca.
@@ -76,6 +81,7 @@ func clear() -> void:
 	cars_sold = 0
 	saved_at = 0
 	areas = {}
+	reputation = GameManager.REPUTATION_START
 
 func _read() -> void:
 	var cfg := ConfigFile.new()
@@ -88,6 +94,7 @@ func _read() -> void:
 	cars_sold = int(cfg.get_value("jogo", "carros_vendidos", 0))
 	saved_at = int(cfg.get_value("jogo", "salvo_em", 0))
 	areas = cfg.get_value("jogo", "loja", {})
+	reputation = int(cfg.get_value("jogo", "reputacao", GameManager.REPUTATION_START))
 	has_save = true
 
 ## Texto curto pro botao Continuar ("R$ 480 · 3 carros").

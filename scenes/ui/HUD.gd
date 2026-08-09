@@ -74,6 +74,7 @@ func _ready() -> void:
 	add_to_group("hud")
 	_build_damage_label()
 	GameManager.money_changed.connect(_on_money_changed)
+	GameManager.reputation_changed.connect(_on_reputation_changed)
 	GameManager.persuasion_updated.connect(_on_persuasion_updated)
 	GameManager.objective_changed.connect(_on_objective_changed)
 	_on_money_changed(GameManager.money)
@@ -84,7 +85,10 @@ func _ready() -> void:
 	_on_objective_changed(GameManager.objective_position, GameManager.objective_label)
 
 func _on_money_changed(amount: int) -> void:
-	money_label.text = "R$ %d" % amount
+	money_label.text = "R$ %d  ·  reputação %d" % [amount, GameManager.reputation]
+
+func _on_reputation_changed(_value: int) -> void:
+	_on_money_changed(GameManager.money)
 
 func _on_persuasion_updated(active: bool, progress: float) -> void:
 	persuasion_bar.visible = active

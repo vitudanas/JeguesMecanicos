@@ -2255,6 +2255,34 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     que o escritório aumenta a oferta (R$ 240 → R$ 264) e que tudo volta do
     disco.
 
+- **2026-08-09** — Itens 3 e 4: **preço pedido pelo jogador, lowballer e
+  reputação** — a ponta da venda, que até agora não tinha escolha nenhuma do
+  lado do jogador.
+  - **O preço é do jogador** (`[Q]` no cliente, 4 degraus). Vale a regra das duas
+    inspirações: **o cliente nunca paga acima do que você pediu**, então pedir
+    barato é dinheiro deixado na mesa. Pedir acima do que ele topa cobra em
+    **dificuldade** — a barra de lábia enche mais devagar quanto maior o
+    exagero. Sem esse custo, pedir o máximo seria sempre certo.
+  - **Cliente "Abutre"** (o lowballer): oferece 62% e não se mexe. Existe pra que
+    anunciar caro NEM SEMPRE seja a jogada — com ele na porta, escolhe-se entre
+    aceitar pouco ou esperar outro.
+  - **Reputação** (0-100, começa em 50, no HUD e no save): entregar carro com
+    defeito ESCONDIDO derruba (peso da peça vira ponto: motor escondido dói mais
+    que bateria), entregar em ordem levanta. Ela mexe na oferta em ±18% —
+    medido, o mesmo carro e cliente pagam R$ 248 com reputação 100 e R$ 172 com
+    0. É o que dá consequência a vender abacaxi: sem ela, não diagnosticar seria
+    sempre a jogada certa e o diagnóstico seria enfeite.
+  - **Erro meu de design, pego pelo teste**: a faixa de preços começava em 85%
+    do valor, mas o cliente mais duro topa 62% — ou seja, TODO degrau já ficava
+    acima do que ele paga, o teto era sempre o dele, e pedir caro só atrapalhava.
+    Puro prejuízo, decisão nenhuma. A faixa passou a começar em 58%, abaixo do
+    cliente mais pão-duro. Medido depois: com o Colecionador, pedir caro rende
+    R$ 27 → R$ 68; com o Abutre, rende R$ 2 a mais e deixa a lábia 55% mais
+    difícil — que é a outra metade da decisão.
+  - **Erro meu de arnês**: `npc._ceiling()` num `Node` devolve Variant, e o
+    projeto trata aviso como erro — o script não carregava e o Godot ficava
+    parado, parecendo travamento em vez de erro de parse.
+
 ### Pendências pedidas e ainda NÃO feitas
 
 Nenhuma das três pendências anteriores continua aberta. O que sobrou de

@@ -200,6 +200,73 @@ func _ready() -> void:
 	check(freio_ruim < freio_bom, "freio quebrado piora a frenagem")
 	carro_teste.queue_free()
 
+	print("\n[10] preco pedido: pedir caro rende mais e custa labia")
+	var npc := (load("res://scenes/npc/BuyerNPC.tscn") as PackedScene).instantiate()
+	add_child(npc)
+	await get_tree().process_frame
+	var falso := (load("res://scenes/vehicle/Vehicle.tscn") as PackedScene).instantiate()
+	falso.is_wrecked = false
+	add_child(falso)
+	await get_tree().physics_frame
+	for k: String in Economy.PARTS:
+		falso.parts[k] = 1.0
+	npc.nearby_vehicle = falso
+	# Com um cliente GENEROSO, pedir mais caro tem que render mais.
+	npc.client = _by_name("Colecionador")
+	var linhas: Array = []
+	for passo in range(npc.ASK_STEPS.size()):
+		npc.ask_step = passo
+		linhas.append([npc.ASK_LABELS[passo], npc.asking(), npc._ceiling(), npc._difficulty()])
+		print("    Colecionador  %-12s pede R$ %4d  ->  fecha por R$ %4d  (labia x%.2f)"
+			% [linhas[-1][0], linhas[-1][1], linhas[-1][2], linhas[-1][3]])
+	check(linhas[0][2] < linhas[-1][2], "com cliente bom, pedir mais caro rende mais",
+		"R$ %d -> R$ %d" % [linhas[0][2], linhas[-1][2]])
+	check(linhas[-1][3] <= linhas[0][3], "pedir caro deixa a labia mais dificil",
+		"x%.2f -> x%.2f" % [linhas[0][3], linhas[-1][3]])
+	npc.ask_step = 0
+	check(npc._ceiling() <= npc.asking(), "o cliente nunca paga acima do pedido")
+
+	# E com um PAO-DURO, pedir caro nao rende nada e so custa labia: e a outra
+	# metade da decisao — com quem paga pouco, o certo e pedir pouco e fechar
+	# rapido.
+	npc.client = _by_name("Abutre")
+	npc.ask_step = 0
+	var abutre_barato: int = npc._ceiling()
+	var abutre_facil: float = npc._difficulty()
+	npc.ask_step = npc.ASK_STEPS.size() - 1
+	var abutre_caro: int = npc._ceiling()
+	var abutre_dificil: float = npc._difficulty()
+	print("    Abutre        pedindo barato R$ %d (labia x%.2f)  |  caro R$ %d (labia x%.2f)"
+		% [abutre_barato, abutre_facil, abutre_caro, abutre_dificil])
+	check(abutre_barato < abutre_caro or abutre_dificil < abutre_facil,
+		"com o Abutre a escolha de preco tambem pesa")
+
+	print("\n[11] reputacao: esconder defeito cobra o preco depois")
+	GameManager.reset()
+	var limpo: Dictionary = {}
+	for k: String in Economy.PARTS:
+		limpo[k] = 1.0
+	var podre: Dictionary = {}
+	for k: String in Economy.PARTS:
+		podre[k] = 0.0
+	print("    carro em ordem: %d de reputacao   |   carro escondendo defeito: -%d"
+		% [3, Economy.reputation_hit(podre)])
+	check(Economy.reputation_hit(limpo) == 0, "carro em ordem nao derruba reputacao")
+	check(Economy.reputation_hit(podre) > 0, "carro podre derruba reputacao")
+
+	var alta := 0
+	var baixa := 0
+	GameManager.reputation = 100
+	alta = int(round(Economy.offer(_by_name("Pão-duro"), 300) * Economy.reputation_bonus()))
+	GameManager.reputation = 0
+	baixa = int(round(Economy.offer(_by_name("Pão-duro"), 300) * Economy.reputation_bonus()))
+	print("    mesmo carro e cliente: reputacao 100 paga R$ %d, reputacao 0 paga R$ %d"
+		% [alta, baixa])
+	check(alta > baixa, "reputacao alta faz o cliente pagar mais")
+	GameManager.reset()
+	npc.queue_free()
+	falso.queue_free()
+
 	print("")
 	if problems.is_empty():
 		print("=== RESULTADO ===")
