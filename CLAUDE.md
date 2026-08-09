@@ -2092,6 +2092,32 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     copiar screenshot do `user://` sem `cd` pra dentro de `Library/`, usando
     caminho absoluto direto no `sips`.
 
+- **2026-08-09** — Usuário pediu pra seguir o desenvolvimento. Auditei o que
+  estava mais raso agora que a base fechou, e era a **economia**: toda venda era
+  idêntica — 8 s, mesma taxa, e o preço só mudava pela avaria. O cliente trocava
+  de rosto e mais nada, então atravessar a cidade dava sempre o mesmo resultado.
+  - **Cinco tipos de cliente** (`Economy.CLIENTS`), cada um mexendo em preço,
+    velocidade de enchimento, dreno, paciência e o quanto implica com gambiarra
+    quebrada. Medido no mesmo carro 4/4: **de R$ 154 (Pão-duro) a R$ 352
+    (Colecionador), 2,3x**. E perder 2 gambiarras custa R$ 106 com o
+    Colecionador contra R$ 53 com o Apressado — quem paga mais é quem mais
+    desconta.
+  - **A informação chega ANTES da decisão**, senão o tipo de cliente é rótulo e
+    não mecânica: o objetivo/bússola já diz quem está esperando ("Entregue na
+    CASA marcada — Colecionador (paga bem por carro inteiro)"), e com o carro na
+    zona o prompt mostra o **valor exato** daquele cliente. Dá pra decidir se
+    vale caprichar nas gambiarras ou entregar do jeito que está.
+  - **Invariante que o teste cobra: nenhum cliente é impossível.** Segurando E
+    sem soltar, todos fecham (de 1,1 s a 3,3 s de paciência), até com o carro
+    detonado (0/4) e a penalidade cheia. Perder a entrega por sorteio ruim,
+    depois de atravessar a cidade, seria punição sem aviso — a dificuldade tem
+    que vir de titubear. E titubear pesa de verdade: alternando o botão, o
+    Desconfiado e o Colecionador ficam em **0%**, enquanto o Pão-duro perdoa
+    (69%).
+  - `tools/verify/economy_test.tscn` (novo) roda o minigame REAL
+    (`PersuasionMinigame`, o mesmo objeto do jogo) por tipo, em vez de conferir
+    a tabela contra ela mesma.
+
 ### Pendências pedidas e ainda NÃO feitas
 
 Nenhuma das três pendências anteriores continua aberta. O que sobrou de
@@ -2163,9 +2189,10 @@ observação pra uma próxima rodada (nada disso foi pedido):
 - Se o jogador mirar no corpo do carro (em vez de num ponto de fixação) enquanto ele
   ainda está incompleto, o prompt volta a mostrar "Rebocar [E]" mesmo já estando na
   oficina — inofensivo, só reengancha o TowHook.
-- As entregas já são em casas sorteadas da cidade (ver 2026-08-03), mas o NPC de
-  entrega é sempre o mesmo modelo/personalidade — não há variação de cliente nem
-  negociação (ver Roadmap).
+- As entregas já são em casas sorteadas da cidade (ver 2026-08-03) e o cliente
+  agora tem **personalidade** (5 tipos, ver changelog 2026-08-09), o que muda
+  preço e dificuldade da lábia. O que ainda não existe é **negociação de
+  verdade** (contraproposta, blefe): a lábia segue sendo segurar um botão.
 - Os buracos (`Pothole*`) e poças de lama continuam em 4 pontos fixos da grade, em
   vez de espalhados/procedurais.
 - Os pedestres e o cliente ainda saem de só 2 personagens-base (um masculino, um

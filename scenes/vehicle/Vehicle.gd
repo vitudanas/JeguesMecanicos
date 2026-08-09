@@ -379,7 +379,10 @@ func install_part(point_name: String, part: Node, marker: Node3D) -> bool:
 		AudioManager.play_ui("confirma", -3.0)
 		var buyer := get_tree().get_first_node_in_group("buyer")
 		if buyer:
-			GameManager.set_objective(buyer.global_position, "Entregue o carro na CASA marcada (placa verde), na cidade")
+			var quem: String = buyer.client_label() if buyer.has_method("client_label") else ""
+			GameManager.set_objective(buyer.global_position,
+				"Entregue na CASA marcada (placa verde) — %s" % quem if quem != ""
+				else "Entregue o carro na CASA marcada (placa verde), na cidade")
 	return true
 
 func _on_part_broke(point_name: String) -> void:

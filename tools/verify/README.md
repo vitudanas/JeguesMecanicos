@@ -20,6 +20,7 @@ godot --headless --path . tools/verify/audio_test.tscn  # som carrega e dispara
 godot --headless --path . tools/verify/obstacles_test.tscn  # parede invisível e estrada
 godot --headless --path . tools/verify/save_test.tscn   # progresso salva e volta
 godot --headless --path . tools/verify/loading_test.tscn # a tela de carregamento chega ao fim
+godot --headless --path . tools/verify/economy_test.tscn # os tipos de cliente mudam o jogo
 ```
 
 `obstacles_test` faz a pergunta que o `scale_test` não fazia. Ele compara caixa
