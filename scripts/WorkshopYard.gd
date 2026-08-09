@@ -120,6 +120,17 @@ func _build() -> void:
 	for p: Vector3 in [Vector3(-7.4, 0, 3.6), Vector3(7.4, 0, 3.6)]:
 		_spawn(p, _work_lamp)
 
+	# Quadro de melhorias. Posicao escolhida a mao (e nao pelo `_spawn`, que
+	# recusa qualquer coisa perto da vaga): fica FORA do anel de trabalho e do
+	# corredor de saida, mas de frente pra quem chega rebocando — o jogador
+	# precisa esbarrar nele pra descobrir que existe progressao.
+	var board := StaticBody3D.new()
+	board.name = "QuadroDeMelhorias"
+	board.set_script(load("res://scripts/UpgradeBoard.gd"))
+	board.position = Vector3(-9.6, 0.0, 4.8)
+	board.rotation_degrees.y = 58.0
+	add_child(board)
+
 # ---------------------------------------------------------------- os objetos
 
 func _tire_stack(root: Node3D) -> void:

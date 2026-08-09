@@ -21,6 +21,7 @@ EventManager="*res://autoload/EventManager.gd"
 DeliveryManager="*res://autoload/DeliveryManager.gd"
 GraphicsSettings="*res://autoload/GraphicsSettings.gd"
 AudioManager="*res://autoload/AudioManager.gd"
+Dealership="*res://autoload/Dealership.gd"
 SaveGame="*res://autoload/SaveGame.gd"
 
 [display]

@@ -189,7 +189,9 @@ local hard-coded sempre que possível.
 ```
 project.godot          # config do Godot, autoloads, display/fullscreen
 export_presets.cfg     # presets Windows Desktop + macOS (testados e funcionando)
-autoload/               GameManager.gd, Economy.gd, WeatherManager.gd (clima/chuva),
+autoload/               GameManager.gd, Economy.gd (valor do carro, peças,
+                        clientes), Dealership.gd (áreas da loja e níveis),
+                        WeatherManager.gd (clima/chuva),
                         EventManager.gd (eventos procedurais),
                         DeliveryManager.gd (sorteia a casa da entrega da vez),
                         GraphicsSettings.gd, AudioManager.gd (biblioteca de sons,
@@ -2228,6 +2230,30 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     sorteado dentro e reprovou sozinho. Teste de física tem que isolar física —
     agora ele nasce com a mecânica em ordem, e o efeito do defeito virou uma
     seção própria que mede o carro andando.
+
+- **2026-08-09** — Item 2: **a loja com áreas e níveis** (`autoload/Dealership.gd`),
+  o eixo de progressão do Car Dealer Simulator. Até agora o lucro não tinha ONDE
+  ser gasto — vender caro era um número subindo na tela.
+  - **Quatro áreas, cada uma com 3 níveis próprios**, como no jogo de referência
+    (lá não existe "um upgrade de oficina": cada área sobe sozinha):
+    **oficina** (nv.1 bateria e escapamento na mão → nv.2 elevador: freio,
+    suspensão, pneus → nv.3 bancada de motor), **funilaria** (martelinho →
+    cabine de pintura), **pátio** (1 → 2 → 4 carros) e **escritório** (anúncio →
+    recepção, e cada nível melhora a oferta do cliente em 10% e 18%).
+  - **A oficina LIMITA o conserto**: peça que o nível não alcança fica listada
+    como quebrada e sem opção ("a oficina não dá conta — melhore a oficina"). É
+    isso que faz o upgrade ser desejado em vez de um número.
+  - **Quadro de melhorias no pátio** (`scripts/UpgradeBoard.gd`), montado com
+    primitivas: **Q troca de área, E compra**. Sem menu e sem mouse de
+    propósito — o jogo inteiro é mirar e apertar tecla, e abrir uma janela só
+    aqui seria corpo estranho. Fica de frente pra quem chega rebocando: o
+    jogador precisa esbarrar nele pra descobrir que existe progressão.
+  - **Os níveis entram no save** e o "Novo jogo" zera junto.
+  - `tools/verify/shop_test.tscn` (novo) não confere a tabela contra ela mesma:
+    compra cada nível de verdade e mede o efeito — que a oficina passa a trocar
+    freio e depois motor, que o dinheiro sai da conta, que o pátio ganha vaga,
+    que o escritório aumenta a oferta (R$ 240 → R$ 264) e que tudo volta do
+    disco.
 
 ### Pendências pedidas e ainda NÃO feitas
 

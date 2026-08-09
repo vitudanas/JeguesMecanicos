@@ -409,14 +409,25 @@ func _service_prompt() -> String:
 	var quebradas := Economy.broken_parts(parts)
 	if quebradas.is_empty():
 		return "mecânica em ordem"
-	var proxima: String = quebradas[0]
-	var info: Dictionary = Economy.PARTS[proxima]
 	var full: int = Economy.repaired_value(model_key, condition)
 	var lista: Array[String] = []
 	for k in quebradas:
 		lista.append(str(Economy.PARTS[k]["nome"]))
+	# So aparece pra trocar o que a OFICINA aguenta: o resto fica listado como
+	# quebrado e sem opcao, que e o que faz o upgrade ser desejado.
+	var proxima := _next_repairable()
+	if proxima == "":
+		return "quebrado: %s  ·  a oficina não dá conta — melhore a oficina" % ", ".join(lista)
+	var info: Dictionary = Economy.PARTS[proxima]
 	return "quebrado: %s  ·  [Q] trocar %s — R$ %d" % [
 		", ".join(lista), info["nome"], Economy.part_price(proxima, full)]
+
+## Primeira peca quebrada que o nivel atual da oficina consegue trocar.
+func _next_repairable() -> String:
+	for k in Economy.broken_parts(parts):
+		if Dealership.can_repair(k):
+			return k
+	return ""
 
 ## [Q] na oficina: diagnostica e depois troca peca por peca, pagando.
 func service() -> void:
@@ -424,11 +435,10 @@ func service() -> void:
 		diagnosed = true
 		AudioManager.play_ui("confirma", -6.0)
 		return
-	var quebradas := Economy.broken_parts(parts)
-	if quebradas.is_empty():
+	var key := _next_repairable()
+	if key == "":
 		AudioManager.play_ui("erro", -12.0)
 		return
-	var key: String = quebradas[0]
 	var custo := Economy.part_price(key, Economy.repaired_value(model_key, condition))
 	if GameManager.money < custo:
 		AudioManager.play_ui("erro", -4.0)

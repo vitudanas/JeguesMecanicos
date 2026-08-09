@@ -23,6 +23,8 @@ var has_save := false
 var money := 0
 var cars_sold := 0
 var saved_at := 0
+## Niveis de cada area da loja (ver Dealership).
+var areas: Dictionary = {}
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -42,6 +44,7 @@ func save() -> void:
 	cfg.set_value("jogo", "dinheiro", GameManager.money)
 	cfg.set_value("jogo", "carros_vendidos", GameManager.cars_sold)
 	cfg.set_value("jogo", "salvo_em", int(Time.get_unix_time_from_system()))
+	cfg.set_value("jogo", "loja", Dealership.to_dict())
 	if cfg.save(PATH) != OK:
 		push_warning("SaveGame: nao consegui gravar em %s" % PATH)
 		return
@@ -49,6 +52,7 @@ func save() -> void:
 	money = GameManager.money
 	cars_sold = GameManager.cars_sold
 	saved_at = int(Time.get_unix_time_from_system())
+	areas = Dealership.to_dict()
 	saved.emit()
 
 ## Joga o progresso salvo dentro do GameManager. Chamado ao entrar no jogo por
@@ -58,6 +62,7 @@ func apply_to_game() -> void:
 		return
 	GameManager.money = money
 	GameManager.cars_sold = cars_sold
+	Dealership.from_dict(areas)
 	# Emitir o sinal e o que faz o HUD mostrar o valor certo: ele nao le o campo,
 	# ele escuta a mudanca.
 	GameManager.money_changed.emit(GameManager.money)
@@ -70,6 +75,7 @@ func clear() -> void:
 	money = 0
 	cars_sold = 0
 	saved_at = 0
+	areas = {}
 
 func _read() -> void:
 	var cfg := ConfigFile.new()
@@ -81,6 +87,7 @@ func _read() -> void:
 	money = int(cfg.get_value("jogo", "dinheiro", 0))
 	cars_sold = int(cfg.get_value("jogo", "carros_vendidos", 0))
 	saved_at = int(cfg.get_value("jogo", "salvo_em", 0))
+	areas = cfg.get_value("jogo", "loja", {})
 	has_save = true
 
 ## Texto curto pro botao Continuar ("R$ 480 · 3 carros").

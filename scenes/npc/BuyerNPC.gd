@@ -88,7 +88,8 @@ func _offer() -> int:
 	var market: int = Economy.market_value(nearby_vehicle.model_key,
 		nearby_vehicle.condition, nearby_vehicle.intact_part_count(),
 		nearby_vehicle.total_attach_points(), nearby_vehicle.parts)
-	return Economy.offer(client, market)
+	# O escritorio melhora a oferta: e o retorno de investir naquela area.
+	return int(round(Economy.offer(client, market) * Dealership.office_bonus()))
 
 func interact(player: Node) -> void:
 	if nearby_vehicle == null or minigame_running:
