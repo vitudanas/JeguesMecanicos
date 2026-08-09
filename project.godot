@@ -22,6 +22,7 @@ DeliveryManager="*res://autoload/DeliveryManager.gd"
 GraphicsSettings="*res://autoload/GraphicsSettings.gd"
 AudioManager="*res://autoload/AudioManager.gd"
 Dealership="*res://autoload/Dealership.gd"
+Staff="*res://autoload/Staff.gd"
 SaveGame="*res://autoload/SaveGame.gd"
 
 [display]

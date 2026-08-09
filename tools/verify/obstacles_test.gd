@@ -68,6 +68,11 @@ func _check_walls() -> void:
 		# ninguem, entao colisao sem desenho ali e o projeto, nao defeito.
 		if body is Area3D:
 			continue
+		# Corpo fora de toda camada nao barra ninguem — e o desligado, nao um
+		# obstaculo. E o caso do mecanico antes de ser contratado (ele fica
+		# invisivel e sem camada ate alguem pagar por ele).
+		if body.collision_layer == 0:
+			continue
 		var col := _collision_aabb(body)
 		if col.size == Vector3.ZERO:
 			continue

@@ -174,9 +174,11 @@ local hard-coded sempre que possível.
 
 - **A pé:** W/A/S/D anda, Shift corre, Space pula, E interage (olhando para o alvo),
   Esc abre/fecha o menu de pause.
-- **Ferro-velho:** mire na carcaça — **Q vistoria** (revela km, lataria, pintura
-  e quanto ela vale consertada), **Q de novo pechincha** (3 tentativas, com risco
-  de o dono se fechar) e **E compra**. Sem comprar não dá pra rebocar.
+- **Ferro-velho:** o lote tem **3 carcaças ao mesmo tempo** e se repõe sozinho
+  (25s depois que uma vaga esvazia). Mire numa delas — **Q vistoria** (revela km,
+  lataria, pintura e quanto ela vale consertada), **Q de novo pechincha** (3
+  tentativas, com risco de o dono se fechar) e **E compra**. Sem comprar não dá
+  pra rebocar.
 - **Dirigindo:** W/S acelera/ré, A/D vira, Space freio de mão, F sai do carro,
   **R desvira/reassenta o carro** (também vale rebocando a carcaça a pé).
 - **Oficina (carro no pátio):** mire na carroceria — **Q diagnostica** (revela
@@ -184,7 +186,12 @@ local hard-coded sempre que possível.
   oficina só troca o que o nível dela alcança. Os 4 pontos coloridos continuam
   sendo as gambiarras (E em cada um).
 - **Quadro de melhorias (pátio):** **Q troca de área** (oficina, funilaria,
-  pátio, escritório) e **E compra** o próximo nível.
+  pátio, escritório) e **E compra** o próximo nível. Na área que já está no
+  **último nível**, o **E contrata** quem trabalha nela (mecânico na oficina,
+  recepcionista no escritório).
+- **Pátio:** as faixas amarelas pintadas na laje mostram quantas vagas o nível
+  atual dá (1, 2 ou 4). Com o pátio cheio, o reboque **não solta** — venda um
+  carro ou melhore o pátio.
 - **Venda:** a entrega é numa casa sorteada da cidade (placa verde ENTREGA);
   encoste o carro na frente dela. No cliente, **Q escolhe o preço pedido**
   (4 degraus) e **segurar E** enche a barra de lábia. O cliente nunca paga acima
@@ -199,6 +206,7 @@ project.godot          # config do Godot, autoloads, display/fullscreen
 export_presets.cfg     # presets Windows Desktop + macOS (testados e funcionando)
 autoload/               GameManager.gd, Economy.gd (valor do carro, peças,
                         clientes), Dealership.gd (áreas da loja e níveis),
+                        Staff.gd (mecânico e recepcionista contratados),
                         WeatherManager.gd (clima/chuva),
                         EventManager.gd (eventos procedurais),
                         DeliveryManager.gd (sorteia a casa da entrega da vez),
@@ -210,6 +218,8 @@ shaders/                city_surface.gdshader (fachada/asfalto: atlas do kit +
                         ground.gdshader (chao do mundo por ruido, sem textura),
                         mountain.gdshader (rocha/mato/neve por altura e declive)
 scripts/                Interactable.gd, TowHook.gd, PersuasionMinigame.gd, Pothole.gd,
+                        JunkyardLot.gd (o lote de 3 carcaças que se repõe),
+                        Mechanic.gd (o funcionário que conserta no pátio),
                         CityStreets.gd (malha viária procedural + semáforo/ponto
                         de ônibus/faixa), CityBlocks.gd (preenche os quarteirões
                         com fileiras de prédios virados pra rua, sorteia lotes
@@ -224,11 +234,14 @@ scenes/main/            Main.tscn — cena de entrada (Town + Player + HUD + Rai
 scenes/player/          Player.tscn/gd — controller 1ª pessoa
 scenes/vehicle/         Vehicle.tscn/gd (carro real + suspensao por raycast),
                         AttachSpot.gd, GambiarraPart.gd, parts/*.tscn
-tools/verify/           city.tscn, drive_test.tscn e loop_test.tscn —
+tools/verify/           city.tscn, drive_test.tscn, loop_test.tscn,
+                        staff_test.tscn, yard_shots.tscn e outros —
                         verificacao automatizada (fora do build, ver
                         tools/verify/README.md)
 scenes/world/           Town.tscn (cidade + anel rural, tudo num só mundo sandbox),
-                        Junkyard.tscn, Workshop.tscn, MudZone.tscn/gd, RainFX.tscn/gd,
+                        Junkyard.tscn (o lote), Workshop.gd (o pátio e suas
+                        vagas — usado pelo RuralWorkshop, sem .tscn próprio),
+                        MudZone.tscn/gd, RainFX.tscn/gd,
                         CityBuilding.tscn (prédio genérico com colisão automática),
                         FarmCluster.tscn/gd (fazenda procedural), ScrapyardCluster.tscn/gd
                         (ferro-velho rural decorativo), RuralWorkshop.tscn (a oficina
@@ -2291,6 +2304,105 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     projeto trata aviso como erro — o script não carregava e o Godot ficava
     parado, parecendo travamento em vez de erro de parse.
 
+- **2026-08-09** — Itens 5 e 6, os dois últimos da lista das inspirações:
+  **funcionários** e **pátio de verdade**. Vieram juntos porque um não vale sem
+  o outro — mecânico só faz sentido se houver carro esperando no pátio enquanto
+  o jogador está na rua, e vaga extra só faz sentido se houver o que pôr nela.
+  Daí veio também uma terceira peça que não estava na lista e que os dois
+  exigiam.
+  - **O ferro-velho nunca se repunha, e isso passou 6 dias despercebido.** Havia
+    UMA carcaça posta à mão dentro do `Junkyard.tscn`: rebocada, o ferro-velho
+    ficava vazio **pra sempre**, e a única outra fonte de carro era o
+    `EventManager` largando sucata ao acaso pela cidade. Na prática o jogo tinha
+    exatamente um ciclo de garimpo. Agora `scripts/JunkyardLot.gd` mantém **3
+    carcaças** em vagas fixas e repõe a que sair (25 s). Como `Vehicle.gd` já
+    sorteia modelo, km, lataria, pintura e defeito por carcaça, o lote sai
+    variado de graça — medido numa rodada: R$ 92 a R$ 164 pedidos, um
+    esportivo detonado ao lado de um sedã de lataria boa. Garimpar virou
+    escolher, que é a primeira das quatro fases do ciclo das duas referências.
+    - Vaga ocupada é medida por **veículo por perto**, não por "o carro que eu
+      spawnei ainda existe": a carcaça comprada fica parada ali até ser
+      rebocada, e o dono não empilharia outra em cima dela.
+  - **O pátio com vagas de verdade** (`scenes/world/Workshop.gd`):
+    `Dealership.yard_slots()` devolvia 1/2/4 desde a rodada anterior e **nada no
+    jogo lia esse número** — o nível do pátio era uma linha de texto. Agora a
+    laje conta os carros e **recusa soltar o reboque** quando lota ("Pátio cheio
+    (2/2) — venda um carro ou melhore o pátio").
+    - **O gatilho é a LAJE INTEIRA, não uma Area3D por vaga**, e isso foi
+      decidido medindo: o barracão avança até z = -5.44, o tanque toma x < -9.3
+      e a sucata x > 7.8, então quatro vagas com trigger próprio não cabem sem
+      esbarrar em alguma coisa — e carro parado meio torto deixaria de contar,
+      que é pior que contar demais.
+    - **O layout MUDA de nível pra nível** em vez de só acender vagas novas: 1
+      vaga no meio (que é onde o reboque chega), 2 abrindo pros lados, 4 em
+      fileira. Comprar o upgrade **repinta o pátio** — é o único jeito de a
+      melhoria aparecer na tela, porque ela não mexe em nenhum número do HUD.
+    - As faixas amarelas são **orientação, não regra**: sem colisão, sem
+      trigger. Prop ou carro por cima não quebra nada.
+    - `WorkshopYard._blocked()` deixou de ter o retângulo escrito à mão e passou
+      a ler `Workshop.clear_rect()`, que é a **união das vagas de todos os
+      níveis**. Sem isso, prop plantado hoje no lugar de uma vaga futura viraria
+      obstáculo assim que o jogador comprasse o upgrade — o cenário é montado
+      uma vez só, no início da partida.
+  - **Funcionários** (`autoload/Staff.gd` + `scripts/Mechanic.gd`): contratar só
+    abre no **último nível** da área, como no Car Dealer Simulator. O
+    **mecânico** (oficina nv.3, R$ 1.600) diagnostica em 8 s e troca uma peça a
+    cada 22 s, pagando a peça **+30% de mão de obra** — sem essa taxa, contratar
+    seria puro lucro e não existiria a escolha entre consertar na mão (barato) e
+    deixar com ele (caro, mas não custa seu tempo). Sem dinheiro ele **para** e o
+    prompt diz o motivo, em vez de trabalhar fiado e o carro nunca ficar pronto
+    sem explicação. Ele **não monta gambiarra**: essa é a piada do jogo e o único
+    trabalho que o jogador faz com as próprias mãos.
+    A **recepcionista** (escritório nv.3, R$ 1.400) põe **dois clientes na rua ao
+    mesmo tempo** e o jogador escolhe — o nível 3 já prometia "fila de clientes"
+    em texto e não entregava. Como cada cliente tem personalidade e preço desde a
+    rodada anterior, poder escolher muda a decisão de verdade: cair num Abutre
+    deixa de ser azar sem saída.
+  - **Onde o mecânico PARA importa, e a primeira versão errou.** Ele precisa ser
+    corpo sólido (senão o raio de interação não acha ele e não há prompt), e eu
+    o pus 1,9 m ao **lado** do carro — que é exatamente onde o jogador contorna
+    a lataria pra mirar nos marcadores, e onde o carro esbarraria ao sair. É
+    irmão do bug da cápsula do jogador segurando o carro (2026-08-04). Agora ele
+    fica 3,4 m ao **norte**, o lado do barracão; o portão é ao sul, então ele
+    nunca está no caminho de saída. E o lado sai da OFICINA, não do carro: o
+    carro chega rebocado em qualquer ângulo, então "o lado direito do carro"
+    cairia ora no corredor, ora em cima do vizinho.
+  - **A foto achou o que nenhum número achava.** `tools/verify/yard_shots.gd`
+    (novo) fotografa o pátio em 1 e em 4 vagas, com e sem carro, e o mecânico
+    trabalhando. Ela mostrou um **poste de luz plantado no meio da laje**, bem no
+    arco que o carro faz do portão até a vaga da ponta — e ele passava em todos
+    os testes, porque estava fora de todos os retângulos proibidos. Foi a
+    segunda tentativa de posição: os postes ficavam em x = ±7.4, que virou vaga.
+    Agora estão nos cantos, na linha da cerca. A laje também foi de 18 para 20 m
+    de largura, senão a vaga da ponta ficava com 20 cm de margem.
+  - **Erros meus nesta rodada**:
+    1. *Contar filho de nó como "vaga cheia"*: a carcaça rebocada continua sendo
+       filha do ferro-velho enquanto atravessa o mapa, então contar filhos dizia
+       que o lote estava cheio com as vagas vazias. O verificador passou a
+       contar carro **em cima da vaga**.
+    2. *`Array.filter()` num `Array[Node]`*: devolve array sem tipo e a
+       atribuição de volta falha. Trocado por laço explícito.
+    3. *Corpo sem desenho acusado como parede invisível*: o `obstacles_test`
+       reprovou o mecânico **antes de contratado** — ele fica invisível e fora
+       de toda camada de colisão. Corpo em camada 0 não barra ninguém, então o
+       teste passou a pular esses; afrouxar o limiar teria escondido parede de
+       verdade.
+    4. *Rodar `settings_test` com `--headless`*: ele espera
+       `RenderingServer.frame_post_draw`, que **não é emitido** com o servidor de
+       render falso — 10 minutos parecendo travamento. O próprio cabeçalho do
+       arquivo avisa; eu é que não li.
+  - **Verificação**: `tools/verify/staff_test.tscn` (novo) carrega o `Main.tscn`
+    de verdade, põe os carros na laje pelo gatilho do jogo, compra os níveis e
+    deixa o `_physics_process` do mecânico rodar os 30 s de serviço. Ele cobra
+    o que importa: que as faixas pintadas e o limite contem a MESMA história em
+    cada nível, que o segundo carro seja recusado com 1 vaga e **aceito na hora**
+    ao comprar a segunda, que nenhum prop caia dentro de vaga nenhuma, que o
+    mecânico cobre mais que a peça, e que os dois clientes da recepcionista
+    caiam em casas diferentes. Suíte inteira passa (city, drive, loop, attach,
+    scale, yard, settings, audio, ui, obstacles, save, loading, economy, shop,
+    staff). `scenes/world/Workshop.tscn` foi apagada: era cena morta, referência
+    nenhuma, e o script novo pinta vagas que não caberiam na laje dela.
+
 ### Pendências pedidas e ainda NÃO feitas
 
 Nenhuma das três pendências anteriores continua aberta. O que sobrou de
@@ -2386,15 +2498,18 @@ todo" — não é só a oficina):
   sentido na direção;
 - **(2)** a loja com 4 áreas e 3 níveis cada, com a oficina limitando o conserto;
 - **(3)** preço pedido pelo jogador + lowballer ("Abutre");
-- **(4)** reputação, que cobra o preço de esconder defeito.
+- **(4)** reputação, que cobra o preço de esconder defeito;
+- **(5)** funcionários: mecânico e recepcionista, contratados no último nível da
+  área (2026-08-09, segunda rodada);
+- **(6)** pátio de verdade: 1/2/4 vagas pintadas e limite que recusa o reboque
+  (2026-08-09, segunda rodada). Junto veio o **lote do ferro-velho**, que não
+  estava na lista e sem o qual as vagas não teriam o que encher.
 
-**Falta:**
-5. **Funcionários** — mecânico que conserta enquanto o jogador garimpa;
-   recepcionista. No jogo de referência a contratação só abre no ÚLTIMO nível de
-   cada área, e o funcionário é designado a uma estação.
-6. **Terreno/pátio de verdade** — `Dealership.yard_slots()` já devolve 1/2/4,
-   mas o mundo ainda só usa uma vaga: falta o pátio comportar vários carros ao
-   mesmo tempo e o jogador escolher em qual trabalhar.
+**Falta:** nada da lista das inspirações. O que dá pra levar adiante um dia:
+funcionário designado a uma ESTAÇÃO específica (aqui o mecânico atende o pátio
+inteiro), lava-jato e posto próprio (descartados de propósito — nas duas
+referências lavar e abastecer **não mudam valor**), e negociação de verdade
+(contraproposta, blefe) no lugar de segurar um botão.
 
 Não implementado de propósito (e por quê): lavar/abastecer, que nas duas
 referências **não mudam valor** — seria trabalho sem consequência.
@@ -2442,13 +2557,14 @@ referências **não mudam valor** — seria trabalho sem consequência.
 
 ## Limitações conhecidas da vertical slice
 
-- Se o jogador mirar no corpo do carro (em vez de num ponto de fixação) enquanto ele
-  ainda está incompleto, o prompt volta a mostrar "Rebocar [E]" mesmo já estando na
-  oficina — inofensivo, só reengancha o TowHook.
-- As entregas já são em casas sorteadas da cidade (ver 2026-08-03) e o cliente
-  agora tem **personalidade** (5 tipos, ver changelog 2026-08-09), o que muda
-  preço e dificuldade da lábia. O que ainda não existe é **negociação de
-  verdade** (contraproposta, blefe): a lábia segue sendo segurar um botão.
+- O **mecânico** contratado atende o pátio inteiro, e não uma estação
+  específica como no jogo de referência: não dá pra designá-lo a uma vaga nem
+  contratar dois. Ele também não monta gambiarra, de propósito.
+- As entregas já são em casas sorteadas da cidade (ver 2026-08-03), o cliente
+  tem **personalidade** (5 tipos, ver changelog 2026-08-09) e com a
+  recepcionista há **dois esperando** ao mesmo tempo. O que ainda não existe é
+  **negociação de verdade** (contraproposta, blefe): a lábia segue sendo segurar
+  um botão.
 - Os buracos (`Pothole*`) e poças de lama continuam em 4 pontos fixos da grade, em
   vez de espalhados/procedurais.
 - Os pedestres e o cliente ainda saem de só 2 personagens-base (um masculino, um

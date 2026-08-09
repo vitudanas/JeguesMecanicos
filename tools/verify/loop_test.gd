@@ -149,20 +149,22 @@ func _run() -> void:
 	print("\n[1] ferro-velho: rebocar a carcaca")
 	# O jogo sorteia o modelo do carro por carcaca (de proposito). Pro TESTE
 	# isso e ruim: cada modelo tem tamanho diferente, e a geometria de cada
-	# mira mudava a cada rodada — o teste passava ou falhava por sorte. Aqui a
-	# carcaca do ferro-velho e trocada por uma de modelo FIXO. Todo o resto
-	# (reboque, gambiarra, direcao, venda) continua passando pelo codigo real.
-	var old: Node3D = town.get_node("Junkyard/WreckedCar")
-	var junkyard: Node3D = old.get_parent()
-	var spot_xform: Transform3D = old.transform
-	old.free()
-	var wreck: RigidBody3D = (load("res://scenes/vehicle/Vehicle.tscn") as PackedScene).instantiate()
-	wreck.name = "WreckedCar"
-	wreck.car_model = load("res://assets/quaternius/cars/car-a.glb")
-	wreck.is_wrecked = true
-	junkyard.add_child(wreck)
-	wreck.transform = spot_xform
+	# mira mudava a cada rodada — o teste passava ou falhava por sorte. Aqui o
+	# LOTE inteiro do ferro-velho (ver JunkyardLot.gd) e refeito com um modelo
+	# FIXO. Todo o resto (compra, reboque, gambiarra, direcao, venda) continua
+	# passando pelo codigo real.
+	var junkyard: Node3D = town.get_node("Junkyard")
+	for c in junkyard.get_children():
+		if c.is_in_group("vehicle"):
+			c.free()
+	junkyard.forced_model = load("res://assets/quaternius/cars/car-a.glb")
+	junkyard.restock_now()
 	await get_tree().physics_frame
+	var wreck: RigidBody3D = null
+	for c in junkyard.get_children():
+		if c.is_in_group("vehicle"):
+			wreck = c
+			break
 	if wreck == null:
 		fail("nao achei o carro do ferro-velho")
 		return

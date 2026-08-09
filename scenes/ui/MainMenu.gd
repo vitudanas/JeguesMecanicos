@@ -51,6 +51,7 @@ func _on_play() -> void:
 	SaveGame.clear()
 	GameManager.reset()
 	Dealership.reset()
+	Staff.reset()
 	_start_game()
 
 ## Entrar no jogo passa pela tela de carregamento: o `Main.tscn` carrega a

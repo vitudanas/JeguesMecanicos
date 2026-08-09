@@ -10,16 +10,21 @@ extends Node3D
 ## (`StreetFurniture.gd`): mantem um estilo so e nao traz pacote novo.
 ##
 ## DUAS AREAS FICAM LIVRES, e o `tools/verify/yard_test.gd` cobra isso:
-##   - o anel de trabalho em volta da vaga, senao o jogador nao alcanca os 4
+##   - o anel de trabalho em volta das vagas, senao o jogador nao alcanca os 4
 ##     pontos de gambiarra;
 ##   - o corredor de saida ao sul, senao o carro consertado nao sai do patio.
+##
+## O anel de trabalho nao e mais um retangulo escrito aqui: ele vem do
+## `Workshop.clear_rect()`, que e a UNIAO das vagas de todos os niveis do patio.
+## Escrito na mao, ele descrevia a vaga unica de antes — e prop plantado hoje no
+## lugar de uma vaga futura viraria obstaculo assim que o jogador comprasse o
+## upgrade, porque o cenario e montado uma vez so, no inicio da partida.
 
-## Meia-largura do anel livre em volta da vaga (a vaga fica em z ~ +2).
-const CLEAR_X := 5.0
-const CLEAR_Z_MIN := -3.0
-const CLEAR_Z_MAX := 7.0
-## Corredor de saida: mesma abertura do vao da cerca.
+const WorkshopScript := preload("res://scenes/world/Workshop.gd")
+
+## Corredor de saida: do fundo das vagas ate o vao da cerca.
 const GATE_HALF := 6.0
+const GATE_Z_MIN := 4.0
 
 @export var rng_seed := 20260804
 
@@ -82,9 +87,10 @@ func _torus(inner: float, outer: float, pos: Vector3, mat: Material, parent: Nod
 ## deixar livre: prop no lugar errado aqui nao e enfeite feio, e o jogador sem
 ## conseguir montar ou sem conseguir sair.
 func _blocked(pos: Vector3) -> bool:
-	if absf(pos.x) < CLEAR_X and pos.z > CLEAR_Z_MIN and pos.z < CLEAR_Z_MAX:
+	var vagas: Rect2 = WorkshopScript.clear_rect()
+	if vagas.has_point(Vector2(pos.x, pos.z)):
 		return true
-	if absf(pos.x) < GATE_HALF and pos.z >= CLEAR_Z_MAX:
+	if absf(pos.x) < GATE_HALF and pos.z >= GATE_Z_MIN:
 		return true
 	return false
 
@@ -100,7 +106,7 @@ func _spawn(pos: Vector3, builder: Callable) -> void:
 
 func _build() -> void:
 	# Pneus velhos empilhados — o objeto que mais diz "oficina" de longe.
-	for p: Vector3 in [Vector3(-6.8, 0, -2.5), Vector3(-7.6, 0, -0.8),
+	for p: Vector3 in [Vector3(-6.8, 0, -2.5), Vector3(-8.5, 0, -5.0),
 			Vector3(7.4, 0, -6.5), Vector3(-6.2, 0, -5.4)]:
 		_spawn(p, _tire_stack)
 	# Tambores de oleo.
@@ -110,14 +116,18 @@ func _build() -> void:
 	# Bancada e carrinho encostados no barracao.
 	_spawn(Vector3(-3.2, 0, -7.4), _workbench)
 	_spawn(Vector3(2.8, 0, -7.2), _tool_cart)
-	# Cavaletes de apoio na beira da laje.
-	for p: Vector3 in [Vector3(-6.0, 0, 1.0), Vector3(6.2, 0, 0.4)]:
+	# Cavaletes de apoio ATRAS da fileira de vagas (ficavam nas laterais, que e
+	# justamente onde a terceira e a quarta vaga aparecem no patio nivel 3).
+	for p: Vector3 in [Vector3(-7.9, 0, -3.4), Vector3(6.0, 0, -2.2)]:
 		_spawn(p, _jack_stand)
 	# Cones marcando o vao da cerca, FORA do corredor.
 	for p: Vector3 in [Vector3(-6.9, 0, 8.4), Vector3(6.9, 0, 8.4)]:
 		_spawn(p, _cone)
-	# Luminarias de trabalho nos dois lados da vaga.
-	for p: Vector3 in [Vector3(-7.4, 0, 3.6), Vector3(7.4, 0, 3.6)]:
+	# Luminarias nos CANTOS do patio, na linha da cerca. Ficavam em x = +-7.4,
+	# que virou vaga; a primeira tentativa de mudanca (x = +-8.5, z = 6.4) so
+	# trocou de defeito — a foto mostrou um poste plantado no meio da laje,
+	# bem no arco que o carro faz do portao ate a vaga da ponta.
+	for p: Vector3 in [Vector3(-9.8, 0, 7.8), Vector3(9.8, 0, 7.8)]:
 		_spawn(p, _work_lamp)
 
 	# Quadro de melhorias. Posicao escolhida a mao (e nao pelo `_spawn`, que

@@ -68,15 +68,35 @@ func get_interact_prompt() -> String:
 	var linha := "%s  (nível %d/%d) — %s" % [info["nome"], Dealership.level(area) + 1,
 		Dealership.max_level(area) + 1, Dealership.current_text(area)]
 	if Dealership.at_max(area):
-		linha += "\nno máximo"
+		linha += "\nno máximo" + _staff_line(area)
 	else:
 		linha += "\npróximo: %s — R$ %d  [E] comprar" % [
 			Dealership.next_text(area), Dealership.next_cost(area)]
 	return linha + "\n[Q] ver outra área"
 
-## E compra o próximo nível da área que está na tela.
+## A vaga de funcionário só aparece no ÚLTIMO nível da área — é a regra do jogo
+## de referência (ver Staff.gd), e é o que faz contratar ser o que a área vira
+## depois de paga inteira, em vez de um atalho comprado cedo.
+func _staff_line(area: String) -> String:
+	var role := Staff.role_for_area(area)
+	if role == "":
+		return ""
+	var info: Dictionary = Staff.ROLES[role]
+	if Staff.has(role):
+		return "\n%s contratado — %s" % [info["nome"], info["texto"]]
+	return "\n[E] contratar %s — R$ %d (%s)" % [
+		info["nome"], Staff.cost(role), info["texto"]]
+
+## E compra o próximo nível da área que está na tela — ou, se ela já está no
+## teto, contrata quem trabalha nela.
 func interact(_player: Node) -> void:
-	var erro := Dealership.buy(_area())
+	var area := _area()
+	var erro := ""
+	if Dealership.at_max(area):
+		var role := Staff.role_for_area(area)
+		erro = "no máximo" if role == "" else Staff.hire(role)
+	else:
+		erro = Dealership.buy(area)
 	if erro == "":
 		AudioManager.play_ui("confirma", 0.0)
 	else:

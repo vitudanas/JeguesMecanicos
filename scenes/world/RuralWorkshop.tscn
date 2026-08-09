@@ -12,13 +12,13 @@
 [ext_resource type="Script" path="res://scripts/WorkshopYard.gd" id="10"]
 
 [sub_resource type="BoxShape3D" id="DropZoneShape"]
-size = Vector3(6.0, 3.0, 6.0)
+size = Vector3(19.6, 3.0, 15.6)
 
 [sub_resource type="BoxShape3D" id="PadShape"]
-size = Vector3(18, 0.2, 16)
+size = Vector3(20, 0.2, 16)
 
 [sub_resource type="BoxMesh" id="PadMesh"]
-size = Vector3(18, 0.2, 16)
+size = Vector3(20, 0.2, 16)
 
 [sub_resource type="StandardMaterial3D" id="PadMat"]
 albedo_color = Color(0.33, 0.32, 0.31, 1)
@@ -108,7 +108,7 @@ transform = Transform3D(0, 0, 1, 0, 1, 0, -1, 0, 0, -14.5, 0, 6)
 ; mask 1 pra detectar o veiculo normalmente.
 collision_layer = 4
 collision_mask = 1
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 1)
 
 [node name="Shape" type="CollisionShape3D" parent="DropZone"]
 shape = SubResource("DropZoneShape")

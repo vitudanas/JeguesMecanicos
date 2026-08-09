@@ -1,10 +1,14 @@
 extends Node3D
 ## Define o objetivo inicial (bussola do HUD aponta pro ferro-velho).
 
-@onready var junkyard_car: Node3D = $Junkyard/WreckedCar
+## O ferro-velho e um LOTE (ver JunkyardLot.gd), nao mais uma carcaca so posta
+## a mao — entao a bussola aponta pro lote, e nao pra um carro especifico que
+## some assim que o jogador reboca.
+@onready var junkyard: Node3D = $Junkyard
 
 func _ready() -> void:
-	GameManager.set_objective(junkyard_car.global_position, "Ache o carro no FERRO-VELHO (placa laranja)")
+	GameManager.set_objective(junkyard.global_position + Vector3(0.0, 1.0, 0.0),
+		"Escolha uma carcaça no FERRO-VELHO (placa laranja)")
 	_register_event_spawn_points()
 	# Neste ponto CityBlocks ja rodou o proprio _ready() (filhos antes do pai),
 	# entao as casas ja estao no grupo "delivery_house" e da pra sortear a

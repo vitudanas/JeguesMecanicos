@@ -431,6 +431,7 @@ func _next_repairable() -> String:
 
 ## [Q] na oficina: diagnostica e depois troca peca por peca, pagando.
 func service() -> void:
+	GameManager.set_active_vehicle(self)
 	if not diagnosed:
 		diagnosed = true
 		AudioManager.play_ui("confirma", -6.0)
@@ -527,6 +528,10 @@ func install_part(point_name: String, part: Node, marker: Node3D) -> bool:
 		return false
 	if installed_parts.has(point_name):
 		return false
+	# Com varios carros no patio (ver Workshop.gd), o carro "da vez" e aquele em
+	# que o jogador esta MEXENDO — senao o HUD continuaria mostrando as
+	# gambiarras do carro anterior enquanto ele monta este.
+	GameManager.set_active_vehicle(self)
 	installed_parts[point_name] = part
 	# A peca vai pro ANCORA (lugar que o nome dela diz, encostado na lataria),
 	# nao pro marcador de mira que o jogador acertou — os dois so coincidiam por
@@ -545,13 +550,29 @@ func install_part(point_name: String, part: Node, marker: Node3D) -> bool:
 		# Carro pronto: um toque de confirmacao, porque terminar as 4 gambiarras
 		# e o unico momento do loop sem nenhum outro retorno na tela.
 		AudioManager.play_ui("confirma", -3.0)
-		var buyer := get_tree().get_first_node_in_group("buyer")
-		if buyer:
-			var quem: String = buyer.client_label() if buyer.has_method("client_label") else ""
-			GameManager.set_objective(buyer.global_position,
-				"Entregue na CASA marcada (placa verde) — %s" % quem if quem != ""
-				else "Entregue o carro na CASA marcada (placa verde), na cidade")
+		_point_to_buyer()
 	return true
+
+## Aponta a bussola pro cliente MAIS PERTO deste carro. Com a recepcionista
+## contratada ha dois clientes na rua ao mesmo tempo (ver DeliveryManager) e
+## pegar "o primeiro do grupo" mandaria atravessar a cidade com um deles na
+## esquina — e o jogador nem saberia que havia escolha.
+func _point_to_buyer() -> void:
+	var buyers := get_tree().get_nodes_in_group("buyer")
+	if buyers.is_empty():
+		return
+	var perto: Node3D = buyers[0]
+	for b: Node3D in buyers:
+		if b.global_position.distance_to(global_position) \
+				< perto.global_position.distance_to(global_position):
+			perto = b
+	var quem: String = perto.client_label() if perto.has_method("client_label") else ""
+	var texto := "Entregue o carro na CASA marcada (placa verde), na cidade"
+	if quem != "":
+		texto = "Entregue na CASA marcada (placa verde) — %s" % quem
+	if buyers.size() > 1:
+		texto += "  ·  %d clientes esperando" % buyers.size()
+	GameManager.set_objective(perto.global_position, texto)
 
 func _on_part_broke(point_name: String) -> void:
 	installed_parts.erase(point_name)

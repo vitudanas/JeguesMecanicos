@@ -22,7 +22,16 @@ godot --headless --path . tools/verify/save_test.tscn   # progresso salva e volt
 godot --headless --path . tools/verify/loading_test.tscn # a tela de carregamento chega ao fim
 godot --headless --path . tools/verify/economy_test.tscn # valor, peças, clientes
 godot --headless --path . tools/verify/shop_test.tscn    # as áreas da loja destravam
+godot --headless --path . tools/verify/staff_test.tscn   # lote, vagas do pátio e funcionários
 ```
+
+`staff_test` junta lote, pátio e equipe **de propósito**: são três sistemas que
+não valem separados. O lote dá mais de uma carcaça pra escolher, o pátio deixa
+mais de um carro esperando, e o mecânico é quem mexe neles enquanto o jogador
+está na rua — tirando qualquer um, os outros dois viram número na tela. Ele
+compra os níveis de verdade, põe os carros na laje pelo gatilho do jogo e deixa
+o `_physics_process` do mecânico rodar os 30 s de serviço, em vez de conferir a
+tabela contra ela mesma.
 
 `obstacles_test` faz a pergunta que o `scale_test` não fazia. Ele compara caixa
 de COLISÃO com caixa de DESENHO — e por isso era cego pro pior caso: uma
@@ -52,7 +61,15 @@ godot --path . tools/verify/quality_shots.tscn   # fotos + chamadas de desenho
 godot --path . tools/verify/settings_test.tscn   # o menu de gráficos faz efeito?
 godot --path . tools/verify/player_shots.tscn    # a jogadora de cabeça de jegue
 godot --path . tools/verify/ui_shot.tscn         # menu principal e configuração
+godot --path . tools/verify/yard_shots.tscn      # vagas pintadas e o mecânico
 ```
+
+`yard_shots` existe porque comprar o pátio **não muda número nenhum no HUD**: se
+a laje não mudar de cara, o jogador paga R$ 2.600 e não vê nada acontecer. Ele
+fotografa o pátio em 1 e em 4 vagas, com e sem carro, e o mecânico trabalhando.
+Foi ele que mostrou o poste de luz plantado no meio da laje, bem no arco que o
+carro faz do portão até a vaga da ponta — nenhum teste numérico reprovava aquilo,
+porque o poste estava fora de todos os retângulos proibidos.
 
 `ui_shot` existe porque a tela de configuração é montada **em código** e já
 falhou renderizando invisível (0x0) com todos os controles montados certinho —
