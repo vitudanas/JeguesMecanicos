@@ -179,8 +179,16 @@ local hard-coded sempre que possível.
   de o dono se fechar) e **E compra**. Sem comprar não dá pra rebocar.
 - **Dirigindo:** W/S acelera/ré, A/D vira, Space freio de mão, F sai do carro,
   **R desvira/reassenta o carro** (também vale rebocando a carcaça a pé).
+- **Oficina (carro no pátio):** mire na carroceria — **Q diagnostica** (revela
+  quais peças estão quebradas) e **Q de novo troca a próxima peça**, pagando. A
+  oficina só troca o que o nível dela alcança. Os 4 pontos coloridos continuam
+  sendo as gambiarras (E em cada um).
+- **Quadro de melhorias (pátio):** **Q troca de área** (oficina, funilaria,
+  pátio, escritório) e **E compra** o próximo nível.
 - **Venda:** a entrega é numa casa sorteada da cidade (placa verde ENTREGA);
-  encoste o carro na frente dela e segure E perto do NPC pra encher a barra de lábia.
+  encoste o carro na frente dela. No cliente, **Q escolhe o preço pedido**
+  (4 degraus) e **segurar E** enche a barra de lábia. O cliente nunca paga acima
+  do que você pediu, e pedir acima do que ele topa deixa a lábia mais difícil.
 - **Menus:** o jogo abre num menu principal (Jogar/Sair); Esc a qualquer momento
   dentro da partida pausa e abre Continuar/Sair para o Menu/Sair do Jogo.
 
@@ -2371,19 +2379,25 @@ todo" — não é só a oficina):
 
 ### Como isso mapeia neste projeto
 
-Já feito (2026-08-09): valor por modelo + estado, carcaça com dono, vistoria,
-pechincha com risco, cliente com personalidade.
+**Já feito** (tudo em 2026-08-09, ver changelog):
+- valor por modelo + estado permanente, carcaça com dono, vistoria, pechincha
+  com risco, cliente com personalidade;
+- **(1)** peças mecânicas com defeito escondido + diagnóstico, e o defeito
+  sentido na direção;
+- **(2)** a loja com 4 áreas e 3 níveis cada, com a oficina limitando o conserto;
+- **(3)** preço pedido pelo jogador + lowballer ("Abutre");
+- **(4)** reputação, que cobra o preço de esconder defeito.
 
-Falta, em ordem de dependência:
-1. **Peças com estado + diagnóstico** — base de "conserto realista". A gambiarra
-   vira a opção BARATA E ARRISCADA ao lado da peça de verdade, que é a piada do
-   jogo em forma de mecânica.
-2. **Oficina em níveis** — nv.1 só gambiarra; níveis maiores destravam conserto
-   de verdade, pagos com o lucro.
-3. **Anúncio com preço definido pelo jogador** + lowballers.
-4. **Reputação** — entregar carro com defeito escondido cobra o preço depois.
-5. **Funcionários** — mecânico que trabalha enquanto o jogador garimpa.
-6. **Terreno/pátio** — mais vagas, mais carros simultâneos.
+**Falta:**
+5. **Funcionários** — mecânico que conserta enquanto o jogador garimpa;
+   recepcionista. No jogo de referência a contratação só abre no ÚLTIMO nível de
+   cada área, e o funcionário é designado a uma estação.
+6. **Terreno/pátio de verdade** — `Dealership.yard_slots()` já devolve 1/2/4,
+   mas o mundo ainda só usa uma vaga: falta o pátio comportar vários carros ao
+   mesmo tempo e o jogador escolher em qual trabalhar.
+
+Não implementado de propósito (e por quê): lavar/abastecer, que nas duas
+referências **não mudam valor** — seria trabalho sem consequência.
 
 ## Roadmap (fora de escopo desta vertical slice)
 
