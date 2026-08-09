@@ -4,8 +4,9 @@ extends RigidBody3D
 ## — nao e afetado por forcas, mas ainda colide fisicamente e dispara o
 ## sistema de estresse de gambiarras do carro do jogador (ver
 ## Vehicle.gd:_on_body_entered, que ja reage a qualquer body_entered).
-## Visual: um modelo do Kenney Car Kit (assets/kenney/car-kit), com
-## fallback pra uma caixa colorida se nenhum modelo for atribuido.
+## Visual: um modelo do Cars Bundle do Quaternius (assets/quaternius/cars, em
+## escala real — ver changelog 2026-08-03), com fallback pra uma caixa colorida
+## se nenhum modelo for atribuido.
 
 @export var speed := 4.0
 @export var car_model: PackedScene

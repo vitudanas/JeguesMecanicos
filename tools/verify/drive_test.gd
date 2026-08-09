@@ -12,6 +12,11 @@ const VEHICLE := preload("res://scenes/vehicle/Vehicle.tscn")
 var problems: Array[String] = []
 var town: Node3D
 
+## Quanto a peca instalada pode se afastar da ancora dela. Nao e zero porque a
+## fisica tem um passo de atraso; qualquer coisa acima disso lê como peca solta
+## boiando ao lado do carro.
+const GAMBIARRA_DRIFT := 0.08
+
 func fail(msg: String) -> void:
 	problems.append(msg)
 
@@ -312,6 +317,8 @@ func _run() -> void:
 		await get_tree().physics_frame
 
 	# ------------------------------------------------------ rodas do rig
+	await _gambiarra_andando()
+
 	var rig = car.rig
 	print("\n[rig] eixo dianteiro z=%.2f | traseiro z=%.2f | bitola %.2f | raio da roda %.3f" % [
 		rig.front_axle_z, rig.rear_axle_z, rig.half_track * 2.0, rig.wheel_radius])
@@ -342,3 +349,128 @@ func _run() -> void:
 		if not (reachable and attached):
 			fail("ponto '%s' sobra %.2f m da carroceria (precisa entre 0.05 e 0.6)" % [
 				spot.point_name, protrusion])
+
+## A gambiarra continua colada COM O CARRO ANDANDO?
+##
+## Todo teste anterior mediu a peca com o carro PARADO (o attach_test mede logo
+## depois de instalar, as fotos sao estaticas). O jogador reportou que elas
+## descolam e ficam boiando quando ele comeca a dirigir — e nenhum numero deste
+## repositorio olhava pra isso.
+func _gambiarra_andando() -> void:
+	print("\n[gambiarra andando] a peca acompanha o carro em movimento?")
+	# PISTA ISOLADA, acima do mundo. Tentei tres trechos de rua da cidade e nos
+	# tres o carro achou alguma coisa em 4 s a 65 km/h (meio-fio, mobiliario,
+	# carro largado por outra secao) — e ai "a gambiarra caiu dirigindo" na
+	# verdade era batida, ou seja o teste mediria o contrario do que quer. A
+	# unica forma de perguntar "dirigir SEM bater arranca?" e um trecho onde
+	# comprovadamente nao ha no que bater.
+	var pista := StaticBody3D.new()
+	var chao := CollisionShape3D.new()
+	var laje := BoxShape3D.new()
+	laje.size = Vector3(300.0, 2.0, 14.0)
+	chao.shape = laje
+	pista.add_child(chao)
+	town.add_child(pista)
+	pista.global_position = Vector3(0.0, 400.0, 0.0)
+
+	var car := _spawn()
+	car.global_position = Vector3(-120.0, 402.0, 0.0)
+	await _settle(car, 90)
+	var partida: Vector3 = car.global_position
+	var v0: float = 0.0
+	car.body_entered.connect(func(b: Node) -> void:
+		if b != pista:
+			print("      (bateu em %s — a pista de teste devia estar vazia)" % b.name))
+	for spot: Area3D in car.get_node("AttachPoints").get_children():
+		if spot.part_scene == null:
+			continue
+		var part: Node = spot.part_scene.instantiate()
+		town.add_child(part)
+		car.install_part(spot.point_name, part, spot)
+	await get_tree().physics_frame
+	if car.installed_parts.size() != 4:
+		fail("nao consegui instalar as 4 gambiarras pro teste de movimento")
+		car.queue_free()
+		return
+
+	# Distancia entre a peca e a ANCORA dela (o ponto do carro onde ela devia
+	# estar). Parada tem que ser ~0; andando tambem.
+	var pior := {}
+	for nome: String in car.installed_parts:
+		pior[nome] = 0.0
+	var frames := int(4.0 * 60.0)
+	for i in range(frames):
+		await _step(car, 1.0, 0.15 if i > 90 else 0.0)
+		# Mede DEPOIS do quadro de desenho: e ali que a peca se alinha com o
+		# carro, e e o que o jogador ve. Medindo so no passo de fisica, a peca
+		# aparece sempre um passo atras — atraso do arnes, nao defeito.
+		await get_tree().process_frame
+		v0 = maxf(v0, car.linear_velocity.length())
+		for nome: String in car.installed_parts:
+			var peca: Node3D = car.installed_parts[nome]
+			var ancora: Node3D = car.part_anchors_node.get_node_or_null(nome)
+			if peca == null or ancora == null or not is_instance_valid(peca):
+				continue
+			var d: float = peca.global_position.distance_to(ancora.global_position)
+			pior[nome] = maxf(pior[nome], d)
+
+	var sobreviveram: int = car.installed_parts.size()
+	var vel: float = car.linear_velocity.length()
+	var andou: float = car.global_position.distance_to(partida)
+	print("    depois de 4 s de acelerador: andou %.1f m, %.0f km/h" % [andou, vel * 3.6])
+	if andou < 5.0:
+		fail("o carro do teste de gambiarra nao andou (%.1f m) — arnes, nao jogo" % andou)
+	for nome: String in pior:
+		var d: float = pior[nome]
+		print("      %-9s afastou no maximo %.2f m %s" % [
+			nome, d, "ok" if d <= GAMBIARRA_DRIFT else "DESCOLOU"])
+		if d > GAMBIARRA_DRIFT:
+			fail("gambiarra '%s' descolou %.2f m do carro andando" % [nome, d])
+	# DIRIGIR NAO PODE ARRANCAR GAMBIARRA. `body_entered` dispara com qualquer
+	# contato — inclusive a barriga do carro encostando no chao do mundo — e
+	# enquanto o estresse saia da VELOCIDADE (e nao do tranco), 4 segundos de
+	# acelerador em linha reta arrancavam as QUATRO de uma vez, a 39 km/h, sem o
+	# jogador ter batido em nada. Era o defeito reportado pelo usuario.
+	print("    gambiarras inteiras depois do trecho: %d de 4 (pico %.0f km/h)" % [
+		sobreviveram, v0 * 3.6])
+	if sobreviveram < 4:
+		fail("dirigir em linha reta arrancou %d gambiarra(s)" % (4 - sobreviveram))
+	car.queue_free()
+	pista.queue_free()
+	await get_tree().physics_frame
+	await _gambiarra_batendo()
+
+## ...MAS BATER TEM QUE ARRANCAR. O conserto do defeito acima e trocar o que
+## conta como impacto; frouxo demais deixaria a gambiarra indestrutivel, e ai o
+## test-drive caotico (a premissa do jogo) perderia a consequencia.
+func _gambiarra_batendo() -> void:
+	print("\n[gambiarra batendo] bater ainda arranca?")
+	var car := _spawn()
+	car.global_position = Vector3(-40.0, 0.5, 1.5)
+	await _settle(car, 60)
+	for spot: Area3D in car.get_node("AttachPoints").get_children():
+		if spot.part_scene == null:
+			continue
+		var part: Node = spot.part_scene.instantiate()
+		town.add_child(part)
+		car.install_part(spot.point_name, part, spot)
+	await get_tree().physics_frame
+
+	var muro := StaticBody3D.new()
+	var forma := CollisionShape3D.new()
+	var caixa := BoxShape3D.new()
+	caixa.size = Vector3(1.0, 4.0, 12.0)
+	forma.shape = caixa
+	muro.add_child(forma)
+	town.add_child(muro)
+	muro.global_position = Vector3(-8.0, 2.0, 1.5)
+
+	for i in range(int(5.0 * 60.0)):
+		await _step(car, 1.0, 0.0)
+	var soltas: int = 4 - car.installed_parts.size()
+	print("    bateu no muro; gambiarras arrancadas: %d de 4" % soltas)
+	if soltas == 0:
+		fail("bater num muro nao arrancou nenhuma gambiarra")
+	muro.queue_free()
+	car.queue_free()
+	await get_tree().physics_frame

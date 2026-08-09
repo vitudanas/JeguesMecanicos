@@ -2403,6 +2403,90 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     staff). `scenes/world/Workshop.tscn` foi apagada: era cena morta, referência
     nenhuma, e o script novo pinta vagas que não caberiam na laje dela.
 
+- **2026-08-09** — Usuário reportou jogando: "as gambiarras estão descolando do
+  carro quando você começa a dirigir e ficando flutuando". Eram **dois defeitos
+  diferentes**, os dois invisíveis pra suíte inteira porque **todo teste media a
+  gambiarra com o carro PARADO** (o `attach_test` mede logo depois de instalar,
+  as fotos são estáticas). Medido antes de mexer: o carro andou 35,5 m e as
+  peças ficaram **20,8 m atrás**.
+  1. **A peça não acompanhava o carro.** Ela virava FILHA do ponto de fixação, e
+     `RigidBody3D` é dono do próprio transform — o servidor de física reescreve
+     o transform do nó a cada passo, então pendurar na árvore do carro não faz
+     ela andar junto. Parada no pátio ficava perfeita. Agora ela vive no mundo e
+     copia o transform da âncora, que é o que o comentário da classe **sempre
+     disse** que acontecia. Como deixou de ser filha do carro, ela também
+     precisou aprender a se apagar quando o carro é vendido — senão sobravam 4
+     peças boiando onde o carro estava.
+     - Copiar só no `_physics_process` não bastava: ele roda ANTES de o servidor
+       integrar, então a peça ficava sempre um passo atrás (medido: 22 cm a
+       26 km/h, e pior quanto mais rápido). Instalada, a peça não colide com
+       nada, então quem manda é o quadro de DESENHO — copiar também no
+       `_process` zerou o desvio.
+  2. **O carro "batia" no próprio chão e isso arrancava as quatro de uma vez.**
+     `_on_body_entered` usava `linear_velocity.length()` como impacto — ou seja,
+     **a velocidade em que você estava**, não o tranco — e `body_entered` dispara
+     com QUALQUER contato, inclusive a barriga raspando o `Ground`. Medido: a
+     39 km/h, em linha reta, sem bater em nada, as 4 gambiarras se soltavam
+     juntas. Agora o impacto é **quanto a velocidade caiu no toque**: raspão dá
+     ~0, poste dá o tranco inteiro.
+  - **Como achei o segundo**: o primeiro conserto passou no teste e a FOTO a
+     70 km/h saiu com o carro pelado. Instrumentei o roteiro de fotos pra
+     imprimir quem arrancou o quê — e apareceu `BATEU em Ground` seguido de
+     `ARRANCOU` nas quatro. Sem a foto, o bug número 2 teria ficado.
+  - **Regressão travada dos DOIS lados** (`drive_test`): 4 s a 69 km/h numa reta
+    limpa tem que terminar **4 de 4 inteiras**, e bater num muro tem que
+    arrancar. Só o primeiro lado deixaria alguém "consertar" tornando a
+    gambiarra indestrutível, e aí o test-drive caótico — a premissa do jogo —
+    perderia a consequência.
+  - **Erro meu de arnês, três vezes seguidas**: pra provar "dirigir sem bater
+    não arranca" eu precisava de um trecho livre, e testei três ruas da cidade
+    achando cada uma limpa. Nas três o carro achou algo em 4 s a 65 km/h
+    (meio-fio, mobiliário, carro largado por outra seção do próprio teste) — o
+    teste media o oposto do que queria. A seção ganhou uma **pista isolada
+    acima do mundo**; e uma tentativa de rodar a seção primeiro, pra pegar a rua
+    intacta, quebrou a seção de resgate, que passou a bater no carro que eu
+    deixei lá.
+
+- **2026-08-09** — Usuário pediu pra procurar lixo nos arquivos e compactar o
+  jogo. O número autoritativo não veio de olhar a pasta `assets/`, e sim de
+  **abrir o `.pck` exportado** (parser do formato v4 escrito na hora): é ele que
+  diz o que de fato viaja no build, já convertido e comprimido. Resultado:
+  **196 MB → 131 MB de pacote** (−33%), sem tirar nada que o jogo use.
+  - **Textura que ninguém amostra: 59 MB.** `Rock030` e `Rock023` (34 MB) foram
+    baixadas em 2026-08-04 pra encosta da montanha, mas o `mountain.gdshader`
+    ficou com `Concrete034` — as duas nunca foram referenciadas por lugar
+    nenhum. E `Grass005`/`Gravel022` entravam com Normal e Roughness quando o
+    `ground.gdshader` só tem `grass_b_tex` e `gravel_tex` (cor), de propósito.
+  - **`export_filter="all_resources"` exporta TUDO que está na pasta**, mesmo o
+    que nenhuma cena referencia — é por isso que arquivo esquecido custa
+    tamanho. Foi assim que sobreviveram 3 texturas de pele extraídas do import
+    ANTIGO do `Male_Dressed.glb` (a versão que ainda tinha o braço duplicado,
+    removido em 2026-08-03): o GLB atual não as referencia mais.
+  - **`ext_resource` declarado e nunca usado também pesa**: `Town.tscn` carregava
+    7 carros do Kenney Car Kit, o boneco `characterMedium.fbx` e 4 texturas de
+    pele — restos de quando o tráfego e os pedestres eram Kenney. Nenhum nó da
+    cena os usava, mas o Godot carrega tudo que está declarado no topo do
+    arquivo. Removidos 17 (2 deles eram cenas que outros scripts já carregam
+    dinamicamente — conferi uma a uma antes de tirar).
+  - **`preload` é dependência DURA**: `Pedestrian.gd` ainda pré-carregava o
+    `idle.fbx`/`run.fbx` do Kenney como valor padrão, e todos os 18
+    `PedestrianRoute` da cidade já sobrescreviam esses campos com a UAL1. O
+    pacote inteiro viajava por causa de duas linhas de default.
+  - Com as referências limpas, deletados os pacotes `car-kit`,
+    `animated-characters-protagonists` e `mini-characters` (este sem uma única
+    referência no projeto).
+  - **Resultado**: `.pck` 196 → **131 MB**, zip macOS 250 → **185 MB**, `.app`
+    375 → **288 MB**, `.exe` Windows 305 → **240 MB**. `pack_audit` limpo e o
+    binário exportado sobe sem erro.
+  - **Ainda no repositório, mas FORA do build** (não afetam quem joga): os 145 MB
+    de pastas-fonte que o `exclude_filter` já corta. Três delas
+    (`universal-base-characters`, `outfits-fantasy`,
+    `universal-animation-library-2`) são o insumo do `tools/build_characters.py`
+    e não dá pra apagar sem perder a receita dos personagens. A quarta,
+    `downtown-city-megakit` (48 MB), não é usada por nada desde o redesenho de
+    2026-08-02 e está guardada só pela ideia de um "centro histórico" — apagar é
+    decisão do usuário.
+
 ### Pendências pedidas e ainda NÃO feitas
 
 Nenhuma das três pendências anteriores continua aberta. O que sobrou de

@@ -124,6 +124,8 @@ var haggles_left := 0
 var _haggle_locked := false
 
 var _r_prev := false
+## Velocidade do passo anterior, pra medir o tranco de uma batida.
+var _prev_velocity := Vector3.ZERO
 var _spring_k := 0.0
 var _spring_c := 0.0
 var _rest_length := 0.0
@@ -653,11 +655,26 @@ func hit_pothole(force: float) -> void:
 	if audio:
 		audio.pothole()
 
+## Quanto a velocidade precisa CAIR num toque pra aquilo contar como batida.
+## Abaixo disso e raspao (a barriga encostando no asfalto, a roda subindo a
+## guia), e raspao nao arranca gambiarra.
+const IMPACT_MIN := 1.2
+
 func _on_body_entered(_body: Node) -> void:
-	var impact: float = linear_velocity.length()
+	# O que arranca a gambiarra e a BATIDA, nao a velocidade.
+	#
+	# Antes isto usava `linear_velocity.length()`, ou seja o quanto o carro
+	# estava andando — e `body_entered` dispara com QUALQUER contato, inclusive
+	# o chao do mundo. Resultado medido: a 39 km/h a barriga encostou no
+	# `Ground` e as QUATRO gambiarras se soltaram de uma vez, sem o jogador ter
+	# batido em nada. Era o "as gambiarras descolam quando começo a dirigir".
+	#
+	# A conta certa e quanto a velocidade CAIU no toque: raspar dá ~0, bater
+	# num poste dá o tranco inteiro.
+	var impact: float = (_prev_velocity - linear_velocity).length()
 	if audio:
 		audio.impact(impact)
-	if impact > 3.0:
+	if impact > IMPACT_MIN:
 		_stress_all_parts(impact * 1.5)
 
 func _stress_all_parts(force: float) -> void:
@@ -721,6 +738,12 @@ func part_factor(key: String, pior: float) -> float:
 	return pior
 
 func _apply_suspension_and_drive(delta: float) -> void:
+	# Velocidade no COMECO do passo, antes do solver. E a referencia de
+	# `_on_body_entered`, que roda depois da colisao ja resolvida. Fica aqui, e
+	# nao no `_physics_process`, porque o banco de provas desliga o
+	# `_physics_process` e chama esta funcao direto — se ficasse la, o teste
+	# mediria uma coisa e o jogo faria outra.
+	_prev_velocity = linear_velocity
 	var traction: float = _current_traction()
 	var speed: float = forward_speed()
 

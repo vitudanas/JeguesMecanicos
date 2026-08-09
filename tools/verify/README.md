@@ -62,7 +62,16 @@ godot --path . tools/verify/settings_test.tscn   # o menu de gráficos faz efeit
 godot --path . tools/verify/player_shots.tscn    # a jogadora de cabeça de jegue
 godot --path . tools/verify/ui_shot.tscn         # menu principal e configuração
 godot --path . tools/verify/yard_shots.tscn      # vagas pintadas e o mecânico
+godot --path . tools/verify/gambiarra_shot.tscn  # a gambiarra com o carro ANDANDO
 ```
+
+`gambiarra_shot` nasceu de um defeito que a suíte inteira não via porque **todo
+teste media a gambiarra com o carro parado**: a peça descolava e ficava boiando
+assim que o jogador acelerava. Ele fotografa a 0, 39 e 70 km/h, imprime a
+distância de cada peça até a âncora **junto com a foto**, e loga quem arrancou o
+quê — foi esse log que revelou o segundo defeito (a barriga do carro encostando
+no chão contava como batida e arrancava as quatro de uma vez). O `drive_test`
+ganhou a trava numérica dos dois lados; este roteiro é pra OLHAR.
 
 `yard_shots` existe porque comprar o pátio **não muda número nenhum no HUD**: se
 a laje não mudar de cara, o jogador paga R$ 2.600 e não vê nada acontecer. Ele

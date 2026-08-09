@@ -27,10 +27,14 @@ signal ragdolled
 @export var visual_rotation_y_degrees := 180.0
 @export var ragdoll_impact_threshold := 4.0
 @export var ragdoll_recover_time := 4.0
-@export var idle_anim_scene: PackedScene = preload("res://assets/kenney/animated-characters-protagonists/Animations/idle.fbx")
-@export var walk_anim_scene: PackedScene = preload("res://assets/kenney/animated-characters-protagonists/Animations/run.fbx")
-@export var idle_anim_name := "Root|Idle"
-@export var walk_anim_name := "Root|Run"
+## Animacoes. O padrao e a UAL1 do Quaternius, que e o que o jogo usa hoje —
+## antes era o boneco do Kenney, e o `preload` daquele FBX era uma dependencia
+## DURA: todo `PedestrianRoute` da cidade ja sobrescrevia estes dois campos, mas
+## o pacote inteiro continuava entrando no build por causa desta linha.
+@export var idle_anim_scene: PackedScene = preload("res://assets/quaternius/universal-animation-library-1/Animations/UAL1_Standard.glb")
+@export var walk_anim_scene: PackedScene = preload("res://assets/quaternius/universal-animation-library-1/Animations/UAL1_Standard.glb")
+@export var idle_anim_name := "Idle"
+@export var walk_anim_name := "Walk"
 ## Cena de roupa (ex: Quaternius Modular Character Outfits) que compartilha o
 ## MESMO esqueleto do character_model — as malhas de roupa sao transplantadas
 ## pro Skeleton3D do personagem (troca de "skeleton" de cada MeshInstance3D)
