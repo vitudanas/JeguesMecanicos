@@ -2733,6 +2733,36 @@ referências lavar e abastecer **não mudam valor**), e negociação de verdade
 Não implementado de propósito (e por quê): lavar/abastecer, que nas duas
 referências **não mudam valor** — seria trabalho sem consequência.
 
+## Prédios realistas: o que já foi apurado
+
+**Lista de compras e requisitos:** [docs/modelos-realistas.md](docs/modelos-realistas.md).
+**Candidatos já garimpados (160 modelos, links prontos):**
+[docs/garimpo-sketchfab.md](docs/garimpo-sketchfab.md), gerado por
+`tools/garimpo_sketchfab.py`.
+
+O que ficou provado em 2026-08-09, mexendo nos sites de verdade com o usuário
+logado:
+
+- **A API de busca do Sketchfab é pública** (não precisa de login) e devolve
+  contagem de faces e licença — que são exatamente os dois filtros que separam o
+  modelo usável do scan de meio milhão de triângulos. `tools/garimpo_sketchfab.py`
+  varre 17 termos nas quatro zonas da cidade e devolveu **261 candidatos** CC0 ou
+  CC-BY. Detalhe que custou uma rodada: o parâmetro `max_face_count` da API
+  devolve lista VAZIA (não é válido) — filtrar do lado de cá; e o Python deste
+  ambiente não tem cadeia de certificados, então a chamada tem que sair por
+  `curl`.
+- **O Fab é fraco pra este caso, ao contrário do que eu tinha estimado.** O
+  "Downtown Alley", que a imprensa citou como grátis, hoje custa R$ 152 e o campo
+  *Included formats* diz **"Unreal Engine"** — sem FBX. Vários pacotes bons de
+  cidade lá são assim: a licença permite qualquer engine, mas o ARQUIVO só vem em
+  formato Unreal. Conferir esse campo antes de qualquer coisa.
+- **O download não sai pelo navegador embutido.** Clicar em *Download* começa a
+  transferência (dá pra ver o arquivo temporário crescendo em `~/Downloads`) e
+  ela é abortada. E a API de download responde **401 com cookie de sessão** — ela
+  quer Bearer token. Caçar esse token no armazenamento da página seria mexer em
+  credencial, então **não**: o download é do usuário, em duas cliques por modelo,
+  e o arquivo cai em `~/Downloads`, de onde dá pra pegar e integrar.
+
 ## Prédios realistas: a lista de compras
 
 Levantado em 2026-08-09: **[docs/modelos-realistas.md](docs/modelos-realistas.md)**
