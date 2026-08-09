@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/vehicle/GambiarraPart.gd" id="1"]
+
+[node name="GambiarraPart" type="RigidBody3D"]
+mass = 3.0
+script = ExtResource("1")
+break_threshold = 7.0

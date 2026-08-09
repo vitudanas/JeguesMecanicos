@@ -106,7 +106,7 @@ func _market() -> int:
 		return 0
 	return Economy.market_value(nearby_vehicle.model_key, nearby_vehicle.condition,
 		nearby_vehicle.intact_part_count(), nearby_vehicle.total_attach_points(),
-		nearby_vehicle.parts)
+		nearby_vehicle.parts, nearby_vehicle.installed_options)
 
 ## Quanto o jogador está pedindo.
 func asking() -> int:

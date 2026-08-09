@@ -68,11 +68,15 @@ func repaired_value(model_key: String, condition: Dictionary) -> int:
 ## Valor de mercado AGORA: o valor de consertado descontando as gambiarras que
 ## faltam ou quebraram.
 func market_value(model_key: String, condition: Dictionary,
-		intact_parts: int, total_parts: int, parts: Dictionary = {}) -> int:
+		intact_parts: int, total_parts: int, parts: Dictionary = {},
+		gambiarras: Dictionary = {}) -> int:
 	var full := float(repaired_value(model_key, condition))
 	# Peca mecanica quebrada derruba o valor junto com a gambiarra faltando: sao
 	# dois eixos independentes de "carro ruim".
 	full *= (1.0 - parts_penalty(parts))
+	# E a QUALIDADE da gambiarra e um terceiro: papelao no parachoque nao vale o
+	# mesmo que chapa de compensado, mesmo os dois estando no lugar.
+	full *= (1.0 - gambiarra_penalty(gambiarras))
 	if total_parts <= 0:
 		return int(round(full))
 	var ratio := float(intact_parts) / float(total_parts)
@@ -153,6 +157,119 @@ func repair_cost(parts: Dictionary, full: int) -> int:
 	for key: String in broken_parts(parts):
 		total += part_price(key, full)
 	return total
+
+# ------------------------------------------------------------- gambiarras
+
+## O CATALOGO DE GAMBIARRA: o que da pra enfiar em cada ponto do carro.
+##
+## Ate agora cada ponto tinha UMA peca fixa e de graca: montar era apertar E
+## quatro vezes, sempre igual — a premissa do jogo era o unico sistema dele sem
+## nenhuma decisao. Agora cada ponto tem tres graus, e a escolha e um triangulo
+## honesto:
+##
+##   1 barata      → quase de graca, cai no primeiro buraco, o cliente repara;
+##   2 media       → a peca que o jogo sempre teve;
+##   3 caprichada  → aguenta o test-drive e o cliente quase nao desconta, mas
+##                   come um pedaco do lucro ANTES de você saber se vai vender.
+##
+## OS NUMEROS SAO OS MESMOS NOS QUATRO PONTOS, de proposito: o que muda de um
+## ponto pro outro e o OBJETO (a piada e a leitura na tela), nao a planilha.
+## Isso deixa a regra provavel — e ela foi RESOLVIDA, nao chutada.
+##
+## Escrevendo lucro = valor − custo, com o valor caindo tanto pelo desconto
+## quanto pela gambiarra que se soltou, existe uma faixa em que cada grau ganha
+## em algum cenario. Fora dela um grau vira imposto: a primeira calibragem que
+## escrevi no olho punha o grau 3 a 52% do valor do carro, e ele **perdia nos
+## tres cenarios** — o teste pegou. Estes valores saem de uma busca pela maior
+## margem util (ver `economy_test`, secao da gambiarra):
+##
+##   viagem calma  (nada cai)      → ganha a BARATA
+##   viagem normal (a barata cai)  → ganha a MEDIA
+##   viagem feia   (media tambem)  → ganha a CAPRICHADA
+##
+## `custo` e `desconto` sao FRACOES do valor do carro, nunca reais fixos: mesma
+## licao das pecas mecanicas (2026-08-09) — preco absoluto num jogo onde o carro
+## vale R$ 150-430 faz o item nunca compensar.
+const G_CUSTO: Array[float] = [0.010, 0.050, 0.105]
+const G_DESCONTO: Array[float] = [0.045, 0.030, 0.008]
+## Multiplica o limiar de estresse da peca (`break_threshold`, 7.0). Contra o
+## buraco da rua (`Pothole.impact_force` 8.0, escalado 0.3-3.0 pela velocidade):
+## a barata cai ate devagar, a media passa no devagar e cai no rapido, a
+## caprichada aguenta o rapido.
+const G_AGUENTA: Array[float] = [0.40, 1.0, 2.1]
+const GRAUS := 3
+
+## Por ponto, o objeto de cada grau. `kind` e o visual que o GambiarraVisual
+## monta (a ordem do enum dele).
+const GAMBIARRAS := {
+	"hood": [
+		{"id": "arame", "nome": "Arame de cabide", "kind": 4},
+		{"id": "dobradica", "nome": "Dobradiça de porta", "kind": 0},
+		{"id": "cinta", "nome": "Cinta de amarração", "kind": 5},
+	],
+	"radiator": [
+		{"id": "chiclete", "nome": "Chiclete e fita", "kind": 6},
+		{"id": "mangueira", "nome": "Mangueira de pia", "kind": 1},
+		{"id": "mangueira_pesada", "nome": "Mangueira de máq. de lavar", "kind": 7},
+	],
+	"mirror": [
+		{"id": "fita", "nome": "Fita isolante", "kind": 2},
+		{"id": "abracadeira", "nome": "Abraçadeira de nylon", "kind": 8},
+		{"id": "suporte", "nome": "Espelho de bicicleta", "kind": 9},
+	],
+	"bumper": [
+		{"id": "papelao", "nome": "Papelão e barbante", "kind": 10},
+		{"id": "lona", "nome": "Lona plástica", "kind": 3},
+		{"id": "compensado", "nome": "Chapa de compensado", "kind": 11},
+	],
+}
+## Grau que vem selecionado quando o jogador chega no ponto: o do meio, que e a
+## peca que o jogo sempre teve. Quem nao quiser escolher nada joga como antes.
+const GAMBIARRA_DEFAULT := 1
+
+func gambiarra_options(point: String) -> Array:
+	return GAMBIARRAS.get(point, []) as Array
+
+## A opcao ja com os numeros do grau dentro — quem chama nao precisa saber que
+## eles moram numa tabela separada.
+func gambiarra_option(point: String, index: int) -> Dictionary:
+	var lista := gambiarra_options(point)
+	if lista.is_empty():
+		return {}
+	var grau := posmod(index, lista.size())
+	var out: Dictionary = (lista[grau] as Dictionary).duplicate()
+	out["grau"] = grau
+	out["custo"] = G_CUSTO[grau]
+	out["aguenta"] = G_AGUENTA[grau]
+	out["desconto"] = G_DESCONTO[grau]
+	return out
+
+## Quanto esta gambiarra custa num carro que vale `full` consertado.
+func gambiarra_price(option: Dictionary, full: int) -> int:
+	if option.is_empty():
+		return 0
+	return maxi(2, int(round(float(full) * float(option["custo"]))))
+
+## Quanto o cliente corta do valor por causa das gambiarras INSTALADAS.
+##
+## So conta o que esta la: gambiarra que caiu no caminho ja e cobrada pelo termo
+## de peca faltando (ver market_value), e cobrar duas vezes faria carro detonado
+## valer quase nada e a entrega deixar de compensar.
+func gambiarra_penalty(installed: Dictionary) -> float:
+	var perda := 0.0
+	for point: String in installed:
+		var opt: Dictionary = installed[point]
+		perda += float(opt.get("desconto", 0.0))
+	return minf(perda, 0.45)
+
+## Rotulo curto de resistencia, pro jogador decidir sem ler numero.
+func gambiarra_grade(option: Dictionary) -> String:
+	var a := float(option.get("aguenta", 1.0))
+	if a < 0.7:
+		return "cai fácil"
+	if a < 1.6:
+		return "aguenta"
+	return "aguenta bem"
 
 # ------------------------------------------------------- comprar a carcaca
 

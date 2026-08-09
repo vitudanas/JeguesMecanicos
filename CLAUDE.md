@@ -183,8 +183,11 @@ local hard-coded sempre que possível.
   **R desvira/reassenta o carro** (também vale rebocando a carcaça a pé).
 - **Oficina (carro no pátio):** mire na carroceria — **Q diagnostica** (revela
   quais peças estão quebradas) e **Q de novo troca a próxima peça**, pagando. A
-  oficina só troca o que o nível dela alcança. Os 4 pontos coloridos continuam
-  sendo as gambiarras (E em cada um).
+  oficina só troca o que o nível dela alcança.
+- **Gambiarras:** mire num dos 4 pontos coloridos — **Q troca o item** (3 opções
+  por ponto) e **E instala**, pagando. A barata sai quase de graça e cai no
+  primeiro buraco; a caprichada aguenta o test-drive e o cliente quase não
+  desconta, mas come um pedaço do lucro antes da venda.
 - **Quadro de melhorias (pátio):** **Q troca de área** (oficina, funilaria,
   pátio, escritório) e **E compra** o próximo nível. Na área que já está no
   **último nível**, o **E contrata** quem trabalha nela (mecânico na oficina,
@@ -233,7 +236,9 @@ scripts/                Interactable.gd, TowHook.gd, PersuasionMinigame.gd, Poth
 scenes/main/            Main.tscn — cena de entrada (Town + Player + HUD + RainFX)
 scenes/player/          Player.tscn/gd — controller 1ª pessoa
 scenes/vehicle/         Vehicle.tscn/gd (carro real + suspensao por raycast),
-                        AttachSpot.gd, GambiarraPart.gd, parts/*.tscn
+                        AttachSpot.gd (escolha de gambiarra: Q troca, E instala),
+                        GambiarraPart.gd, parts/GambiarraPart.tscn (uma cena so,
+                        montada a partir do catalogo em Economy.GAMBIARRAS)
 tools/verify/           city.tscn, drive_test.tscn, loop_test.tscn,
                         staff_test.tscn, yard_shots.tscn e outros —
                         verificacao automatizada (fora do build, ver
@@ -2487,6 +2492,65 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     2026-08-02 e está guardada só pela ideia de um "centro histórico" — apagar é
     decisão do usuário.
 
+- **2026-08-09** — Seguindo o desenvolvimento, ataquei o que estava mais raso em
+  relação à importância: **a gambiarra**. Ela dá nome ao jogo e era o único
+  sistema dele **sem decisão nenhuma** — cada ponto tinha uma peça fixa e de
+  graça, e montar era apertar E quatro vezes, sempre igual. Agora são **12
+  itens, 3 por ponto**, escolhidos na hora (**Q troca, E instala**, pagando),
+  no mesmo idioma do ferro-velho e do quadro de melhorias.
+  - **O triângulo**: a barata sai quase de graça e cai no primeiro buraco; a
+    média é a peça de sempre; a caprichada aguenta o test-drive e o cliente
+    quase não desconta, mas come um pedaço do lucro **antes** de o jogador saber
+    se a venda vai ser boa.
+  - **A calibragem foi RESOLVIDA, não chutada — e a primeira, escrita no olho,
+    estava errada.** Eu tinha posto a opção cara a 52% do valor do carro, e o
+    teste mostrou que ela **perdia nos três cenários**: era imposto, não opção.
+    Escrevi lucro = valor − custo (com o valor caindo tanto pelo desconto quanto
+    pela peça que se soltou) e busquei numericamente a faixa em que cada grau
+    ganha em algum cenário. Resultado medido, num carro de R$ 206:
+    viagem calma ganha a barata (R$ 161 contra 141 e 111), viagem normal ganha a
+    média (141 contra 74 e 111), viagem feia ganha a caprichada (111 contra 74 e
+    42).
+  - **Os números são os mesmos nos quatro pontos, de propósito**: o que muda de
+    um ponto pro outro é o OBJETO (a piada e a leitura na tela), não a planilha.
+    Isso deixa a regra provável e impede que um ponto vire o melhor por acidente
+    de tabela.
+  - **Doze `.tscn` viraram um.** Havia um arquivo de cena por peça, cada um com
+    resistência e caixa de colisão escritas à mão; com três opções por ponto
+    seriam doze arquivos quase iguais e doze lugares pra um número divergir do
+    catálogo. Agora há uma cena só, montada a partir de `Economy.GAMBIARRAS`, e
+    a colisão sai da **malha medida** (ela só vale quando a peça vira destroço).
+  - **Oito visuais novos** (`GambiarraVisual`), com as mesmas primitivas dos
+    quatro originais: arame de cabide, cinta de amarração, chiclete e fita,
+    mangueira de máquina de lavar, abraçadeira de nylon, espelho de bicicleta,
+    papelão e barbante, chapa de compensado.
+  - **A folha de contato pegou dois defeitos que número nenhum pegaria**
+    (`tools/verify/gambiarra_sheet.gd`, novo — renderiza os 12 lado a lado):
+    1. *O arame era três palitos soltos.* Eu posicionava cada pedaço por ângulo
+       escrito à mão, e ângulo à mão não garante que a ponta de um encoste na do
+       outro. Agora existe um `_link(a, b)` que liga dois PONTOS — o arame é
+       contínuo por construção.
+    2. *O espelho de bicicleta renderizava preto.* Material metálico puro com
+       rugosidade zero não tem o que refletir num fundo liso. E o vidro estava
+       na face de TRÁS do aro, então de fora só se via o plástico preto.
+  - **Erro meu de arnês, três enquadramentos**: montei a folha com espaçamento
+    fixo, e como a fita tem 16 cm e a chapa de compensado tem 60, ou os itens se
+    atravessavam ou sobrava deserto no quadro. Passou a medir a largura de cada
+    peça e derivar dali o passo e a distância da câmera.
+  - **Erro meu de verificador, e é o mais perigoso da rodada**: um erro de
+    script no meio da seção nova abortava a função e o teste terminava dizendo
+    "nenhum problema" com metade das perguntas **não feitas**. A seção agora
+    marca que chegou ao fim, e o teste cobra isso.
+  - **Verificação**: `economy_test` ganhou a seção da gambiarra — que os três
+    graus diferem em preço, resistência e desconto; que o preço acompanha o
+    valor do carro (a mesma lona custa R$ 17 no esportivo e R$ 8 no táxi); que
+    os graus se separam contra o buraco de verdade (`Pothole.impact_force` 8.0,
+    escalado pela velocidade); e os três cenários acima. `attach_test`,
+    `drive_test`, `loop_test` e as fotos passaram a instalar pelo **caminho real
+    do jogo** (`AttachSpot.interact`), que é quem cobra o dinheiro e guarda qual
+    item foi usado — antes eles instanciavam a peça por fora e não provavam nada
+    sobre a compra.
+
 ### Pendências pedidas e ainda NÃO feitas
 
 Nenhuma das três pendências anteriores continua aberta. O que sobrou de
@@ -2612,8 +2676,12 @@ referências **não mudam valor** — seria trabalho sem consequência.
   cruzamento diagonal-com-ortogonal no kit do Kenney; uma avenida diagonal de
   verdade cortando o mapa (tipo Broadway em Manhattan) precisaria resolver esses
   cruzamentos em ângulo, o que não foi tentado.
-- Sistema de crafting mais rico (mais tipos de gambiarra, escolha de item por
-  inventário em vez de item fixo por ponto de fixação).
+- ~~Sistema de crafting mais rico (mais tipos de gambiarra, escolha de item por
+  inventário em vez de item fixo por ponto de fixação).~~ **Feito em parte em
+  2026-08-09**: são 12 itens, 3 por ponto, escolhidos na hora com Q. O que não
+  existe é **inventário** — o jogador não carrega peça, compra na hora de
+  instalar; e um item ainda só serve no ponto dele (não dá pra enfiar papelão no
+  capô).
 - Economia mais profunda (preços variáveis, múltiplos compradores com personalidades
   diferentes, negociação).
 - ~~Sons e efeitos de UI/menu.~~ **Feito em 2026-08-08** (ver changelog): efeitos

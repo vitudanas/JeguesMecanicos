@@ -24,6 +24,49 @@ func _ready() -> void:
 	freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
 	contact_monitor = false
 
+## Monta a peca a partir de uma opcao do catalogo (ver Economy.GAMBIARRAS).
+##
+## Antes havia um `.tscn` por ponto do carro, cada um com resistencia e caixa de
+## colisao escritas a mao. Com tres opcoes por ponto isso viraria doze arquivos
+## quase iguais — e doze lugares pra um numero divergir do catalogo. Aqui ha uma
+## cena so e o catalogo manda em tudo.
+func setup(option: Dictionary) -> void:
+	part_id = str(option.get("id", "generic"))
+	display_name = str(option.get("nome", "Peça Misteriosa"))
+	resistance = float(option.get("aguenta", 1.0))
+	var visual := GambiarraVisual.new()
+	visual.name = "Visual"
+	visual.kind = int(option.get("kind", 0))
+	add_child(visual)
+	_fit_collision(visual)
+
+## A colisao sai da MALHA montada, nao de um numero escrito a mao. Ela so vale
+## quando a peca se solta e vira destroco (instalada, a peca nao colide — ver
+## `install`), entao o que importa e ela ter o tamanho do que se ve rolando na
+## pista. Mesma tecnica do `AutoCollisionBody`.
+func _fit_collision(visual: Node3D) -> void:
+	var caixa := AABB()
+	var primeiro := true
+	for filho in visual.get_children():
+		if filho is MeshInstance3D:
+			var mi := filho as MeshInstance3D
+			var b: AABB = mi.transform * mi.get_aabb()
+			caixa = b if primeiro else caixa.merge(b)
+			primeiro = false
+	if primeiro:
+		return
+	var forma := get_node_or_null("Collision") as CollisionShape3D
+	if forma == null:
+		forma = CollisionShape3D.new()
+		forma.name = "Collision"
+		add_child(forma)
+	var box := BoxShape3D.new()
+	# Piso de 4 cm: fita e arame sao finos demais pra virar uma forma estavel.
+	box.size = Vector3(maxf(caixa.size.x, 0.04), maxf(caixa.size.y, 0.04),
+		maxf(caixa.size.z, 0.04))
+	forma.shape = box
+	forma.position = caixa.position + caixa.size * 0.5
+
 ## Encaixa esta peca no ponto do carro.
 ##
 ## Ela NAO vira filha do carro, e isso e o conserto de um bug que so aparecia

@@ -85,6 +85,8 @@ var part_anchors_node: Node3D = null
 
 var attach_points: Dictionary = {}
 var installed_parts: Dictionary = {}
+## Opcao do catalogo usada em cada ponto (ver Economy.GAMBIARRAS).
+var installed_options: Dictionary = {}
 var driver: Node = null
 var steer_input := 0.0
 var throttle_input := 0.0
@@ -525,7 +527,8 @@ func exit_to_driver() -> void:
 	chase_camera.current = false
 	driver = null
 
-func install_part(point_name: String, part: Node, marker: Node3D) -> bool:
+func install_part(point_name: String, part: Node, marker: Node3D,
+		option: Dictionary = {}) -> bool:
 	if not attach_points.has(point_name):
 		return false
 	if installed_parts.has(point_name):
@@ -535,6 +538,11 @@ func install_part(point_name: String, part: Node, marker: Node3D) -> bool:
 	# gambiarras do carro anterior enquanto ele monta este.
 	GameManager.set_active_vehicle(self)
 	installed_parts[point_name] = part
+	# Guarda QUAL gambiarra foi posta aqui: e o que o cliente olha na hora de
+	# descontar (papelao no parachoque nao vale o mesmo que compensado, mesmo os
+	# dois estando no lugar). Some junto com a peca quando ela se solta.
+	if not option.is_empty():
+		installed_options[point_name] = option
 	# A peca vai pro ANCORA (lugar que o nome dela diz, encostado na lataria),
 	# nao pro marcador de mira que o jogador acertou — os dois so coincidiam por
 	# falta de separacao, e era isso que deixava a mangueira na porta.
@@ -578,6 +586,7 @@ func _point_to_buyer() -> void:
 
 func _on_part_broke(point_name: String) -> void:
 	installed_parts.erase(point_name)
+	installed_options.erase(point_name)
 	part_broken.emit(point_name)
 
 func intact_part_count() -> int:

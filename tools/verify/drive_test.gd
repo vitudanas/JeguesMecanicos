@@ -382,11 +382,11 @@ func _gambiarra_andando() -> void:
 		if b != pista:
 			print("      (bateu em %s — a pista de teste devia estar vazia)" % b.name))
 	for spot: Area3D in car.get_node("AttachPoints").get_children():
-		if spot.part_scene == null:
-			continue
-		var part: Node = spot.part_scene.instantiate()
-		town.add_child(part)
-		car.install_part(spot.point_name, part, spot)
+		# Monta pelo caminho REAL do jogo (escolhe item, paga, instala), e nao
+		# instanciando a peca por fora: e o `interact` que cobra o dinheiro e
+		# guarda qual gambiarra foi usada.
+		GameManager.money = 100000   # a gambiarra agora e paga
+		spot.interact(null)
 	await get_tree().physics_frame
 	if car.installed_parts.size() != 4:
 		fail("nao consegui instalar as 4 gambiarras pro teste de movimento")
@@ -449,11 +449,11 @@ func _gambiarra_batendo() -> void:
 	car.global_position = Vector3(-40.0, 0.5, 1.5)
 	await _settle(car, 60)
 	for spot: Area3D in car.get_node("AttachPoints").get_children():
-		if spot.part_scene == null:
-			continue
-		var part: Node = spot.part_scene.instantiate()
-		town.add_child(part)
-		car.install_part(spot.point_name, part, spot)
+		# Monta pelo caminho REAL do jogo (escolhe item, paga, instala), e nao
+		# instanciando a peca por fora: e o `interact` que cobra o dinheiro e
+		# guarda qual gambiarra foi usada.
+		GameManager.money = 100000   # a gambiarra agora e paga
+		spot.interact(null)
 	await get_tree().physics_frame
 
 	var muro := StaticBody3D.new()

@@ -42,11 +42,11 @@ func _run() -> void:
 		await get_tree().physics_frame
 
 	for spot: Area3D in car.get_node("AttachPoints").get_children():
-		if spot.part_scene == null:
-			continue
-		var part: Node = spot.part_scene.instantiate()
-		town.add_child(part)
-		car.install_part(spot.point_name, part, spot)
+		# Monta pelo caminho REAL do jogo (escolhe item, paga, instala), e nao
+		# instanciando a peca por fora: e o `interact` que cobra o dinheiro e
+		# guarda qual gambiarra foi usada.
+		GameManager.money = 100000
+		spot.interact(null)
 		# Some com a esfera de mira, como o `AttachSpot.interact()` faz no jogo.
 		# Sem isso a foto sai cheia de bola colorida e nao mostra a gambiarra.
 		spot.get_node("Marker").visible = false

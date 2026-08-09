@@ -63,7 +63,17 @@ godot --path . tools/verify/player_shots.tscn    # a jogadora de cabeça de jegu
 godot --path . tools/verify/ui_shot.tscn         # menu principal e configuração
 godot --path . tools/verify/yard_shots.tscn      # vagas pintadas e o mecânico
 godot --path . tools/verify/gambiarra_shot.tscn  # a gambiarra com o carro ANDANDO
+godot --path . tools/verify/gambiarra_sheet.tscn # os 12 itens do catálogo lado a lado
 ```
+
+`gambiarra_sheet` existe porque os itens são **geometria montada em código** e
+nenhum número diz se "arame de cabide" lê como arame de cabide. Ele pegou dois
+defeitos na primeira leva: o arame era três palitos soltos (ângulos escritos à
+mão não garantem que as pontas se encostem) e o espelho de bicicleta
+renderizava preto (metálico puro sem nada pra refletir, e o vidro na face de
+trás do aro). Ele mede a largura de cada peça pra derivar o espaçamento e a
+distância da câmera — com passo fixo, a fita de 16 cm e a chapa de 60 não cabem
+na mesma folha.
 
 `gambiarra_shot` nasceu de um defeito que a suíte inteira não via porque **todo
 teste media a gambiarra com o carro parado**: a peça descolava e ficava boiando

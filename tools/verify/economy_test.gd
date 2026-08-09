@@ -267,6 +267,12 @@ func _ready() -> void:
 	npc.queue_free()
 	falso.queue_free()
 
+	print("\n[8] a gambiarra virou ESCOLHA (nenhuma opcao domina)")
+	_gambiarras()
+	# Erro de script no meio da secao aborta a funcao e o teste terminaria
+	# "sem problemas" com metade das perguntas nao feitas — ja aconteceu aqui.
+	check(_gambiarras_completou, "a secao da gambiarra rodou ate o fim")
+
 	print("")
 	if problems.is_empty():
 		print("=== RESULTADO ===")
@@ -283,3 +289,105 @@ func _by_name(nome: String) -> Dictionary:
 		if c["nome"] == nome:
 			return c
 	return {}
+
+## O catalogo de gambiarra so vale se as tres opcoes forem decisoes de verdade.
+##
+## Duas perguntas, e a segunda e a que importa:
+##   [a] os degraus diferem mesmo em preco, resistencia e desconto?
+##   [b] existe caso em que a BARATA e a jogada certa? Se a cara ganhasse
+##       sempre, nao haveria escolha — so um imposto pra quem tem dinheiro.
+var _gambiarras_completou := false
+
+func _gambiarras() -> void:
+	var carro := {"km": 120.0, "lataria": 0.3, "pintura": 0.3}
+	var full: int = Economy.repaired_value("car-a", carro)
+	print("    carro de referencia vale R$ %d consertado" % full)
+
+	for point: String in Economy.GAMBIARRAS:
+		var lista: Array[Dictionary] = []
+		for i in range(Economy.GRAUS):
+			# Pela funcao do jogo, nao pela tabela crua: e ela que junta o
+			# objeto com os numeros do grau, e e ela que o jogo chama.
+			lista.append(Economy.gambiarra_option(point, i))
+		var custos: Array[int] = []
+		var aguentam: Array[float] = []
+		for opt: Dictionary in lista:
+			custos.append(Economy.gambiarra_price(opt, full))
+			aguentam.append(float(opt["aguenta"]))
+			print("      %-9s %-32s R$ %3d  %-11s desconta %.1f%%" % [
+				point, opt["nome"], Economy.gambiarra_price(opt, full),
+				Economy.gambiarra_grade(opt), float(opt["desconto"]) * 100.0])
+		check(lista.size() == Economy.GRAUS, "%s tem %d opcoes" % [point, Economy.GRAUS])
+		check(custos[0] < custos[1] and custos[1] < custos[2],
+			"%s: mais caro = mais caro de verdade" % point)
+		check(aguentam[0] < aguentam[1] and aguentam[1] < aguentam[2],
+			"%s: mais caro aguenta mais" % point)
+
+	# Preco proporcional ao carro, e nao reais fixos (licao das pecas mecanicas).
+	var taxi: int = Economy.repaired_value("taxi", carro)
+	var esporte: int = Economy.repaired_value("sports-car-a", carro)
+	var opt_media := Economy.gambiarra_option("bumper", 1)
+	check(Economy.gambiarra_price(opt_media, esporte)
+			> Economy.gambiarra_price(opt_media, taxi),
+		"a mesma lona custa mais no esportivo",
+		"R$ %d contra R$ %d" % [Economy.gambiarra_price(opt_media, esporte),
+			Economy.gambiarra_price(opt_media, taxi)])
+
+	# Resistencia contra o mundo real: o buraco da rua (Pothole.impact_force 8.0,
+	# escalado de 0.3 a 3.0 pela velocidade) tem que separar os degraus.
+	var limiar := 7.0   # break_threshold da peca
+	var buraco_devagar := 8.0 * 0.5
+	var buraco_rapido := 8.0 * 1.6
+	print("    buraco devagar = %.1f de estresse | buraco rapido = %.1f" % [
+		buraco_devagar, buraco_rapido])
+	var barata: float = float(Economy.gambiarra_option("bumper", 0)["aguenta"]) * limiar
+	var media: float = float(Economy.gambiarra_option("bumper", 1)["aguenta"]) * limiar
+	var cara: float = float(Economy.gambiarra_option("bumper", 2)["aguenta"]) * limiar
+	print("    aguentam ate: barata %.1f | media %.1f | cara %.1f" % [barata, media, cara])
+	check(barata < buraco_devagar, "a barata cai ate num buraco devagar")
+	check(media > buraco_devagar and media < buraco_rapido,
+		"a media passa no devagar e cai no rapido")
+	check(cara > buraco_rapido, "a cara aguenta o buraco rapido")
+
+	# A PERGUNTA QUE IMPORTA: cada grau ganha em ALGUM cenario?
+	#
+	# Se a cara ganhasse sempre, ela seria so um imposto pra quem tem dinheiro;
+	# se a barata ganhasse sempre (foi o que este teste pegou na primeira
+	# calibragem), o catalogo inteiro seria enfeite. O que separa os cenarios e
+	# a DURABILIDADE — cada grau perde as pecas que o estresse daquela viagem
+	# arranca, e nao um numero igual pra todos.
+	var pecas_ok := {"motor": 1.0, "freio": 1.0, "suspensao": 1.0,
+		"pneus": 1.0, "bateria": 1.0, "escapamento": 1.0}
+	var cenarios := [
+		{"nome": "viagem calma  (estresse 2.0)", "estresse": 2.0, "esperado": 1},
+		{"nome": "viagem normal (estresse 5.0)", "estresse": 5.0, "esperado": 2},
+		{"nome": "viagem feia   (estresse 13.0)", "estresse": 13.0, "esperado": 3},
+	]
+	for cen: Dictionary in cenarios:
+		var estresse: float = cen["estresse"]
+		print("    %s:" % cen["nome"])
+		var melhor := 0
+		var melhor_lucro := -999999
+		for grau in range(Economy.GRAUS):
+			var custo := 0
+			var postas: Dictionary = {}
+			var intactas := 0
+			for point: String in Economy.GAMBIARRAS:
+				var opt := Economy.gambiarra_option(point, grau)
+				custo += Economy.gambiarra_price(opt, full)
+				# Mesma regra do GambiarraPart: quebra acima de limiar*aguenta.
+				if estresse <= limiar * float(opt["aguenta"]):
+					postas[point] = opt
+					intactas += 1
+			var venda := Economy.market_value("car-a", carro, intactas, 4,
+				pecas_ok, postas)
+			var lucro := venda - custo
+			print("      grau %d: gastou R$ %3d, sobraram %d/4, vende por R$ %3d -> lucro R$ %3d" % [
+				grau + 1, custo, intactas, venda, lucro])
+			if lucro > melhor_lucro:
+				melhor_lucro = lucro
+				melhor = grau + 1
+		check(melhor == int(cen["esperado"]),
+			"%s: ganha o grau %d" % [cen["nome"].strip_edges(), int(cen["esperado"])],
+			"ganhou o grau %d" % melhor)
+	_gambiarras_completou = true

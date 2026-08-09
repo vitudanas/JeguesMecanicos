@@ -1,11 +1,7 @@
-[gd_scene load_steps=19 format=3]
+[gd_scene load_steps=15 format=3]
 
 [ext_resource type="Script" path="res://scenes/vehicle/Vehicle.gd" id="1"]
 [ext_resource type="Script" path="res://scenes/vehicle/AttachSpot.gd" id="2"]
-[ext_resource type="PackedScene" path="res://scenes/vehicle/parts/HingePart.tscn" id="3"]
-[ext_resource type="PackedScene" path="res://scenes/vehicle/parts/HosePart.tscn" id="4"]
-[ext_resource type="PackedScene" path="res://scenes/vehicle/parts/TapePart.tscn" id="5"]
-[ext_resource type="PackedScene" path="res://scenes/vehicle/parts/PlasticPart.tscn" id="6"]
 
 [sub_resource type="BoxShape3D" id="BodyShape"]
 size = Vector3(1.8, 1.0, 4.0)
@@ -95,7 +91,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, -1.9)
 script = ExtResource("2")
 point_name = "hood"
 display_name = "Capo"
-part_scene = ExtResource("3")
 
 [node name="Collision" type="CollisionShape3D" parent="AttachPoints/Hood"]
 shape = SubResource("AttachShape")
@@ -109,7 +104,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, -2.0)
 script = ExtResource("2")
 point_name = "radiator"
 display_name = "Radiador"
-part_scene = ExtResource("4")
 
 [node name="Collision" type="CollisionShape3D" parent="AttachPoints/Radiator"]
 shape = SubResource("AttachShape")
@@ -123,7 +117,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.0, 0.7, -0.6)
 script = ExtResource("2")
 point_name = "mirror"
 display_name = "Retrovisor"
-part_scene = ExtResource("5")
 
 [node name="Collision" type="CollisionShape3D" parent="AttachPoints/Mirror"]
 shape = SubResource("AttachShape")
@@ -137,7 +130,6 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 2.05)
 script = ExtResource("2")
 point_name = "bumper"
 display_name = "Parachoque"
-part_scene = ExtResource("6")
 
 [node name="Collision" type="CollisionShape3D" parent="AttachPoints/Bumper"]
 shape = SubResource("AttachShape")

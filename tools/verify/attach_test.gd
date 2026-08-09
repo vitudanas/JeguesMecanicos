@@ -320,6 +320,7 @@ func _run() -> void:
 	for spot in spots:
 		if not spot.has_method("interact"):
 			continue
+		GameManager.money = 100000   # a gambiarra agora e paga (ver AttachSpot)
 		spot.interact(player)
 		await get_tree().physics_frame
 	await get_tree().physics_frame
