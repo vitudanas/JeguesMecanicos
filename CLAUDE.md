@@ -2733,6 +2733,36 @@ referências lavar e abastecer **não mudam valor**), e negociação de verdade
 Não implementado de propósito (e por quê): lavar/abastecer, que nas duas
 referências **não mudam valor** — seria trabalho sem consequência.
 
+## Prédios realistas: 14 pacotes já baixados
+
+Em `assets/realistas/` (476 MB, **fora do git** — ver `.gitignore`; são downloads
+crus, entram no repo depois de normalizados e são re-baixáveis pela lista).
+Todos **CC-BY 4.0**: uso comercial liberado, **crédito obrigatório** —
+`tools/creditos.py` monta [docs/creditos.md](docs/creditos.md) lendo o
+`license.txt` que vem dentro de cada pacote, e essa lista vai virar a tela de
+créditos do jogo.
+
+downtown_buildings · brownstone_building_set · european_buildings_pack3 ·
+old_building_pack_lowpoly · tenement_house · bordeaux_flat_1 e 2 ·
+industrial_buildings_sets · old_industrial_building · city_pack_7 ·
+new_york_buildings · low_poly_city_buildings · warehouses · factory_low_poly
+
+**Como o download funciona** (custou algumas tentativas): o navegador embutido
+NÃO salva sozinho — clicar em *Download* abre um diálogo do macOS e é o usuário
+quem escolhe a pasta. Eu abro o painel e clico no glTF por JavaScript (achar a
+linha `.gltf` e clicar no botão `DOWNLOAD` dela — duas chamadas por modelo, sem
+depender de coordenada de tela, que muda com o tamanho do título), e o usuário
+aceita. `tools/receber_modelos.sh` recolhe: **espera cada zip parar de crescer**
+antes de abrir, porque desempacotar um arquivo de 29 MB com 14 MB baixados dá
+"End-of-central-directory signature not found" e o parcial fica na pasta
+parecendo pronto.
+
+**O que ainda falta** (é o trabalho de verdade): cada pacote vem numa escala e
+orientação própria e vários são **uma cena com vários prédios num mesh só** — o
+downtown tem uma fileira inteira. Fatiar em prédios individuais, normalizar
+escala/origem/colisão e reduzir textura (há normal maps de 40 MB) é o que falta
+pra isso entrar no `CityBlocks`.
+
 ## Prédios realistas: o que já foi apurado
 
 **Lista de compras e requisitos:** [docs/modelos-realistas.md](docs/modelos-realistas.md).

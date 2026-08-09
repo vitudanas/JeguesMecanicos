@@ -1,0 +1,19 @@
+# Créditos dos modelos de terceiros
+
+Gerado por `tools/creditos.py` a partir do `license.txt` de cada pacote.
+**CC-BY exige crédito** — esta lista alimenta a tela de créditos do jogo.
+
+- **Bordeaux Flat 1 corner [France]** por [Lost Gecko](https://sketchfab.com/Lost_Gecko) — [página do modelo](https://sketchfab.com/3d-models/bordeaux-flat-1-corner-france-cde0ef76b4ab482bad79d29fe5fb7a88), licença CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+- **Bordeaux Flat 2 corner [France]** por [Lost Gecko](https://sketchfab.com/Lost_Gecko) — [página do modelo](https://sketchfab.com/3d-models/bordeaux-flat-2-corner-france-d390f8d7c3064060b03a753ec02c1da1), licença CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+- **Brownstone Building Set - Low poly model** por [Daniel Zhabotinsky](https://sketchfab.com/DanielZhabotinsky) — [página do modelo](https://sketchfab.com/3d-models/brownstone-building-set-low-poly-model-b15e6344acd844eabc823e1cc8332574), licença CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+- **City pack 7** por [Pasha](https://sketchfab.com/Pasha.) — [página do modelo](https://sketchfab.com/3d-models/city-pack-7-6550e37439814c348e2c884aa740ca3c), licença CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+- **Downtown Buildings Set - Low Poly model** por [Daniel Zhabotinsky](https://sketchfab.com/DanielZhabotinsky) — [página do modelo](https://sketchfab.com/3d-models/downtown-buildings-set-low-poly-model-7378e7fb9c914c39880d9913a6f4e1d6), licença CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+- **European Buildings Asset Pack 3** por [EddyNL](https://sketchfab.com/EddyNL) — [página do modelo](https://sketchfab.com/3d-models/european-buildings-asset-pack-3-b4fe252345214a3ea1abc834af42944d), licença CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+- **Factory Low-Poly** por [KIFIR](https://sketchfab.com/kifir) — [página do modelo](https://sketchfab.com/3d-models/factory-low-poly-7d3bc4d7ce6d48d9986a664d48f3cca1), licença CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+- **Industrial Buildings Set - Low poly models** por [Daniel Zhabotinsky](https://sketchfab.com/DanielZhabotinsky) — [página do modelo](https://sketchfab.com/3d-models/industrial-buildings-set-low-poly-models-e0b0d0342be24e6c923319991a2a4d3d), licença CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+- **Low-poly City Buildings** por [smooth998](https://sketchfab.com/smooth998) — [página do modelo](https://sketchfab.com/3d-models/low-poly-city-buildings-e0209ac5bb684d2d85e5ade96c92d2ff), licença CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+- **New York Buildings** por [sumitmangela](https://sketchfab.com/sumitmangela) — [página do modelo](https://sketchfab.com/3d-models/new-york-buildings-e7922fe0f7b14ed786f84529f9217dac), licença CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+- **Old Building Pack | Lowpoly** por [Fridqeir](https://sketchfab.com/Fridqeir) — [página do modelo](https://sketchfab.com/3d-models/old-building-pack-lowpoly-081eccb97be8429c83b2e9fb407727e7), licença CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+- **Old Industrial Building** por [Hrvoje Wächter](https://sketchfab.com/gazdahrco) — [página do modelo](https://sketchfab.com/3d-models/old-industrial-building-0dafa7aaadfd4666bb4a32776c84b14e), licença CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+- **Low-poly Modular Building Tenement House** por [Orzechu](https://sketchfab.com/Orzechu) — [página do modelo](https://sketchfab.com/3d-models/low-poly-modular-building-tenement-house-c579c4f421f94574b98e7eba7cd5f2a8), licença CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+- **Warehouses** por [99.Miles](https://sketchfab.com/Mazen220) — [página do modelo](https://sketchfab.com/3d-models/warehouses-e6e105d35b3f486292c42ffa52f363c0), licença CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

@@ -21,3 +21,10 @@ builds/
 # Editor/OS
 *.tmp
 *~
+
+# Downloads crus do Sketchfab, ainda nao normalizados (945 MB, texturas ate
+# 40 MB por arquivo). Entram no repo depois de processados: cada modelo vira um
+# predio individual, em escala de metros, com textura reduzida ao que o jogo
+# usa. O cru fica so no disco — e re-baixavel pela lista em
+# docs/garimpo-sketchfab.md.
+assets/realistas/
