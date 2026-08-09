@@ -2228,6 +2228,80 @@ observação pra uma próxima rodada (nada disso foi pedido):
    por "contar chamadas de desenho". Se for medir de verdade a meta de 50-80 FPS,
    medir jogando, em tela cheia e com a janela em foco.
 
+## Referência de design: o que copiar dos dois jogos-inspiração
+
+Levantado em 2026-08-09 a pedido do usuário. **Não foi possível assistir
+gameplay** (não há como ver vídeo nesta sessão): tudo abaixo veio de página da
+Steam, guias, wikis e reviews. Onde a fonte não publica número (custo exato de
+upgrade, principalmente), está marcado como desconhecido — não inventar.
+
+### Car For Sale Simulator 2023 (Red Axe Games)
+
+Fonte: [Steam](https://store.steampowered.com/app/2248760/Car_For_Sale_Simulator_2023/),
+[guia de preços/clientes](https://steamah.com/car-for-sale-simulator-2023-prices-customers-lowballers-guide/).
+
+- **Valor**: preço-base por modelo + modificadores sorteados (km, avaria,
+  pintura, sujeira, combustível, opcionais). Os modificadores derrubam o preço
+  **de compra**; o carro "volta a valer o base" depois de comprado.
+- **Pechincha na compra**: perícia dá 5% / 10% / 20% de desconto extra por
+  nível. **Nunca se negocia acima do preço pedido.**
+- **Venda**: o jogador define o preço do anúncio; clientes bons (8-12/dia)
+  oferecem 93-107% do valor real, **lowballers** (3-5/dia) oferecem 65-88%.
+  Também não dá pra negociar acima do anunciado — daí a estratégia de anunciar
+  alto de propósito.
+- **O que NÃO muda valor** (contraintuitivo, e é bom saber pra não gastar
+  trabalho à toa): lavar, abastecer, foto e título do anúncio. Consertar,
+  repintar e tunar mudam pouco.
+
+### Car Dealer Simulator (Garage Monkeys)
+
+Fonte: [Steam](https://store.steampowered.com/app/2404880/Car_Dealer_Simulator/),
+[enciclopédia](https://shapes.inc/fandom/car-dealer-simulator),
+[dicas](https://gamerblurb.com/articles/car-dealer-simulator-tips-tricks),
+[review](https://www.gamegrin.com/reviews/car-dealer-simulator-review/).
+
+Ciclo em 4 fases: **garimpar → restaurar → anunciar → negociar**.
+
+**Áreas do terreno, cada uma com níveis próprios** (é o "upgrade da loja como um
+todo" — não é só a oficina):
+
+| Área | Níveis | O que destrava |
+|---|---|---|
+| Oficina mecânica | 3 | nv.1 bateria e remendo de escapamento; nv.2 elevador → escapamento, freio, suspensão; nv.3 motor, radiador, embreagem |
+| Funilaria (body) | 4 | lataria, lixar ferrugem, repintura |
+| Lava-jato | 3 | da lavagem na mão ao serviço completo |
+| Escritório | 4 | administrativo; no nv.4 entra a **recepcionista** |
+| Posto próprio | 3 | abastecer sem sair do terreno |
+| Pátio / showroom | — | vagas para expor mais carros ao mesmo tempo |
+| Guincho | 2 tipos | rebocar carro que não anda |
+| Ferramentas | vários | compradas à parte, destravam serviços |
+
+- **Funcionários**: contratados por um app no computador do jogo e **designados a
+  uma estação**. A opção de contratar aparece no **último nível** de cada área
+  (oficina, funilaria, lava-jato). Papéis: mecânico, recepcionista.
+- **Reputação**: cliente que descobre defeito escondido vai embora e **derruba a
+  reputação**; ela destrava progressão.
+- **Diagnóstico**: é preciso descobrir o defeito antes de consertar; defeito
+  não visto = prejuízo na venda.
+- **Detalhe de humor que combina com este projeto**: o jogo tem táticas
+  duvidosas, incluindo adulterar odômetro — irmão da gambiarra daqui.
+
+### Como isso mapeia neste projeto
+
+Já feito (2026-08-09): valor por modelo + estado, carcaça com dono, vistoria,
+pechincha com risco, cliente com personalidade.
+
+Falta, em ordem de dependência:
+1. **Peças com estado + diagnóstico** — base de "conserto realista". A gambiarra
+   vira a opção BARATA E ARRISCADA ao lado da peça de verdade, que é a piada do
+   jogo em forma de mecânica.
+2. **Oficina em níveis** — nv.1 só gambiarra; níveis maiores destravam conserto
+   de verdade, pagos com o lucro.
+3. **Anúncio com preço definido pelo jogador** + lowballers.
+4. **Reputação** — entregar carro com defeito escondido cobra o preço depois.
+5. **Funcionários** — mecânico que trabalha enquanto o jogador garimpa.
+6. **Terreno/pátio** — mais vagas, mais carros simultâneos.
+
 ## Roadmap (fora de escopo desta vertical slice)
 
 - Multiplayer real (cooperativo na oficina / competitivo pelas ruas). Arquitetura atual

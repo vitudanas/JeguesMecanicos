@@ -128,7 +128,9 @@ func _ready() -> void:
 	check(Economy.HAGGLE_RISK > 0.0, "pechinchar tem risco (senao e so burocracia)")
 
 	print("\n[7] da pra comecar o jogo? (o capital inicial compra alguma carcaca)")
-	var inicial := 450
+	# Le do GameManager, nao um numero escrito aqui: foi exatamente assim que o
+	# save_test reprovou sozinho quando o capital inicial mudou.
+	var inicial := GameManager.STARTING_MONEY
 	var caras := 0
 	var total_sorteios := 300
 	for i in range(total_sorteios):
