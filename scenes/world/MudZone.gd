@@ -5,6 +5,7 @@ extends Area3D
 ## propria tracao enquanto estiver dentro (ver Vehicle.gd:enter_mud()).
 
 func _ready() -> void:
+	add_to_group("poca")
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 

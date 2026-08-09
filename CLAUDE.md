@@ -2551,6 +2551,77 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     item foi usado — antes eles instanciavam a peça por fora e não provavam nada
     sobre a compra.
 
+- **2026-08-09** — Usuário pediu o mapa **5x maior**, com um pacote de
+  construções e paisagens realistas, "sempre visando qualidade e não leveza".
+  A expansão está feita e medida; sobre o pacote realista, ver a resposta
+  honesta no fim desta entrada.
+  - **A cidade foi de 6x6 para 14x14 quarteirões**: 225 m → **525 m** de lado
+    (5,4x de área), **182 → 837 prédios**, 413 casas de entrega (eram 108),
+    103 montanhas (eram 44), chão de 2200 → **2700**. Carrega em **2,3 s** e
+    são 43 mil nós.
+  - **Feito por ferramenta, não à mão** (`tools/expand_world.py`): os
+    parâmetros do `Town.tscn` são ACOPLADOS — a grade de ruas aparece em três
+    nós, o cinturão e o anel rural são offsets da borda da cidade, o chão tem
+    que cobrir o pé da serra, a oficina tem que ficar fora do asfalto e as
+    fazendas aparecem tanto como posição quanto dentro de duas listas de
+    `exclude_points`. A ferramenta recebe UM número (quarteirões por lado) e
+    reescreve os 19 blocos juntos, exigindo que cada troca case e gravando a
+    cada passo. Redimensionar de novo é uma linha de comando.
+    - O que **não** escala, de propósito: o espaçamento das ruas (37,5 — o
+      quarteirão é calibrado pelo tamanho dos prédios), a altura das montanhas
+      (320 m já é ~9,5x o prédio mais alto) e a escala de qualquer construção.
+  - **As 18 rotas e os 8 pares de buraco/poça deixaram de ser nós escritos à
+    mão** e viraram geradores (`CityLife.gd`, `CityHazards.gd`) que leem a
+    própria grade. Com 14x14 seriam ~90 retângulos digitados, ou seja ~90
+    chances de repetir o erro de 2026-08-03 (duas rotas que nunca estiveram
+    sobre rua nenhuma). Hoje são **72 carros de IA e 84 pedestres** (eram 42 e
+    26), e **63 buracos + 35 poças** (eram 4 e 4) — isso fecha a limitação
+    "os buracos continuam em 4 pontos fixos", que estava aberta desde o começo
+    e deixava o test-drive caótico sem caos numa cidade deste tamanho.
+  - **Quatro bugs meus, todos pegos por medição e nenhum por leitura de
+    código**:
+    1. *IDs de recurso escolhidos no olho*: usei 410/411/412 pros scripts novos
+       e eles **já estavam em uso** pelas texturas de grama. `ExtResource("410")`
+       passou a resolver pra uma imagem, o script não carregou ("Cannot set
+       object script") e a cidade nasceu com **zero** buracos — sem nada que
+       reprovasse. A ferramenta agora lê os ids usados e pega o primeiro livre.
+    2. *Configurar a rota depois de `add_child`*: o `_ready` da rota roda na
+       hora e é ele que monta a curva a partir de `route_points`. Com a lista
+       ainda vazia a curva nasce com comprimento ZERO, e os pedestres
+       apareceram empilhados na origem.
+    3. *Poça deslocada do eixo*: ela tem raio 2,5 contra 3,0 de meia-pista, e
+       qualquer deslocamento lateral joga a borda em cima do meio-fio — 35 de 35
+       reprovaram assim. Poça vai no eixo; só o buraco (raio 1,1) fica na mão.
+    4. *Sorteio de quarteirão que colide consigo mesmo*: eu pegava "o mais
+       central de N amostras" e recusava repetido; com 196 quarteirões e viés
+       forte, caía sempre nos mesmos e desistia por esgotar tentativas — pedi 14
+       rotas e a cidade nasceu com 5. Agora ordeno a lista inteira uma vez, com
+       ruído em cima da centralidade.
+  - **Regressão da limpeza de ontem, achada aqui**: apaguei o NormalGL e o
+    Roughness do `Gravel022` porque o shader do chão só usa a cor — mas o
+    **piso de cascalho da cidade** (praça, estacionamento) usa os três, e o
+    caminho é montado com `%s`, então nunca aparece inteiro no código. O jogo
+    passou a soltar "Resource file not found" em silêncio (erro de load não
+    reprova teste). Restaurado do git, e o `pack_audit` aprendeu a convenção:
+    todo conjunto ambientCG pedido com `%s` tem que ter os três mapas no disco.
+    Conferido que o auditor pega o defeito de propósito antes de restaurar.
+  - **Teste instável consertado no caminho**: a seção de resgate do
+    `drive_test` capotava o carro girando 180° em torno do eixo FORWARD, o que
+    também espelha a direção dele — depois do R ele saía atravessado e batia na
+    guia em ~3 m, então o teste passava ou falhava por sorte (2,1 m numa rodada,
+    3,6 m na seguinte, sem nada mudar no jogo). Agora ele é apontado ao longo da
+    rua antes de acelerar: 15 m, estável.
+  - **Sobre o pacote de construções realistas — pesquisei de novo e ele não
+    existe.** Poly Haven tem a categoria de arquitetura **vazia**; Kenney,
+    KayKit e Quaternius são todos estilizados; o kit modular de cidade mais
+    realista que apareceu (Laya Design) é licença **Fab**, não CC0, e só roda em
+    Unreal. Baixei o `Kenney Modular Buildings` (111 peças CC0, das quais 7 são
+    prédios inteiros) pra avaliar e **não integrei**: o Sample.png mostra um
+    estilo pastel mais cartunesco que o kit atual, ou seja pioraria justamente o
+    que o usuário quer. O que existe de CC0 realista é **material** (ambientCG,
+    já em uso nas fachadas desde 2026-08-03) e **props avulsos** de rua. Fica
+    registrado pra não pesquisar isto uma quarta vez.
+
 ### Pendências pedidas e ainda NÃO feitas
 
 Nenhuma das três pendências anteriores continua aberta. O que sobrou de

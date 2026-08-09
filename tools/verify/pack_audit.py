@@ -81,6 +81,34 @@ def expand_pattern(ref: str) -> list:
     return sorted(ROOT.glob(rel))
 
 
+## O projeto pede todo conjunto ambientCG nos TRES mapas, montando o caminho com
+## `%s` (ver CitySurface.gd e MountainRange.gd). Como o caminho nunca aparece
+## inteiro no codigo, uma limpeza de arquivo passa batida por este auditor: em
+## 2026-08-09 apaguei o NormalGL e o Roughness do Gravel022 achando que so a cor
+## era usada — o chao usa so a cor, mas o piso de cascalho da cidade usa os tres,
+## e o jogo passou a soltar "Resource file not found" em silencio (erro de load
+## nao reprova teste nenhum). Aqui a convencao vira regra.
+PBR_MAPS = ("Color", "NormalGL", "Roughness")
+
+
+def check_pbr_sets() -> list:
+    faltando = []
+    pat = re.compile(r"res://(assets/ambientcg/[^\"']*?%s[^\"']*?\.jpg)")
+    for f in [ROOT / x for x in SOURCE_FILES] + [
+            p for d in SOURCE_DIRS for p in (ROOT / d).rglob("*")
+            if p.suffix in SOURCE_EXT]:
+        try:
+            text = f.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            continue
+        for rel in pat.findall(text):
+            for mapa in PBR_MAPS:
+                alvo = ROOT / (rel % mapa)
+                if not alvo.exists():
+                    faltando.append(str(alvo.relative_to(ROOT)))
+    return sorted(set(faltando))
+
+
 def collect_refs() -> set:
     refs = set()
     files = [ROOT / f for f in SOURCE_FILES]
@@ -136,6 +164,8 @@ def main() -> int:
     print("referencias conferidas: %d (%d importadas, puladas)" % (len(refs) - skipped, skipped))
     if expanded:
         print("caminhos montados em runtime: %d arquivos casados" % expanded)
+    for alvo in check_pbr_sets():
+        missing.append((alvo, "CONJUNTO PBR INCOMPLETO (falta no disco)"))
     if missing:
         print("\n%d PROBLEMA(S):" % len(missing))
         for ref, why in missing:

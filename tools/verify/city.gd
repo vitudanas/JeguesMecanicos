@@ -402,11 +402,15 @@ func _blocks(streets_x: Array, streets_z: Array, spacing: float) -> void:
 func _hazards(streets_x: Array, streets_z: Array, half_road: float) -> void:
 	var bad := 0
 	var count := 0
-	for child in town.get_children():
-		var is_pothole: bool = child is Area3D and child.name.begins_with("Pothole")
-		var is_mud: bool = child.name.begins_with("MudZone")
-		if not (is_pothole or is_mud):
-			continue
+	# Por GRUPO, e varrendo a arvore inteira: os buracos deixaram de ser filhos
+	# diretos do Town (agora nascem do CityHazards) e passaram a ser irmaos de
+	# mesmo nome, que o Godot renomeia pra @Area3D@N. Contando por nome e por
+	# filho direto, o censo deu ZERO com 41 buracos na cena.
+	var alvos: Array[Node] = []
+	alvos.append_array(get_tree().get_nodes_in_group("buraco"))
+	alvos.append_array(get_tree().get_nodes_in_group("poca"))
+	for child in alvos:
+		var is_pothole: bool = child.is_in_group("buraco")
 		count += 1
 		var r := 1.1 if is_pothole else 2.5
 		var p := (child as Node3D).global_position

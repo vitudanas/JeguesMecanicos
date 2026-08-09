@@ -250,11 +250,27 @@ func _run() -> void:
 	if grounded_after < 3:
 		fail("depois do resgate o carro nao assenta (%d/4 rodas)" % grounded_after)
 	# E tem que voltar a ANDAR: desvirar e largar enterrado no chao nao resolve.
+	#
+	# APONTA AO LONGO DA RUA antes de acelerar. Capotar o carro girando 180 graus
+	# em torno do eixo FORWARD tambem espelha a direcao dele, entao depois do
+	# resgate ele saia atravessado e batia na guia do outro lado em ~3 m — o
+	# teste passava ou falhava por sorte (mediu 2.1 m numa rodada e 3.6 m na
+	# seguinte, sem nada mudar no jogo). A pergunta aqui e "o carro volta a
+	# andar", nao "pra que lado ele ficou virado".
+	car.global_rotation = Vector3(0.0, deg_to_rad(-90.0), 0.0)
+	car.linear_velocity = Vector3.ZERO
+	car.angular_velocity = Vector3.ZERO
+	await _settle(car, 30)
 	var before_drive: Vector3 = car.global_position
 	for i in range(120):
 		await _step(car, 1.0, 0.0)
 	var drove: float = before_drive.distance_to(car.global_position)
-	print("[resgate] andou %.1f m depois de resgatado" % drove)
+	print("[resgate] andou %.1f m depois de resgatado (de %s a %s, %.0f km/h)" % [
+		drove, before_drive, car.global_position, car.linear_velocity.length() * 3.6])
+	if drove < 3.0:
+		print("      chovendo=%s | na lama=%d | contatos: %s" % [
+			WeatherManager.is_raining, car.mud_zones_overlapping,
+			car.get_colliding_bodies()])
 	if drove < 3.0:
 		fail("resgatado, o carro nao volta a andar (%.1f m em 2s)" % drove)
 	car.driver = null

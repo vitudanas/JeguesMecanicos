@@ -5,6 +5,10 @@ extends Area3D
 @export var impact_force := 8.0
 
 func _ready() -> void:
+	# Grupo, e nao nome: desde que os buracos passaram a ser gerados (ver
+	# CityHazards.gd) eles sao irmaos de mesmo nome, que o Godot renomeia pra
+	# @Area3D@N — o verificador contava zero.
+	add_to_group("buraco")
 	body_entered.connect(_on_body_entered)
 
 func _on_body_entered(body: Node) -> void:
