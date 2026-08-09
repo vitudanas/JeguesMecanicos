@@ -177,6 +177,49 @@ func _run() -> void:
 	if absf(after - 0.02) > 0.15:
 		fail("depois da queda o carro nao voltou a assentar (y=%.2f)" % after)
 
+	# --------------------------------------------------- resgate do capotado
+	# Ate esta rodada NAO HAVIA COMO se recuperar: capotou, a partida acabava
+	# ali. Este teste prova as duas metades — que o carro de fato NAO se
+	# desvira sozinho (senao o resgate seria enfeite) e que o R resolve.
+	car.queue_free()
+	await get_tree().physics_frame
+	car = _spawn()
+	await _settle(car, 60)
+	# De cabeca pra baixo, no lugar.
+	car.global_transform = Transform3D(
+		Basis(Vector3.FORWARD, PI), car.global_position + Vector3.UP * 0.5)
+	car.linear_velocity = Vector3.ZERO
+	car.angular_velocity = Vector3.ZERO
+	await _settle(car, 180)
+	var up_flipped: float = car.global_transform.basis.y.dot(Vector3.UP)
+	print("\n[resgate] capotado e largado 3s: up=%.2f, sozinho=%s"
+		% [up_flipped, "de pe" if car.is_upright() else "CONTINUA CAPOTADO"])
+	if car.is_upright():
+		fail("o carro se desvirou sozinho — o teste nao esta testando nada")
+
+	car.driver = self   # o resgate so vale com motorista, como no jogo
+	car.recover()
+	await _settle(car, 90)
+	var up_after: float = car.global_transform.basis.y.dot(Vector3.UP)
+	var grounded_after := 0
+	for w in car.wheels:
+		if w.is_colliding():
+			grounded_after += 1
+	print("[resgate] depois do R: up=%.2f, %d/4 rodas no chao" % [up_after, grounded_after])
+	if not car.is_upright():
+		fail("o resgate nao desvirou o carro (up=%.2f)" % up_after)
+	if grounded_after < 3:
+		fail("depois do resgate o carro nao assenta (%d/4 rodas)" % grounded_after)
+	# E tem que voltar a ANDAR: desvirar e largar enterrado no chao nao resolve.
+	var before_drive: Vector3 = car.global_position
+	for i in range(120):
+		await _step(car, 1.0, 0.0)
+	var drove: float = before_drive.distance_to(car.global_position)
+	print("[resgate] andou %.1f m depois de resgatado" % drove)
+	if drove < 3.0:
+		fail("resgatado, o carro nao volta a andar (%.1f m em 2s)" % drove)
+	car.driver = null
+
 	# ----------------------------------------------------------- reboque
 	car.queue_free()
 	await get_tree().physics_frame

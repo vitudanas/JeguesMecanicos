@@ -174,7 +174,8 @@ local hard-coded sempre que possível.
 
 - **A pé:** W/A/S/D anda, Shift corre, Space pula, E interage (olhando para o alvo),
   Esc abre/fecha o menu de pause.
-- **Dirigindo:** W/S acelera/ré, A/D vira, Space freio de mão, F sai do carro.
+- **Dirigindo:** W/S acelera/ré, A/D vira, Space freio de mão, F sai do carro,
+  **R desvira/reassenta o carro** (também vale rebocando a carcaça a pé).
 - **Venda:** a entrega é numa casa sorteada da cidade (placa verde ENTREGA);
   encoste o carro na frente dela e segure E perto do NPC pra encher a barra de lábia.
 - **Menus:** o jogo abre num menu principal (Jogar/Sair); Esc a qualquer momento
@@ -2030,6 +2031,66 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     do carro), `save_test` (progresso passa pelo DISCO de verdade em cada etapa)
     e `loading_test`. Suíte inteira passa: city, drive, loop, attach, scale,
     yard, settings, audio, ui, obstacles, save e loading.
+
+- **2026-08-08** — Usuário pediu pra seguir verificando o que falta, apontou que
+  a chuva tinha que **fechar o tempo e chover no mapa todo** (e depois: mais
+  leve, e que não chovesse só em cima do jogador), e perguntou se havia
+  salvamento. No meio da rodada a pasta do projeto ficou **inacessível** e ele
+  moveu tudo de `~/Documents/JOGO2` para `/Users/Shared/JOGO2`.
+  - **A chuva tinha um defeito de UMA LINHA, e ele explicava tudo:**
+    `emission_shape = 1` no `RainFX.tscn`. No Godot 4, **1 é SPHERE; BOX é 3** —
+    com a esfera padrão de raio 1, TODA a gota nascia numa bolha de 1 metro e o
+    `emission_box_extents` logo abaixo era **ignorado**. O jogo tinha, ao pé da
+    letra, um chuveiro de 1 m seguindo o jogador. Nenhum ajuste de altura,
+    densidade, alpha ou área ia consertar, porque o defeito era a FORMA — e eu
+    gastei três rodadas mexendo justamente nesses números antes de abrir o
+    arquivo. **Lição**: quando o formato do defeito na foto (um leque saindo de
+    um ponto) não bate com os parâmetros que você acredita estar usando,
+    desconfie do ENUM, não do valor.
+  - **O céu não fechava.** O `WeatherSky` escurecia sol, ambiente e chão, mas o
+    HDRI continuava um dia de sol — cidade sombria embaixo de céu azul com nuvem
+    branca, e o horizonte inteiro desmentia a chuva. Resolvido com
+    `fog_sky_affect`, que mistura a cor da névoa NO PRÓPRIO CÉU: o azul vira
+    cinza de temporal reusando a névoa que já existia, sem trocar o HDRI. É o
+    que faz o mapa inteiro ler como chuvoso a 500 m, onde partícula nenhuma
+    alcança.
+  - **A chuva passou a seguir a CÂMERA, não o jogador.** Presa ao jogador, em 3ª
+    pessoa ela ficava grudada no carro e a rua em volta aparecia seca; a 70 km/h
+    o carro saía por baixo da coluna mais rápido do que ela reposicionava.
+    Registrado no código o limite honesto: partícula só existe perto — ninguém
+    chove em 2200 m de mapa com partícula, e quem vende "chove em tudo" é o céu
+    e a névoa.
+  - **A gota era invisível** com 0,7 cm de largura: sub-pixel a partir de uns
+    10 m. Foi pra 2,2 cm, mais leve (alpha 0,17) e mais densa por área — o que
+    faz ler como chuva é densidade, não quantidade: 1500 gotas espalhadas em
+    164 m davam UMA a cada 18 m².
+  - **Não havia como se recuperar de nada.** Capotou num buraco, bateu de lado
+    num poste, encravou — a partida acabava ali, sem tecla, sem menu. Num jogo
+    cuja premissa é dirigir um calhambeque por pista esburacada, capotar não é
+    acidente raro, é o caminho normal. Agora **R desvira e reassenta** o carro
+    onde ele está (mantém X e Z: o preço de capotar é perder tempo, não perder o
+    lugar), vale dirigindo E rebocando, e sacode as gambiarras — resgate não sai
+    de graça. O `drive_test` prova as duas metades: largado 3 s de cabeça pra
+    baixo ele **continua** capotado (up = −1.00), e depois do R fica up = 1.00,
+    4/4 rodas no chão e volta a andar.
+  - **O HUD não dizia nada sobre as gambiarras**, sendo que o preço de venda vai
+    de 40% a 100% conforme as peças intactas e cada peça quebrada ainda acelera
+    o esvaziamento da barra de lábia. O jogador dirigia cego sobre a única
+    variável que mexe no dinheiro dele. Agora mostra "Gambiarras 3/4 · vale
+    ~R$ 187", com a cor contando a história antes da leitura. O `loop_test`
+    cobra que a leitura ACOMPANHE: quebra uma peça de propósito e exige que o
+    texto mude de 4/4 pra 3/4 — indicador que só acerta no estado inicial não
+    serve.
+  - **Pasta do projeto bloqueada pelo macOS no meio da sessão.** Depois de um
+    comando que entrou em `Library/Application Support` pra copiar screenshots,
+    o TCC passou a negar leitura de tudo em `~/Documents/JOGO2` — `cat`, `sed`,
+    Python, o próprio Godot (`getcwd is null`) e as ferramentas de arquivo, com
+    e sem sandbox, por caminho relativo e absoluto. `ls` de metadados
+    funcionava; conteúdo, não. Diagnosticado que não era o projeto (permissões
+    `-rw-r--r--`, sem flags, `/tmp` lia normal). Resolvido pelo usuário movendo
+    para `/Users/Shared/JOGO2`, que não é pasta protegida. **Pra próxima**:
+    copiar screenshot do `user://` sem `cd` pra dentro de `Library/`, usando
+    caminho absoluto direto no `sips`.
 
 ### Pendências pedidas e ainda NÃO feitas
 

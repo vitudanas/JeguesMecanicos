@@ -348,6 +348,37 @@ func _run() -> void:
 		return
 	ok("jogador entrou no carro (camera de perseguicao ativa: %s)" % wreck.chase_camera.current)
 
+	# O HUD tem que CONTAR o estado das gambiarras. O preco de venda vai de 40%
+	# a 100% conforme as pecas intactas, e antes disto nada na tela dizia quantas
+	# ainda estavam de pe — o jogador dirigia cego sobre a unica variavel que
+	# mexe no dinheiro dele.
+	var hud: Node = get_tree().get_first_node_in_group("hud")
+	if hud == null or hud.damage_label == null:
+		fail("HUD sem o indicador de gambiarras")
+		return
+	await get_tree().process_frame
+	if GameManager.active_vehicle != wreck:
+		fail("o HUD nao sabe qual e o carro do jogador")
+		return
+	if not hud.damage_label.visible:
+		fail("indicador de gambiarras invisivel com o jogador dirigindo")
+		return
+	ok("HUD mostra '%s'" % hud.damage_label.text)
+	if not hud.damage_label.text.contains("4/4"):
+		fail("carro inteiro mas o HUD nao diz 4/4: '%s'" % hud.damage_label.text)
+		return
+
+	# Arrebenta uma gambiarra e cobra que a leitura ACOMPANHE: um indicador que
+	# so acerta no estado inicial nao serve pra nada.
+	var vitima = wreck.installed_parts.values()[0]
+	vitima.receive_stress(999.0)
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if not hud.damage_label.text.contains("3/4"):
+		fail("gambiarra quebrou e o HUD continua dizendo '%s'" % hud.damage_label.text)
+		return
+	ok("depois de quebrar uma: '%s'" % hud.damage_label.text)
+
 	# Acelera de verdade por 2s pra provar que o carro dirigido responde ao W.
 	_track = null
 	_pose_held = false

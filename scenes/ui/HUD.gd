@@ -21,8 +21,58 @@ var objective_position: Vector3 = Vector3.ZERO
 var has_objective := false
 var player: Node = null
 
+## Estado das gambiarras + valor estimado do carro.
+##
+## Ate agora o jogador dirigia CEGO em relacao ao que mais mexe no jogo: o preco
+## de venda vai de 40%% a 100%% do valor base conforme as pecas intactas, e cada
+## peca quebrada ainda acelera o esvaziamento da barra de labia — e nada disso
+## aparecia na tela. Quebrar uma gambiarra num buraco era um evento invisivel.
+##
+## Criado em codigo, e nao adicionado ao HUD.tscn: mexer a mao num `.tscn` ja
+## custou caro neste projeto.
+var damage_label: Label = null
+
+func _build_damage_label() -> void:
+	damage_label = Label.new()
+	damage_label.add_theme_font_size_override("font_size", 18)
+	damage_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	damage_label.add_theme_constant_override("outline_size", 5)
+	damage_label.visible = false
+	money_label.get_parent().add_child(damage_label)
+	money_label.get_parent().move_child(damage_label, money_label.get_index() + 1)
+
+## Cor do texto conta a historia antes da leitura: verde inteiro, amarelo
+## arranhado, vermelho caindo aos pedacos.
+func _update_damage() -> void:
+	if damage_label == null:
+		return
+	var v: Node = GameManager.active_vehicle
+	if v == null or not is_instance_valid(v):
+		damage_label.visible = false
+		return
+	var total: int = v.total_attach_points()
+	if total <= 0:
+		damage_label.visible = false
+		return
+	var intact: int = v.intact_part_count()
+	damage_label.visible = true
+	if v.is_wrecked:
+		damage_label.text = "Gambiarras %d/%d — carro incompleto" % [intact, total]
+		damage_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.88))
+		return
+	var ratio := float(intact) / float(total)
+	damage_label.text = "Gambiarras %d/%d · vale ~R$ %d" % [
+		intact, total, Economy.estimate_sale_price(intact, total)]
+	var color := Color(0.55, 0.92, 0.55)
+	if ratio < 0.5:
+		color = Color(0.95, 0.45, 0.40)
+	elif ratio < 1.0:
+		color = Color(0.98, 0.83, 0.35)
+	damage_label.add_theme_color_override("font_color", color)
+
 func _ready() -> void:
 	add_to_group("hud")
+	_build_damage_label()
 	GameManager.money_changed.connect(_on_money_changed)
 	GameManager.persuasion_updated.connect(_on_persuasion_updated)
 	GameManager.objective_changed.connect(_on_objective_changed)
@@ -52,6 +102,7 @@ func set_prompt(text: String) -> void:
 
 func _process(delta: float) -> void:
 	_update_fps(delta)
+	_update_damage()
 	if not has_objective:
 		return
 	if player == null:

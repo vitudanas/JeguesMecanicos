@@ -32,6 +32,8 @@ const TIPS: Array[String] = [
 	"Segure E perto do cliente para encher a barra de lábia.",
 	"Quanto mais gambiarra quebrada, mais rápido a barra de lábia esvazia.",
 	"F sai do carro. Shift corre.",
+	"Capotou? R desvira o carro onde ele estiver — dirigindo ou rebocando.",
+	"O canto da tela mostra quantas gambiarras seguem inteiras e quanto o carro vale.",
 	"A entrega é sempre numa casa diferente — siga a bússola no topo da tela.",
 ]
 

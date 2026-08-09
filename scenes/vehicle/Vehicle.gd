@@ -103,6 +103,7 @@ var rig: CarRig
 var wheels: Array[RayCast3D] = []
 var _steer_angle := 0.0
 var audio: VehicleAudio = null
+var _r_prev := false
 var _spring_k := 0.0
 var _spring_c := 0.0
 var _rest_length := 0.0
@@ -336,9 +337,11 @@ func interact(player: Node) -> void:
 			return
 		if player.has_method("start_towing"):
 			player.start_towing(self)
+			GameManager.set_active_vehicle(self)
 	else:
 		if player.has_method("enter_vehicle"):
 			driver = player
+			GameManager.set_active_vehicle(self)
 			player.enter_vehicle(self)
 			chase_camera.current = true
 
@@ -402,6 +405,56 @@ func _current_traction() -> float:
 		return WeatherManager.mud_traction_factor
 	return 1.0
 
+## Quanto o carro pode inclinar antes de contar como capotado (cosseno do
+## angulo entre o teto e o ceu). 0.35 e ~70 graus: deitado de lado ja conta.
+const UPRIGHT_LIMIT := 0.35
+## Espera entre dois resgates, pra R segurado nao virar voo.
+const RECOVER_COOLDOWN := 1.5
+
+var _recover_wait := 0.0
+
+## Desvira e reassenta o carro onde ele esta. Chamado pelo R.
+##
+## Existe porque ate agora NAO HAVIA COMO SE RECUPERAR de nada: capotou num
+## buraco, bateu de lado num poste ou encravou entre duas construcoes, e a
+## partida acabava ali — sem tecla, sem menu, sem nada. Num jogo cuja premissa e
+## dirigir um calhambeque de gambiarra por uma pista esburacada, capotar nao e
+## acidente raro, e o caminho normal.
+##
+## Mantem X e Z: reposicionar pra longe seria teleporte, e o preco de capotar
+## deve ser perder tempo, nao perder o lugar.
+func recover() -> void:
+	if _recover_wait > 0.0:
+		return
+	_recover_wait = RECOVER_COOLDOWN
+	var space := get_world_3d().direct_space_state
+	var from := global_position + Vector3.UP * 3.0
+	var q := PhysicsRayQueryParameters3D.create(from, from + Vector3.DOWN * 40.0)
+	# Sem excluir o proprio carro, o raio bate na barriga dele e devolve a
+	# altura da lataria — a mesma armadilha que enterrou a rua inteira em
+	# 2026-08-03.
+	q.exclude = [get_rid()]
+	var hit := space.intersect_ray(q)
+	var ground_y: float = float(hit["position"].y) if hit.has("position") else global_position.y
+
+	# So a direcao (guinada) sobrevive: inclinacao e rolagem sao justamente o
+	# que se quer desfazer.
+	var yaw := global_transform.basis.get_euler().y
+	var t := Transform3D(Basis(Vector3.UP, yaw), Vector3(
+		global_position.x, ground_y + rig.wheel_radius + 0.35, global_position.z))
+	# `set_deferred`: isto e chamado de dentro do passo de fisica, e mexer na
+	# transformada de um RigidBody ali e erro no Godot.
+	set_deferred("freeze", false)
+	linear_velocity = Vector3.ZERO
+	angular_velocity = Vector3.ZERO
+	global_transform = t
+	_stress_all_parts(2.0)   # sacode as gambiarras: resgate nao sai de graca
+	AudioManager.play_at("batida_media", global_position, -6.0, 0.8, 45.0)
+
+## O teto ainda aponta pro ceu?
+func is_upright() -> bool:
+	return global_transform.basis.y.dot(Vector3.UP) > UPRIGHT_LIMIT
+
 func hit_pothole(force: float) -> void:
 	apply_central_impulse(Vector3.UP * force * 0.35)
 	_stress_all_parts(force)
@@ -442,6 +495,19 @@ func _physics_process(delta: float) -> void:
 		throttle_input = 0.0
 		steer_input = 0.0
 		handbrake = false
+	# R desvira/reassenta. Vale DIRIGINDO ou REBOCANDO: a carcaca puxada a pe
+	# tambem capota (foi o que fez ela chegar de cabeca pra baixo na oficina em
+	# 2 de 3 rodadas antes do `tow_grip`), e ali o jogador tambem nao tinha
+	# saida. Borda de subida, como o E e o V — segurado, seria um resgate por
+	# quadro.
+	if driver or being_towed:
+		var r_now := Input.is_key_pressed(KEY_R)
+		if r_now and not _r_prev:
+			recover()
+		_r_prev = r_now
+	else:
+		_r_prev = false
+	_recover_wait = maxf(_recover_wait - delta, 0.0)
 	_apply_suspension_and_drive(delta)
 	_update_visual(delta)
 	if smoke_fx:

@@ -24,6 +24,18 @@ extends Node
 @export var rain_fog_color := Color(0.62, 0.65, 0.70)
 ## Chao molhado: escurece e fica mais espelhado.
 @export var rain_ground_darken := 0.72
+## O CEU FECHANDO. Sem isto o mundo escurecia por baixo e o ceu continuava um
+## dia de sol — HDRI azul com nuvem branca por cima de uma cidade sombria. Era
+## esse o motivo de a chuva nao "fechar o tempo": o horizonte inteiro
+## desmentia a chuva.
+##
+## `fog_sky_affect` mistura a cor da nevoa NO PROPRIO CEU, entao o azul vira
+## cinza de temporal usando a nevoa que ja existe — sem trocar o HDRI e sem
+## material novo. E o que faz o mapa todo ler como chuvoso a 500 m de
+## distancia, onde particula nenhuma alcanca.
+@export var rain_sky_fog := 0.92
+## Nevoa da altura da vista: fecha o horizonte sem apagar o que esta perto.
+@export var rain_fog_sun_scatter := 0.02
 
 @export var sun_path: NodePath
 @export var env_path: NodePath
@@ -57,6 +69,8 @@ func _ready() -> void:
 		_dry["fog_enabled"] = e.fog_enabled
 		_dry["fog_density"] = e.fog_density
 		_dry["fog_color"] = e.fog_light_color
+		_dry["fog_sky"] = e.fog_sky_affect
+		_dry["fog_scatter"] = e.fog_sun_scatter
 	if _ground_mat:
 		_dry["grass"] = _ground_mat.get_shader_parameter("grass_color")
 		_dry["dry_grass"] = _ground_mat.get_shader_parameter("grass_dry_color")
@@ -91,6 +105,9 @@ func _apply() -> void:
 		e.fog_enabled = bool(_dry["fog_enabled"]) or _wet > 0.01
 		e.fog_density = lerpf(float(_dry["fog_density"]), rain_fog_density, _wet)
 		e.fog_light_color = (_dry["fog_color"] as Color).lerp(rain_fog_color, _wet)
+		# O ceu entra na conta da nevoa: e isto que fecha o tempo de verdade.
+		e.fog_sky_affect = lerpf(float(_dry["fog_sky"]), rain_sky_fog, _wet)
+		e.fog_sun_scatter = lerpf(float(_dry["fog_scatter"]), rain_fog_sun_scatter, _wet)
 	if _ground_mat and _dry.has("grass"):
 		# Chao molhado: mais escuro e menos saturado. E o sinal mais forte de que
 		# choveu ALI, mesmo onde nao ha uma gota desenhada.

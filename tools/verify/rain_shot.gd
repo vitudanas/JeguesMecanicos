@@ -49,52 +49,47 @@ func _shot(n: String) -> void:
 	get_viewport().get_texture().get_image().save_png("%s/%s.png" % [OUT_DIR, n])
 	print("  foto: %s" % n)
 
-func _run() -> void:
-	# Grama de PERTO: e a distancia em que o jogador anda, e onde o detalhe fino
-	# do shader tem que aparecer.
-	_look(Vector3(-150, 1.7, 60), Vector3(-150, 0.3, 54))
-	await _shot("00_grama_de_perto")
-	_look(Vector3(-140, 6, 80), Vector3(-150, 0, 40))
-	await _shot("00b_campo")
-	# Patio da oficina, de cima e no chao.
-	_look(Vector3(-160, 14, 22), Vector3(-175, 1, 0))
-	await _shot("06_patio_de_cima")
-	_look(Vector3(-172, 1.7, 12), Vector3(-176, 2, -4))
-	await _shot("07_patio_no_chao")
+## Pontos de vista fotografados SECO e depois CHOVENDO, do mesmo lugar. Comparar
+## o par e o unico jeito de responder "parece que chove no mapa todo?" — uma foto
+## de chuva sozinha nao diz se o mundo mudou ou se so tem gota na frente da
+## camera.
+const VIEWS: Array = [
+	[Vector3(0.0, 1.7, 30.0), Vector3(6.0, 4.0, -40.0), "rua"],
+	[Vector3(-150.0, 90.0, 150.0), Vector3(0.0, 8.0, 0.0), "cidade_de_cima"],
+	[Vector3(-158.0, 1.7, 22.0), Vector3(-100.0, 6.0, 10.0), "campo"],
+	[Vector3(-40.0, 6.0, 260.0), Vector3(-40.0, 90.0, 520.0), "serra"],
+]
 
-	# Estrada de terra ligando cidade e oficina.
-	_look(Vector3(-130, 9, 22), Vector3(-155, 0, 2))
-	await _shot("08_estrada_de_terra")
-	_look(Vector3(-120, 1.9, 4), Vector3(-160, 1.5, 1))
-	await _shot("09_estrada_no_chao")
+## Espera a transicao inteira do WeatherSky mais folga.
+func _set_weather(raining: bool) -> void:
+	WeatherManager.is_raining = raining
+	WeatherManager.weather_changed.emit(raining)
+	for i in range(300):
+		await get_tree().process_frame
 
-	# Serra nova, do chao e de longe.
-	_look(Vector3(-120, 3, 150), Vector3(-20, 120, 420))
-	await _shot("01_serra_do_chao")
-	_look(Vector3(0, 90, 300), Vector3(0, 30, -100))
-	await _shot("02_serra_e_cidade")
-	_look(Vector3(40, 2.0, 60), Vector3(40, 8.0, -80))
-	await _shot("03_rua_com_serra_ao_fundo")
-
-	# Chuva: liga na mao, espera o efeito encher e fotografa perto do jogador.
-	var rain := main.get_node_or_null("RainFX")
-	var player := get_tree().get_first_node_in_group("player")
-	if rain == null or player == null:
-		print("    (sem RainFX ou jogador, pulei a chuva)")
+## A gota esta mesmo saindo? "Nao vejo chuva na foto" pode ser particula
+## desligada, particula longe da camera ou gota transparente demais — e cada uma
+## pede um conserto diferente.
+func _report_rain() -> void:
+	var fx := main.find_child("RainFX", true, false) as GPUParticles3D
+	if fx == null:
+		print("  [chuva] RainFX NAO ESTA NA CENA")
 		return
-	# O RainFX segue o jogador, entao o jogador vai pra rua antes.
-	player.global_position = Vector3(0, 0.2, 30)
-	WeatherManager.is_raining = true
-	WeatherManager.weather_changed.emit(true)
-	for i in range(150):
-		await get_tree().physics_frame
-	print("    chovendo: %s | emitindo: %s | gotas: %d" % [
-		WeatherManager.is_raining, rain.emitting, rain.amount])
-	_look(Vector3(2, 1.7, 34), Vector3(0, 3.0, 10))
-	await _shot("04_chuva_na_rua")
-	_look(Vector3(-172, 1.7, 6), Vector3(-175, 3.0, -6))
-	await _shot("05_chuva_na_oficina")
-	_look(Vector3(-120, 30, 200), Vector3(0, 20, -40))
-	await _shot("10_chuva_vista_ampla")
-	_look(Vector3(-140, 4, 90), Vector3(-40, 90, 400))
-	await _shot("11_chuva_na_serra")
+	var cam_pos := cam.global_position
+	var mat := fx.draw_pass_1.surface_get_material(0) if fx.draw_pass_1 else null
+	var alpha := -1.0
+	if mat is StandardMaterial3D:
+		alpha = (mat as StandardMaterial3D).albedo_color.a
+	print("  [chuva] emitindo=%s | %d gotas | a %.0f m da camera | alpha da gota %.2f"
+		% [fx.emitting, fx.amount, fx.global_position.distance_to(cam_pos), alpha])
+
+func _run() -> void:
+	await _set_weather(false)
+	for v in VIEWS:
+		_look(v[0], v[1])
+		await _shot("seco_%s" % v[2])
+	await _set_weather(true)
+	_report_rain()
+	for v in VIEWS:
+		_look(v[0], v[1])
+		await _shot("chuva_%s" % v[2])

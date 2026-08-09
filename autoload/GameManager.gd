@@ -19,11 +19,20 @@ var objective_label: String = ""
 ## Volta pros valores de inicio de partida. Necessario porque os autoloads
 ## SOBREVIVEM a troca de cena: sem isto, sair pro menu e escolher "Novo jogo"
 ## continuaria com o dinheiro da partida anterior.
+## Carro da vez do jogador (rebocado, na oficina ou dirigido). O HUD le daqui
+## pra mostrar o estado das gambiarras — sem isto ele teria que adivinhar qual
+## dos varios veiculos da cena e o do jogador (o EventManager espalha outros).
+var active_vehicle: Node = null
+
+func set_active_vehicle(v: Node) -> void:
+	active_vehicle = v
+
 func reset() -> void:
 	money = 150
 	cars_sold = 0
 	objective_position = Vector3.ZERO
 	objective_label = ""
+	active_vehicle = null
 	money_changed.emit(money)
 
 func add_money(amount: int) -> void:
