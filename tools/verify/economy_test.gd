@@ -143,6 +143,63 @@ func _ready() -> void:
 	check(pct < 15.0, "o capital inicial banca a maioria das carcacas",
 		"%.0f%% fora do alcance" % pct)
 
+	print("\n[8] pecas mecanicas: peso no valor e custo do conserto")
+	var sadio: Dictionary = {}
+	for k: String in Economy.PARTS:
+		sadio[k] = 1.0
+	var detonado: Dictionary = {}
+	for k: String in Economy.PARTS:
+		detonado[k] = 0.0
+	var cheio := Economy.repaired_value("car-a", carro)
+	var val_sadio := Economy.market_value("car-a", carro, 4, 4, sadio)
+	var val_detonado := Economy.market_value("car-a", carro, 4, 4, detonado)
+	print("    mesmo carro: mecanica em ordem R$ %d  |  tudo quebrado R$ %d"
+		% [val_sadio, val_detonado])
+	check(val_detonado < val_sadio, "peca quebrada derruba o valor")
+	check(Economy.repair_cost(sadio, cheio) == 0, "carro sadio nao cobra conserto")
+	check(Economy.repair_cost(detonado, cheio) > 0, "carro detonado cobra conserto")
+
+	# A DECISAO: cada peca tem que se pagar ou nao, INDIVIDUALMENTE. Se todo
+	# conserto fosse lucro nao haveria escolha; se nenhum fosse, o diagnostico
+	# seria enfeite (foi o que aconteceu com preco fixo: consertar tudo custava
+	# R$ 400 e devolvia R$ 148).
+	var vale_a_pena: Array[String] = []
+	var prejuizo: Array[String] = []
+	for key: String in Economy.PARTS:
+		var so_esta: Dictionary = sadio.duplicate()
+		so_esta[key] = 0.0
+		var perda := val_sadio - Economy.market_value("car-a", carro, 4, 4, so_esta)
+		var preco := Economy.part_price(key, cheio)
+		var nome: String = Economy.PARTS[key]["nome"]
+		print("    %-12s custa R$ %3d e devolve R$ %3d  ->  %s"
+			% [nome, preco, perda, "compensa" if preco < perda else "prejuizo"])
+		if preco < perda:
+			vale_a_pena.append(nome)
+		else:
+			prejuizo.append(nome)
+	check(not vale_a_pena.is_empty(), "existe conserto que compensa",
+		", ".join(vale_a_pena))
+	check(not prejuizo.is_empty(), "existe conserto que NAO compensa (a decisao)",
+		", ".join(prejuizo))
+
+	print("\n[9] o defeito SE FAZ SENTIR dirigindo (senao e so planilha)")
+	var carro_teste := (load("res://scenes/vehicle/Vehicle.tscn") as PackedScene).instantiate()
+	add_child(carro_teste)
+	await get_tree().physics_frame
+	for k: String in Economy.PARTS:
+		carro_teste.parts[k] = 1.0
+	var motor_bom: float = carro_teste.part_factor("motor", 0.55)
+	var freio_bom: float = carro_teste.part_factor("freio", 0.40)
+	for k: String in Economy.PARTS:
+		carro_teste.parts[k] = 0.0
+	var motor_ruim: float = carro_teste.part_factor("motor", 0.55)
+	var freio_ruim: float = carro_teste.part_factor("freio", 0.40)
+	print("    motor: %.2f -> %.2f   |   freio: %.2f -> %.2f"
+		% [motor_bom, motor_ruim, freio_bom, freio_ruim])
+	check(motor_ruim < motor_bom, "motor quebrado tira forca")
+	check(freio_ruim < freio_bom, "freio quebrado piora a frenagem")
+	carro_teste.queue_free()
+
 	print("")
 	if problems.is_empty():
 		print("=== RESULTADO ===")

@@ -2200,6 +2200,35 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     pechinchar tenha risco, e que o capital inicial banque a primeira compra
     (medido: 0% das carcaças ficam fora do alcance).
 
+- **2026-08-09** — Item 1 do plano das inspirações: **peças mecânicas com estado
+  e diagnóstico**, que é a base do "conserto realista" do Car Dealer Simulator.
+  - **Seis peças** (motor, freio, suspensão, pneus, bateria, escapamento), cada
+    uma podendo nascer com defeito (42% de chance) escondido na carcaça. Antes o
+    estado era só cosmético (km, lataria, pintura) e nada do que estava quebrado
+    se fazia sentir.
+  - **O defeito SE SENTE dirigindo**, e é isso que separa mecânica de planilha:
+    motor tira 45% da força (medido no banco de provas: 30,2 m contra 17,5 m em
+    3 s de acelerador), freio tira 60% da frenagem, suspensão amortece menos (o
+    carro pula e sacode mais a gambiarra), pneu careca escapa nas curvas.
+  - **A vistoria de rua diz QUANTOS problemas, não QUAIS.** Saber o custo exato
+    exige o diagnóstico na oficina — é o risco que faz garimpar ter graça, e é o
+    "hidden mechanical flaw" das duas inspirações.
+  - **Erro meu de balanceamento, pego pelo próprio teste**: pus preço ABSOLUTO
+    na peça (R$ 30 a 140) num jogo onde o carro vale R$ 150-430. Resultado:
+    consertar tudo custava R$ 400 e devolvia R$ 148 — nunca compensava, e o
+    sistema nasceria decorativo. Agora o preço é **fração do valor do carro**
+    (peso × custo), então pneu de esportivo custa mais que pneu de táxi.
+  - **A decisão é peça a peça, e o teste cobra que ela EXISTA**: freio,
+    suspensão, pneus e escapamento se pagam; motor e bateria não. Se todo
+    conserto fosse lucro não haveria escolha; se nenhum fosse, o diagnóstico
+    seria enfeite. Detalhe emergente bom: o motor dá prejuízo em valor mas tira
+    quase metade da força — então conserta-se pra **conseguir dirigir**, não pra
+    lucrar.
+  - **Outro erro meu**: o `drive_test` passou a medir a física com um defeito
+    sorteado dentro e reprovou sozinho. Teste de física tem que isolar física —
+    agora ele nasce com a mecânica em ordem, e o efeito do defeito virou uma
+    seção própria que mede o carro andando.
+
 ### Pendências pedidas e ainda NÃO feitas
 
 Nenhuma das três pendências anteriores continua aberta. O que sobrou de

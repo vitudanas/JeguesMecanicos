@@ -62,7 +62,7 @@ func _update_damage() -> void:
 		return
 	var ratio := float(intact) / float(total)
 	damage_label.text = "Gambiarras %d/%d · vale ~R$ %d" % [
-		intact, total, Economy.market_value(v.model_key, v.condition, intact, total)]
+		intact, total, Economy.market_value(v.model_key, v.condition, intact, total, v.parts)]
 	var color := Color(0.55, 0.92, 0.55)
 	if ratio < 0.5:
 		color = Color(0.95, 0.45, 0.40)

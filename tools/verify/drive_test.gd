@@ -47,6 +47,13 @@ func _spawn() -> RigidBody3D:
 	car.global_position = Vector3(10.0, 0.5, 1.5)
 	car.rotation = Vector3(0.0, deg_to_rad(-90.0), 0.0)
 	car.set_physics_process(false)
+	# MECANICA EM ORDEM. Desde que as pecas passaram a nascer sorteadas (motor
+	# quebrado tira 45% da forca, freio 60% da frenagem), este banco de provas
+	# media a fisica com um defeito aleatorio dentro — e reprovou por isso. Um
+	# teste de FISICA tem que isolar a fisica; o efeito das pecas e testado de
+	# proposito na secao propria, abaixo.
+	for key: String in car.parts:
+		car.parts[key] = 1.0
 	return car
 
 func _step(car: RigidBody3D, throttle: float, steer: float, handbrake := false) -> void:
@@ -176,6 +183,33 @@ func _run() -> void:
 		fail("o carro foi CATAPULTADO no impacto (subiu a %.1f m)" % peak)
 	if absf(after - 0.02) > 0.15:
 		fail("depois da queda o carro nao voltou a assentar (y=%.2f)" % after)
+
+	# ------------------------------------------- o defeito mecanico se sente
+	# Nao basta o multiplicador existir no papel: o carro com motor quebrado tem
+	# que ANDAR MENOS no mesmo tempo de acelerador.
+	car.queue_free()
+	await get_tree().physics_frame
+	car = _spawn()
+	await _settle(car, 90)
+	var partida_sadio: Vector3 = car.global_position
+	for i in range(180):
+		await _step(car, 1.0, 0.0)
+	var dist_sadio: float = partida_sadio.distance_to(car.global_position)
+
+	car.queue_free()
+	await get_tree().physics_frame
+	car = _spawn()
+	car.parts["motor"] = 0.0
+	await _settle(car, 90)
+	var partida_ruim: Vector3 = car.global_position
+	for i in range(180):
+		await _step(car, 1.0, 0.0)
+	var dist_ruim: float = partida_ruim.distance_to(car.global_position)
+	print("\n[mecanica] 3s de acelerador: motor bom %.1f m, motor quebrado %.1f m"
+		% [dist_sadio, dist_ruim])
+	if dist_ruim >= dist_sadio * 0.9:
+		fail("motor quebrado quase nao muda o desempenho (%.1f vs %.1f m)"
+			% [dist_ruim, dist_sadio])
 
 	# --------------------------------------------------- resgate do capotado
 	# Ate esta rodada NAO HAVIA COMO se recuperar: capotou, a partida acabava

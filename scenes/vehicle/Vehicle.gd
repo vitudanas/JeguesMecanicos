@@ -110,6 +110,10 @@ var audio: VehicleAudio = null
 ## o dinheiro so subia, entao nao havia decisao nenhuma no ferro-velho.
 var model_key := ""
 var condition: Dictionary = {}
+## Estado de cada peca mecanica (ver Economy.PARTS). Fica ESCONDIDO ate o
+## diagnostico: comprar sem saber o que esta quebrado e o risco do negocio.
+var parts: Dictionary = {}
+var diagnosed := false
 ## Preco pedido pela carcaca e se ela ja e do jogador.
 var asking_price := 0
 var owned := false
@@ -153,6 +157,12 @@ func _ready() -> void:
 	if model:
 		model_key = model.resource_path.get_file().get_basename()
 	condition = Economy.roll_condition(rng)
+	parts = Economy.roll_parts(rng)
+	# Carro que ja nasce pronto (nao e carcaca) nao tem defeito escondido.
+	if not is_wrecked:
+		for key: String in parts:
+			parts[key] = 1.0
+		diagnosed = true
 	asking_price = Economy.wreck_asking_price(model_key, condition, rng)
 	haggles_left = Economy.HAGGLE_TRIES
 	# Carro que nasce ja consertado (nao e carcaca) e do jogador por definicao.
@@ -346,7 +356,9 @@ func get_interact_prompt() -> String:
 			# Sem "[E]" de proposito: aqui a carroceria nao e um alvo de acao, e
 			# a dica de onde a acao esta.
 			var missing: int = attach_points.size() - installed_parts.size()
-			return "Faltam %d gambiarra(s) — mire nos pontos coloridos" % missing
+			var linha := "Faltam %d gambiarra(s) — mire nos pontos coloridos" % missing \
+				if missing > 0 else "Gambiarras prontas"
+			return linha + "\n" + _service_prompt()
 		if not owned:
 			return _deal_prompt()
 		return "Rebocar [E]"
@@ -360,6 +372,11 @@ func _deal_prompt() -> String:
 	# Depois da vistoria o jogador ve o que esta comprando E o teto do negocio.
 	var vale: int = Economy.repaired_value(model_key, condition)
 	linha += "\n%s  ·  vale ~R$ %d consertado" % [condition_text(), vale]
+	# A vistoria de rua diz QUANTOS problemas tem, nao QUAIS: saber o custo exato
+	# exige o diagnostico na oficina. E o risco que faz garimpar ter graca.
+	var quebradas: int = Economy.broken_parts(parts).size()
+	linha += "\nmotor/freio/suspensão: %s" % ("nada aparente" if quebradas == 0
+		else "%d problema(s) mecânico(s)" % quebradas)
 	if _haggle_locked:
 		return linha + "  ·  o dono nao desce mais"
 	if haggles_left > 0:
@@ -385,9 +402,51 @@ func _grade(v: float) -> String:
 		return "ruim"
 	return "detonada"
 
+## Linha de servico da oficina: diagnosticar e consertar peca.
+func _service_prompt() -> String:
+	if not diagnosed:
+		return "[Q] diagnosticar o carro (não dá pra consertar o que não se viu)"
+	var quebradas := Economy.broken_parts(parts)
+	if quebradas.is_empty():
+		return "mecânica em ordem"
+	var proxima: String = quebradas[0]
+	var info: Dictionary = Economy.PARTS[proxima]
+	var full: int = Economy.repaired_value(model_key, condition)
+	var lista: Array[String] = []
+	for k in quebradas:
+		lista.append(str(Economy.PARTS[k]["nome"]))
+	return "quebrado: %s  ·  [Q] trocar %s — R$ %d" % [
+		", ".join(lista), info["nome"], Economy.part_price(proxima, full)]
+
+## [Q] na oficina: diagnostica e depois troca peca por peca, pagando.
+func service() -> void:
+	if not diagnosed:
+		diagnosed = true
+		AudioManager.play_ui("confirma", -6.0)
+		return
+	var quebradas := Economy.broken_parts(parts)
+	if quebradas.is_empty():
+		AudioManager.play_ui("erro", -12.0)
+		return
+	var key: String = quebradas[0]
+	var custo := Economy.part_price(key, Economy.repaired_value(model_key, condition))
+	if GameManager.money < custo:
+		AudioManager.play_ui("erro", -4.0)
+		return
+	GameManager.add_money(-custo)
+	# Peca de verdade e PERMANENTE — o oposto da gambiarra, que volta a quebrar.
+	parts[key] = 1.0
+	AudioManager.play_at("encaixa", global_position, -2.0, 0.9, 25.0)
+
 ## [Q] em cima da carcaca: primeiro vistoria, depois pechincha. Uma tecla so,
 ## contextual — o prompt sempre diz o que ela faz agora.
 func negotiate() -> void:
+	# Na oficina o Q deixa de ser negociacao e vira SERVICO (diagnostico e
+	# troca de peca): e a mesma tecla contextual, e o prompt sempre diz o que
+	# ela faz agora.
+	if at_workshop:
+		service()
+		return
 	if owned or not is_wrecked:
 		return
 	if not inspected:
@@ -622,6 +681,14 @@ func _update_visual(delta: float) -> void:
 	rig.set_steer(_steer_angle)
 	rig.roll(forward_speed() * delta)
 
+## Multiplicador de uma peca: 1.0 com ela em ordem, `pior` com ela quebrada.
+## E o que faz o diagnostico valer alguma coisa — carro com defeito ANDA
+## diferente, em vez de so valer menos numa planilha.
+func part_factor(key: String, pior: float) -> float:
+	if not Economy.part_broken(parts, key):
+		return 1.0
+	return pior
+
 func _apply_suspension_and_drive(delta: float) -> void:
 	var traction: float = _current_traction()
 	var speed: float = forward_speed()
@@ -659,7 +726,10 @@ func _apply_suspension_and_drive(delta: float) -> void:
 		# a compressao ia de 0.04 pra 0.34 em 1s e as 4 rodas saiam do chao).
 		var susp_up: Vector3 = -ray_dir
 		var vel_up: float = world_vel.dot(susp_up)
-		var spring_force: float = compression * _spring_k - vel_up * _spring_c
+		# Suspensao quebrada amortece menos: o carro fica pulando em vez de
+		# assentar, e cada buraco sacode mais a gambiarra.
+		var spring_force: float = compression * _spring_k \
+			- vel_up * _spring_c * part_factor("suspensao", 0.45)
 		# Mola so empurra, e no maximo algumas vezes o peso que ela sustenta:
 		# o amortecedor sozinho tambem consegue estourar a forca num impacto
 		# forte, e o batente acima nao limita ele.
@@ -677,16 +747,18 @@ func _apply_suspension_and_drive(delta: float) -> void:
 		if not is_front and not handbrake:
 			var drive := 0.0
 			if throttle_input > 0.0:
-				drive = throttle_input * max_engine_force
+				drive = throttle_input * max_engine_force * part_factor("motor", 0.55)
 			elif throttle_input < 0.0:
 				# S e freio enquanto anda pra frente, re so depois de parar.
-				drive = throttle_input * (brake_force if speed > 0.5 else max_reverse_force)
+				drive = throttle_input * (brake_force * part_factor("freio", 0.40) \
+					if speed > 0.5 else max_reverse_force * part_factor("motor", 0.55))
 			apply_force(forward * drive * lerpf(0.45, 1.0, traction), offset)
 
 		# Aderencia lateral com TETO: acima da carga da roda vezes o
 		# coeficiente, a roda escorrega. E o que permite derrapar.
 		var side_vel: float = world_vel.dot(right)
-		var grip_coef: float = lateral_grip
+		# Pneu careca derrapa: o carro escapa nas curvas mesmo no seco.
+		var grip_coef: float = lateral_grip * part_factor("pneus", 0.55)
 		if being_towed:
 			grip_coef = tow_grip
 		elif handbrake:
