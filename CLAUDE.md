@@ -2733,6 +2733,27 @@ referências lavar e abastecer **não mudam valor**), e negociação de verdade
 Não implementado de propósito (e por quê): lavar/abastecer, que nas duas
 referências **não mudam valor** — seria trabalho sem consequência.
 
+## Prédios realistas: a lista de compras
+
+Levantado em 2026-08-09: **[docs/modelos-realistas.md](docs/modelos-realistas.md)**
+— requisitos duros do gerador (profundidade ≤ 13,8 m, ≤ 25 mil triângulos, ≤ 3
+materiais, textura 2K, base plana), motivos de recusa, onde procurar e quantos
+modelos por zona.
+
+Duas correções de rumo registradas ali, porque as duas vinham me limitando à toa:
+
+- **A licença Fab NÃO é restrita ao Unreal** — vale em qualquer engine, basta
+  baixar o FBX. A Epic ainda renova uma seção gratuita toda semana.
+- **CC-BY serve** — só exige uma tela de créditos. Buscar só CC0 cortava o
+  Sketchfab inteiro (800 mil modelos, glTF é o export padrão deles) por uma
+  regra que ninguém tinha pedido.
+
+O caminho recomendado é o **híbrido** (miolo realista, periferia estilizada),
+começando por um **piloto de 6 modelos** só pra medir chamada de desenho e VRAM
+antes de comprometer com 30. O bloqueio prático: Sketchfab e Fab exigem conta, e
+esta sessão não pode criar nem logar — o download é do usuário, a integração é
+minha.
+
 ## Roadmap (fora de escopo desta vertical slice)
 
 - Multiplayer real (cooperativo na oficina / competitivo pelas ruas). Arquitetura atual
