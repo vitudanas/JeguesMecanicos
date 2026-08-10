@@ -52,7 +52,12 @@ def street_axes(blocks: int):
 # 28.9 m de orcamento) e NENHUMA torre alta cabia — a cidade nascia com 37 m de
 # predio mais alto tendo modelos de 102 m no catalogo. Com o 90 encostado no
 # centro, o miolo tem 80.8 m e as torres entram.
-PADRAO = [90.0, 45.0, 67.5, 90.0, 45.0]
+# Sem quadra de 45 m: com a rua larga (18,8 m de fachada a fachada) o miolo dela
+# cai pra 26 m, e o orcamento de profundidade pra ~9 m — quase nenhum predio
+# realista e tao raso. Medido, as quadras de 45 nasciam com as QUATRO bordas
+# vazias, e sozinhas respondiam por 80 das 104 bordas vazias da cidade.
+# Continua variado (67.5 e 90) e a meia-largura segue 337.5.
+PADRAO = [90.0, 67.5, 90.0, 90.0]
 
 
 def street_axes_variado(padrao=None):
@@ -164,14 +169,28 @@ def main():
     print("  oficina em (%.0f, 0) | ferro-velho (%.0f, %.0f)" % (shop_x, junk[0], junk[1]))
 
     p = Patcher(TSCN, dry)
+    # LIMPAR ANTES DE VALIDAR. Os blocos abaixo cobram um numero exato de
+    # ocorrencias de cada campo; com um CityLife/CityHazards duplicado de uma
+    # rodada anterior, `streets_x` aparecia 6 vezes em vez de 4 e a ferramenta
+    # travava logo no comeco, antes de chegar na remocao.
+    # CityLife/CityHazards entram na lista de remocao junto com as rotas: o bloco
+    # de geradores e ACRESCENTADO logo abaixo, sem checar se ja existe, entao
+    # rodar a ferramenta duas vezes deixava DOIS de cada — ou seja o dobro de
+    # carro, pedestre, buraco e poca, calado. Estava assim no arquivo commitado.
+    apagados = 0
+    for prefixo in ("TrafficRoute", "PedestrianRoute", "Pothole", "MudZone",
+                    "EventSpawnPoint", "CityLife", "CityHazards"):
+        apagados += drop_nodes(p, prefixo)
+    print("  ok  %d nos de rota/buraco/spawn removidos" % apagados)
+
     grid = fmt_floats(axes)
 
     # ------------------------------------------------------------ grade de ruas
     old_grid = re.search(r"streets_x = (Array\[float\]\(\[[^\]]*\]\))", p.text).group(1)
     p.re_sub(r"^streets_x = Array\[float\]\(\[[^\]]*\]\)$", "streets_x = " + grid,
-             "streets_x", 4)
+             "streets_x", 2)
     p.re_sub(r"^streets_z = Array\[float\]\(\[[^\]]*\]\)$", "streets_z = " + grid,
-             "streets_z", 4)
+             "streets_z", 2)
     p.re_sub(r"^street_axes_x = Array\[float\]\(\[[^\]]*\]\)$",
              "street_axes_x = " + grid, "street_axes_x", 1)
     p.re_sub(r"^street_axes_z = Array\[float\]\(\[[^\]]*\]\)$",
@@ -257,12 +276,8 @@ def main():
     # Deixam de ser nos escritos a mao e passam a ser GERADOS da grade (ver
     # CityLife.gd e CityHazards.gd). Com 14x14 quarteiroes seriam ~90
     # retangulos digitados; dois deles ja nasceram fora de rua nenhuma quando
-    # eram 18 (changelog 2026-08-03).
-    apagados = 0
-    for prefixo in ("TrafficRoute", "PedestrianRoute", "Pothole", "MudZone",
-                    "EventSpawnPoint"):
-        apagados += drop_nodes(p, prefixo)
-    print("  ok  %d nos de rota/buraco/spawn removidos" % apagados)
+    # eram 18 (changelog 2026-08-03). A REMOCAO dos nos antigos acontece la em
+    # cima, logo depois de abrir o arquivo — ver o porque la.
 
     # IDS LIVRES, medidos no arquivo. Escolhi 410/411/412 no olho da primeira vez
     # e eles JA ESTAVAM em uso pelas texturas de grama: `ExtResource("410")`

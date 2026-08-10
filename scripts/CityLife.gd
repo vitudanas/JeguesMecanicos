@@ -26,7 +26,11 @@ extends Node3D
 @export var car_models: Array[PackedScene] = []
 ## Distância do eixo da rua até a faixa. A pista tem 3.0 de meia-largura, então
 ## 1.5 é o meio da mão da direita.
-@export var lane_offset := 1.5
+## AMARRADO AO PERFIL DA RUA (CityStreets): pista de +-5.7 e calcada
+## de 3.5 -> faixa de rolamento no meio de cada meia-pista (2.85) e
+## pedestre no meio da calcada (5.7 + 3.5/2 = 7.45). Mexeu na largura
+## da rua, mexe aqui.
+@export var lane_offset := 2.85
 @export var car_speed_min := 4.0
 @export var car_speed_max := 7.0
 
@@ -37,7 +41,7 @@ extends Node3D
 @export var character_models: Array[PackedScene] = []
 @export var anim_scene: PackedScene
 ## A calçada fica entre o meio-fio (3.0) e a fachada (3.8+): 3.75 é o meio dela.
-@export var sidewalk_offset := 3.75
+@export var sidewalk_offset := 7.45
 @export var walk_y := 0.18
 
 ## Quarteirões que NÃO recebem rota: o miolo da cidade fica mais movimentado que

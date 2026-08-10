@@ -30,6 +30,20 @@ const FRONT_YARD_OFFSET := 1.1
 ## e patio de fundo, que e o que uma quadra de verdade tem mesmo.
 const MIOLO_MINIMO := 42.0
 
+## Quanto do miolo do quarteirao UMA fileira pode consumir de profundidade.
+##
+## Era 0.5 — metade pra cada borda oposta, o que garante que elas nunca se
+## encontrem. So que com predio realista (10 a 40 m de profundidade) as duas
+## fileiras norte/sul comiam o quarteirao INTEIRO, e as laterais eram puladas
+## por falta de espaco: sobravam duas bordas completamente vazias. Medido, isso
+## deixava 29% da borda da cidade sem fachada, com buracos de mediana 20 m e o
+## maior de 71,2 m — que e exatamente o miolo de uma quadra de 90 m.
+##
+## Com 0.36, as quatro fileiras somam no maximo 72% e sempre sobra corredor pras
+## laterais. O preco e que predio muito fundo nao entra em quadra pequena — que e
+## o certo de qualquer jeito.
+const DEPTH_SHARE := 0.36
+
 ## Miolo maximo pra um lote virar praca/posto/estacionamento/feira.
 ##
 ## Esses lotes foram calibrados quando todo quarteirao tinha 28 m de miolo. Numa
@@ -235,8 +249,8 @@ func _build_block(x_street_a: float, x_street_b: float, z_street_a: float, z_str
 	# opostas nunca se encontram no meio, por construcao (sem essa trava, um
 	# modelo fundo na borda oeste alcancava o da borda leste num quarteirao
 	# estreito).
-	var depth_budget_z := (z_max - z_min) * 0.5 - lot_gap
-	var depth_budget_x := (x_max - x_min) * 0.5 - lot_gap
+	var depth_budget_z := (z_max - z_min) * DEPTH_SHARE - lot_gap
+	var depth_budget_x := (x_max - x_min) * DEPTH_SHARE - lot_gap
 
 	# Um lote de malhas POR QUARTEIRAO pras vitrines: elas sao dezenas de pecas
 	# pequenas cada, e viraram o maior custo de chamada de desenho da cidade
@@ -275,8 +289,8 @@ func _build_block(x_street_a: float, x_street_b: float, z_street_a: float, z_str
 	var iz_min := z_side_min + depth_south + lot_gap
 	var iz_max := z_side_max - depth_north - lot_gap
 	if ix_max - ix_min > MIOLO_MINIMO and iz_max - iz_min > MIOLO_MINIMO:
-		var ib_z := (iz_max - iz_min) * 0.5 - lot_gap
-		var ib_x := (ix_max - ix_min) * 0.5 - lot_gap
+		var ib_z := (iz_max - iz_min) * DEPTH_SHARE - lot_gap
+		var ib_x := (ix_max - ix_min) * DEPTH_SHARE - lot_gap
 		var id_s := _fill_edge(pool, kinds, ix_min, ix_max, iz_min, true, false, ib_z)
 		var id_n := _fill_edge(pool, kinds, ix_min, ix_max, iz_max, true, true, ib_z)
 		var iz2_min := iz_min + id_s + lot_gap

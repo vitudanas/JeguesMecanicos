@@ -18,6 +18,14 @@ uma decisão relevante for tomada ou o escopo mudar.
   15MB sem ninguém pedir (2026-08-03). Se o build crescer sem motivo, é o
   primeiro lugar pra olhar.
 
+- **Anotar SEMPRE neste arquivo, a cada rodada.** Pedido do usuário em
+  2026-08-09, e ele pediu explicitamente que esta instrução também ficasse
+  registrada. Vale pra tudo: o que foi feito, o que foi medido, o erro que eu
+  cometi e como foi pego, e o que ficou em aberto. A razão é prática — a
+  conversa é limpa com `/clear` entre tarefas (ver a nota abaixo), então o que
+  não estiver escrito aqui **está perdido** pra próxima sessão. Anotar no fim da
+  rodada, antes de exportar e commitar, faz parte de terminar a tarefa.
+
 - **Rodar `/clear` entre sessões/tarefas grandes.** Pedido do usuário em 2026-08-02: a
   conversa fica muito longa depois de várias rodadas seguidas (cada exportação de
   build, cada teste visual etc. consome bastante contexto) — vale limpar o histórico
@@ -2839,6 +2847,98 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     automático sobre malha sentada dá um rig cuja pose de descanso é sentada, e
     um ciclo de caminhada em cima disso dobra a perna a partir de onde ela já
     está dobrada. Recomendado usá-la como estátua de praça — que é a pose dela.
+
+- **2026-08-09** — Usuário lembrou das ruas ("acho que tá meio estreita e não
+  combina com a textura dos prédios") e perguntou se os **buracos entre as
+  construções** eram propositais. Os dois eram problema de verdade, e os dois
+  foram medidos antes de mexer.
+  - **Não existe kit de rua CC0 realista** — pesquisado e conferido abrindo a
+    página: o melhor candidato, "City Roads GLB Pack — 72 modelos CC0", diz que a
+    fonte é o **mesmo `city-kit-roads` do Kenney** que já estava aqui. Baixar não
+    mudaria nada. Fica registrado pra não pesquisar isso de novo.
+  - **A rua era uma viela, e o número é feio**: pista de 6 m e calçada de 1,5
+    davam **9,2 m de fachada a fachada**, o que com prédio de 80 m ao lado dá um
+    desfiladeiro de 1:8,8. Rua urbana de verdade tem 11,4 m de pista (2 faixas de
+    3,5 + 2 de estacionamento) e calçada de 3,5 → 18,4 m.
+  - **Asfalto GERADO** (`CityStreets.asfalto_gerado`), no lugar do tile do kit.
+    Resolve as duas metades da queixa de uma vez: a largura vira **parâmetro**
+    (com o tile, a pista tinha a largura que o modelo tem, e mexer no número não
+    mexia no desenho) e a superfície passa a usar direto o `Asphalt033` do
+    ambientCG que as fachadas já usam, sem o atlas de 64×64 do kit por baixo.
+    Faixa central tracejada e travessia são quads pintados. Perfil novo: pista
+    ±5,7 e calçada 3,5 → **18,8 m de fachada a fachada**.
+    - E saiu **mais barato**: 813 chamadas de desenho contra 1116 com os tiles.
+    - *Erro meu, pego na foto*: o primeiro tom foi 0.62 e o asfalto saiu do mesmo
+      cinza da calçada — a rua lia como uma laje de concreto larga. Asfalto
+      reflete pouca luz; foi pra 0.29, e é o contraste com a calçada que faz o
+      meio-fio aparecer.
+  - **Os buracos eram reais** (o usuário estava certo): medido com
+    `tools/verify/gaps_test.tscn` (novo), 29% da borda dos quarteirões sem
+    fachada, 163 vãos, mediana 20 m e o **maior de 71,2 m** — que é exatamente o
+    miolo inteiro de uma quadra de 90 m, e foi esse número que entregou a causa.
+    1. *As bordas opostas podiam usar METADE do miolo cada*, então com prédio
+       realista (10 a 40 m de profundidade) as duas fileiras norte/sul comiam o
+       quarteirão inteiro e as laterais eram **puladas** por falta de corredor.
+       Virou `DEPTH_SHARE = 0.36`.
+    2. *As quadras de 45 m ficaram inviáveis com a rua larga*: o miolo caiu pra
+       26 m e o orçamento de profundidade pra 9 m — quase nenhum modelo é tão
+       raso, e uma quadra de 26×26 nasceu com as **quatro** bordas vazias. As de
+       45 sozinhas respondiam por 80 das 104 bordas vazias. O padrão passou a
+       `[90, 67.5, 90, 90]`: continua variado e sem quadra inviável.
+    - Resultado medido: **91% da borda com fachada**, maior vão 17,6 m, mediana
+      8,9 m, **zero borda completamente vazia**.
+    - *Erro meu no verificador*: as primeiras 40 "bordas vazias" eram os 10
+      **lotes especiais** (praça, posto, estacionamento, feira), que não têm
+      fachada e não devem ter. O teste passou a pulá-los — sem isso o número
+      culpava a geração por uma decisão de projeto.
+  - **Dois defeitos do `expand_world.py`, e um deles ESTAVA NO COMMIT:**
+    1. **`CityLife` e `CityHazards` duplicados.** A ferramenta acrescenta o bloco
+       de geradores sem remover o antigo, então cada execução deixava mais um de
+       cada — ou seja o **dobro de carro, pedestre, buraco e poça**, calado. O
+       arquivo commitado estava assim. Os dois entraram na lista de remoção.
+    2. **A ordem estava errada**: a validação de contagem rodava ANTES da
+       remoção, então com o duplicado `streets_x` aparecia 6 vezes em vez de 4 e
+       a ferramenta travava logo no começo. A limpeza foi pro início.
+    - *Erro meu de diagnóstico*: filtrei a saída da ferramenta com `grep` e ela
+      **abortou no meio sem eu ver** — o cabeçalho é impresso antes de qualquer
+      patch, então "rodou" e "funcionou" pareciam a mesma coisa. Como o `Patcher`
+      grava a cada passo, o arquivo ficou meio-patcheado e eu medi duas vezes um
+      mundo que não tinha mudado. **Não filtrar a saída de ferramenta que
+      valida.**
+  - **O perfil da rua virou parte do `tools/cidade_realista.py`**, e não uma
+    edição solta no `Town.tscn`: eu tinha alargado a rua à mão e um `git
+    checkout` desfez tudo. O que não está em ferramenta não sobrevive.
+  - Verificação: `city` limpo (877 prédios, 8×8 quadras, 0 invasão, 0
+    sobreposição, 0 quarteirão vazio) e passam `obstacles`, `scale`, `loop`,
+    `drive`, `yard`, `staff` e `loading`.
+
+### ONDE PAREI (2026-08-09, fim da sessão)
+
+Estado: **tudo commitado e verificado**, mas as builds NÃO foram reexportadas
+depois da rua nova — o `.app` e o `.exe` são de antes. Reexportar é a primeira
+coisa a fazer.
+
+Pedidos do usuário ainda **não** feitos, em ordem de prioridade:
+
+1. **Menu de escolha de personagem**, com a mulher-jegue entre as opções e
+   **preview 3D**. Nada disso existe ainda.
+2. **Personalização do corpo** (bunda, peito, etc.) por slider. A base já
+   existe: são as *shape keys* `Bust`/`Butt`/`Hips`/`Belly`/`Bulk`/`Chest`/
+   `Skinny` que o `tools/build_characters.py` grava, e que o `PlayerVisual.gd`
+   hoje aplica com valores FIXOS (`BUST = 0.50`, `BUTT = 0.72`). O trabalho é
+   trocar as constantes por um autoload de aparência, salvar em disco e montar a
+   tela.
+3. **Personagens masculinos** entre as opções (pedido explícito). O
+   `Male_Dressed.glb` já está no repo e já é usado nos NPCs.
+4. **Trocar/variar os NPCs**, que hoje saem de 2 corpos base com a mesma roupa.
+5. **Integrar os modelos baixados** — ver [docs/personagens.md](docs/personagens.md)
+   com os 7 links, todos CC-BY conferidos. O download é do usuário (o navegador
+   embutido não completa). A "Just a girl" sentada precisa de T-pose antes de
+   qualquer rig; o resto já vem em T-pose.
+
+O que já está pronto desta frente: as **três câmeras no V** (1ª, 3ª atrás e 3ª
+livre), com `tools/verify/camera_test.tscn` provando que na livre o mouse gira a
+câmera e **não** o boneco.
 
 ### Pendências pedidas e ainda NÃO feitas
 

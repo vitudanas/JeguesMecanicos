@@ -19,7 +19,11 @@ extends Node3D
 ## chove (ver Vehicle._current_traction), então nem todo buraco precisa de uma.
 @export var mud_ratio := 0.55
 ## O buraco fica na mão de direção; a poça, não (ver `_place`).
-@export var lane_offset := 1.5
+## AMARRADO AO PERFIL DA RUA (CityStreets): pista de +-5.7 e calcada
+## de 3.5 -> faixa de rolamento no meio de cada meia-pista (2.85) e
+## pedestre no meio da calcada (5.7 + 3.5/2 = 7.45). Mexeu na largura
+## da rua, mexe aqui.
+@export var lane_offset := 2.85
 ## Não nasce em cima de cruzamento: buraco no meio do cruzamento pega o jogador
 ## quando ele já está manobrando.
 @export var crossing_clearance := 9.0

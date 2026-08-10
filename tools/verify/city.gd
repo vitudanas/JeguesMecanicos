@@ -213,7 +213,15 @@ func _census(streets_x: Array) -> void:
 	var span: float = float(streets_x[streets_x.size() - 1]) - float(streets_x[0])
 	print("ocupacao: %.0f m2 em %.0f m2 = %.0f%%" % [area, span * span, 100.0 * area / (span * span)])
 
+	# Conta por GRUPO quando o asfalto e gerado, e por caminho de cena quando sao
+	# os tiles do kit. Peca gerada nao tem `scene_file_path`, entao contar so por
+	# caminho devolvia ZERO em tudo — e o verificador acusava "algum gerador nao
+	# rodou" numa cidade cuja rua estava inteira na tela.
 	var tiles := {"straight": 0, "crossroad": 0, "crossing": 0, "end": 0, "light": 0}
+	var por_grupo := {"straight": "via_reta", "crossroad": "via_cruzamento",
+		"crossing": "via_faixa"}
+	for key: String in por_grupo:
+		tiles[key] = get_tree().get_nodes_in_group(por_grupo[key]).size()
 	for child in town.get_node("CityStreets").get_children():
 		var path: String = child.scene_file_path
 		for key: String in ["straight", "crossroad", "crossing", "end"]:
@@ -245,8 +253,12 @@ func _road_continuity(streets_node: Node, streets_x: Array, streets_z: Array, ti
 	var lanes := {}
 	for child in streets_node.get_children():
 		var path: String = child.scene_file_path
-		if not (path.contains("road-straight") or path.contains("road-crossroad")
-				or path.contains("road-crossing") or path.contains("road-end")):
+		# Kit: pelo caminho da cena. Gerado: por grupo — peca gerada nao tem
+		# caminho, e sem este ramo a checagem media ZERO faixa e passava calada.
+		var e_via := path.contains("road-straight") or path.contains("road-crossroad") \
+			or path.contains("road-crossing") or path.contains("road-end") \
+			or child.is_in_group("via_reta") or child.is_in_group("via_cruzamento")
+		if not e_via:
 			continue
 		var p: Vector3 = child.position
 		for z in streets_x:
@@ -517,7 +529,8 @@ func _heights(streets_node: Node) -> void:
 	# A pista e o plano horizontal com mais vertices.
 	var measured := -999.0
 	for child in streets_node.get_children():
-		if child is Node3D and child.scene_file_path.contains("road-straight"):
+		if child is Node3D and (child.scene_file_path.contains("road-straight")
+				or child.is_in_group("via_reta")):
 			measured = _modal_height(child)
 			break
 	print("\nalturas: asfalto pedido y=%.2f, medido na cena y=%.2f | calcada y=%.2f" % [

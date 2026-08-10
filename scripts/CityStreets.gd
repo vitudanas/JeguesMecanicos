@@ -71,6 +71,26 @@ extends Node3D
 ## verdade, como o projeto sempre quis.
 @export var road_surface_y := 0.02
 
+## Asfalto GERADO em geometria, no lugar dos tiles do kit do Kenney.
+##
+## POR QUE. Duas coisas de uma vez. (1) LARGURA: o tile e um modelo, entao a
+## pista tinha a largura que o modelo tem — 6 m entre meios-fios, com 9,2 m de
+## fachada a fachada. Com predio de 80 m ao lado isso da um desfiladeiro de
+## 1:8,8, que le como viela, nao como rua; e nao adiantava mexer no numero,
+## porque o desenho nao acompanhava. Gerando, a largura vira parametro.
+## (2) ACABAMENTO: o tile carrega o atlas de 64x64 em paleta do kit por baixo do
+## PBR, e ao lado de fachada fotogrametrica ele destoa. O asfalto gerado usa
+## direto o mesmo `Asphalt033` do ambientCG que ja esta no projeto — casa com as
+## fachadas por construcao.
+##
+## Pesquisado antes (2026-08-09): NAO existe kit de rua CC0 realista. O melhor
+## candidato, "City Roads GLB Pack - 72 modelos CC0", diz na propria pagina que a
+## fonte e o mesmo `city-kit-roads` do Kenney que ja estava aqui.
+@export var asfalto_gerado := true
+## Faixa pintada: largura da linha e comprimento do tracejado, em metros.
+@export var paint_width := 0.14
+@export var dash_length := 2.4
+
 ## Altura da PISTA de cada tile em unidades locais, medida uma vez por modelo.
 var _road_surface_local: Dictionary = {}
 
@@ -91,7 +111,11 @@ func _build() -> void:
 	for j in range(streets_x.size()):
 		for i in range(streets_z.size()):
 			var center := Vector3(streets_z[i], 0.03, streets_x[j])
-			_place(crossroad_scene, center, 0.0)
+			if asfalto_gerado:
+				if not _is_excluded(center):
+					_asfalto_cruzamento(center)
+			else:
+				_place(crossroad_scene, center, 0.0)
 			_place_intersection_curbs(center)
 			var step: int = maxi(traffic_light_street_step, 1)
 			if traffic_lights_enabled and i % step == 0 and j % step == 0:
@@ -166,11 +190,16 @@ func _build_run(min_v: float, max_v: float, cross_values: Array[float], pos_fn: 
 		var in_tail := p < first_cross - 0.01 or p > last_cross + 0.01
 		var is_first_run_tile := in_tail and i == 0
 		var is_last_run_tile := in_tail and i == positions.size() - 1
-		if is_first_run_tile:
-			_place(end_scene, pos_fn.call(p), rot + end_rotation_offset_degrees)
-			_place_curb_pair(pos_fn.call(p), rot)
-		elif is_last_run_tile:
-			_place(end_scene, pos_fn.call(p), rot)
+		if is_first_run_tile or is_last_run_tile:
+			# Ponta do rabicho que sai da grade. O kit tinha uma tampa
+			# arredondada; o asfalto gerado so termina, que e o que uma rua faz
+			# ao virar estrada.
+			if asfalto_gerado:
+				if not _is_excluded(pos_fn.call(p)):
+					_asfalto_reto(pos_fn.call(p), rot, false)
+			else:
+				var giro: float = rot + (end_rotation_offset_degrees if is_first_run_tile else 0.0)
+				_place(end_scene, pos_fn.call(p), giro)
 			_place_curb_pair(pos_fn.call(p), rot)
 		else:
 			# Aproximacao de cruzamento ganha faixa de pedestre; o resto do
@@ -179,10 +208,15 @@ func _build_run(min_v: float, max_v: float, cross_values: Array[float], pos_fn: 
 			# exatamente tile_size dele — com o 0.95 que estava aqui a condicao
 			# nunca era verdadeira e a faixa de pedestre NUNCA nascia (censo
 			# acusou 0 tiles de road-crossing na cidade inteira).
+			var com_faixa: bool = _near_any(cross_values, p, tile_size * 1.05)
 			var tile_scene := straight_scene
-			if crossing_scene != null and _near_any(cross_values, p, tile_size * 1.05):
+			if crossing_scene != null and com_faixa:
 				tile_scene = crossing_scene
-			_place(tile_scene, pos_fn.call(p), rot)
+			if asfalto_gerado:
+				if not _is_excluded(pos_fn.call(p)):
+					_asfalto_reto(pos_fn.call(p), rot, com_faixa)
+			else:
+				_place(tile_scene, pos_fn.call(p), rot)
 			_place_curb_pair(pos_fn.call(p), rot)
 			tile_count += 1
 			if tile_count % light_every_n_tiles == 0:
@@ -192,6 +226,91 @@ func _build_run(min_v: float, max_v: float, cross_values: Array[float], pos_fn: 
 					and tile_count % bus_stop_every_n_tiles == 0:
 				_place_bus_stop(light_pos_fn.call(p, stop_side, furniture_offset), rot, stop_side)
 				stop_side = -stop_side
+
+# ------------------------------------------------------- asfalto gerado
+#
+# Malhas e materiais COMPARTILHADOS: sao ~1400 pedacos de pista na cidade, e uma
+# malha nova por pedaco entupiria a memoria e as chamadas de desenho. Com o mesmo
+# recurso em todos, o renderizador instancia.
+
+var _mesh_pista: PlaneMesh = null
+var _mesh_cruz: PlaneMesh = null
+var _mesh_traco: PlaneMesh = null
+var _mesh_faixa: PlaneMesh = null
+var _mat_asfalto: Material = null
+var _mat_tinta: StandardMaterial3D = null
+
+func _ensure_road_resources() -> void:
+	if _mesh_pista != null:
+		return
+	var largura := road_half_width * 2.0
+	# EIXOS: com rotacao 0 a rua corre no X, entao o pedaco de pista e COMPRIDO
+	# no X (um tile) e LARGO no Z (a pista inteira). `PlaneMesh.size` e (x, z).
+	# A rua norte-sul usa a mesma malha girada 90 graus, o que troca os dois.
+	_mesh_pista = PlaneMesh.new()
+	_mesh_pista.size = Vector2(tile_size, largura)
+	_mesh_cruz = PlaneMesh.new()
+	_mesh_cruz.size = Vector2(largura, largura)
+	# Traco do meio: corre COM a rua.
+	_mesh_traco = PlaneMesh.new()
+	_mesh_traco.size = Vector2(dash_length, paint_width)
+	# Barra da faixa de pedestre: atravessa a pista, entao e fina no sentido da
+	# rua e comprida no sentido oposto.
+	_mesh_faixa = PlaneMesh.new()
+	_mesh_faixa.size = Vector2(0.45, largura - 0.8)
+	# Escuro de verdade. O primeiro valor foi 0.62 e na foto o asfalto ficou do
+	# mesmo tom da calcada — a rua lia como uma laje de concreto larga. Asfalto
+	# de rua reflete pouca luz; o contraste com a calcada (0.5) e o que faz o
+	# meio-fio aparecer.
+	_mat_asfalto = CitySurface.make(null, Color(0.29, 0.29, 0.30), "asfalto",
+		asphalt_texture_size, 0.35, 0.5, 0.0)
+	_mat_tinta = StandardMaterial3D.new()
+	_mat_tinta.albedo_color = Color(0.86, 0.85, 0.80)
+	_mat_tinta.roughness = 0.85
+
+func _quad(mesh: Mesh, mat: Material, pos: Vector3, rot_y_deg: float,
+		grupo: String) -> void:
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	mi.material_override = mat
+	add_child(mi)
+	mi.position = pos
+	mi.rotation_degrees.y = rot_y_deg
+	mi.add_to_group(grupo)
+
+## Deslocamento ao longo do sentido da rua. Com rotacao 0 a rua corre no X.
+func _ao_longo(dist: float, rot_y_deg: float) -> Vector3:
+	return Vector3(dist, 0.0, 0.0).rotated(Vector3.UP, deg_to_rad(rot_y_deg))
+
+## Um pedaco de pista reta, com o tracejado do meio (ou a faixa de pedestre).
+func _asfalto_reto(pos: Vector3, rot_y_deg: float, com_faixa: bool) -> void:
+	_ensure_road_resources()
+	var chao := Vector3(pos.x, road_surface_y, pos.z)
+	_quad(_mesh_pista, _mat_asfalto, chao, rot_y_deg, "via_reta")
+	# A tinta fica 4 mm acima do asfalto. Coplanar, as duas superficies brigam e
+	# a faixa pisca conforme a camera anda.
+	var tinta_y := road_surface_y + 0.004
+	if com_faixa:
+		# O PAVIMENTO tambem entra em `via_faixa` (e nao so as barras): e ele que
+		# o censo conta como "travessia". As barras sao TINTA — botadas no grupo
+		# de pavimento, a checagem de continuidade via 6 pecas por tile a 0,9 m
+		# uma da outra e acusava 3872 "sobreposicoes" numa rua perfeita.
+		get_child(get_child_count() - 1).add_to_group("via_faixa")
+		var n := 6
+		for i in range(n):
+			var off := _ao_longo((float(i) - (n - 1) * 0.5) * 0.9, rot_y_deg)
+			_quad(_mesh_faixa, _mat_tinta,
+				Vector3(chao.x + off.x, tinta_y, chao.z + off.z), rot_y_deg, "via_tinta")
+		return
+	for s in [-0.25, 0.25]:
+		var off := _ao_longo(s * tile_size, rot_y_deg)
+		_quad(_mesh_traco, _mat_tinta,
+			Vector3(chao.x + off.x, tinta_y, chao.z + off.z), rot_y_deg, "via_tinta")
+
+func _asfalto_cruzamento(pos: Vector3) -> void:
+	_ensure_road_resources()
+	_quad(_mesh_cruz, _mat_asfalto, Vector3(pos.x, road_surface_y, pos.z), 0.0,
+		"via_cruzamento")
 
 func _near_any(values: Array[float], v: float, threshold: float) -> bool:
 	for other in values:

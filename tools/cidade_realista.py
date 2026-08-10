@@ -61,6 +61,20 @@ MIDTOWN = 260.0
 INDUSTRIAIS = [(247.5, -247.5), (-247.5, 247.5)]
 RAIO_INDUSTRIAL = 95.0
 
+# PERFIL DA RUA. O tile do kit tinha 6 m de pista e 1,5 de calcada: 9,2 m de
+# fachada a fachada, o que ao lado de um predio de 80 m da um desfiladeiro de
+# 1:8,8 — le como viela. Uma rua urbana de verdade tem 2 faixas de 3,5 mais 2 de
+# estacionamento de 2,2 (11,4 m de pista) e calcada de 3,5, dando 18,4 m.
+# So da pra mexer nisso porque o asfalto passou a ser GERADO (CityStreets.
+# asfalto_gerado): com o tile, a largura era a do modelo.
+RUA = [
+    ("road_half_width", "5.7", 1),
+    ("sidewalk_width", "3.5", 1),
+    ("road_clearance", "9.4", 1),     # 5.7 + 3.5, com folga
+    ("light_offset", "6.6", 1),       # poste na calcada
+    ("furniture_offset", "7.2", 1),   # ponto de onibus na calcada
+]
+
 # Anel rural mais cheio (pedido do usuario). O anel tambem CRESCEU de area com a
 # cidade nova, entao manter a contagem antiga ja o deixaria mais ralo.
 DECOR = 2800
@@ -117,7 +131,12 @@ def main() -> int:
                "[" + ", ".join("Vector3(%g, 0, %g)" % (x, z) for x, z in pontos) + "]"),
            "exclude_points (natureza e cinturao)", 2)
 
-    # ------------------------------------------------------ 3. campo mais cheio
+    # ------------------------------------------------------- 3. perfil da rua
+    for campo, valor, quantos in RUA:
+        trocar(r"^%s = [\d.]+$" % campo, "%s = %s" % (campo, valor),
+               "rua: %s" % campo, quantos)
+
+    # ------------------------------------------------------ 4. campo mais cheio
     # `decor_count` existe tambem nos 3 ferros-velhos rurais (valores 6 e 7); o
     # do NatureScatter e o unico acima de 100, entao casa so ele.
     trocar(r"^decor_count = \d{3,}$", "decor_count = %d" % DECOR, "densidade de decoracao")
