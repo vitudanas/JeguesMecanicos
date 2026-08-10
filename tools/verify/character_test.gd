@@ -69,7 +69,7 @@ func _run() -> void:
 
 func _secao_modelos() -> void:
 	print("\n[1] os dois personagens carregam")
-	for entry: Dictionary in Appearance.MODELS:
+	for entry: Dictionary in Appearance.models():
 		var scene: PackedScene = load(str(entry["caminho"])) as PackedScene
 		if scene == null:
 			fail("modelo '%s' nao carregou de %s" % [entry["id"], entry["caminho"]])
@@ -91,7 +91,7 @@ func _secao_modelos() -> void:
 
 func _secao_formas() -> void:
 	print("\n[2] o que o slider pede chega na malha")
-	for entry: Dictionary in Appearance.MODELS:
+	for entry: Dictionary in Appearance.models():
 		var model_id := str(entry["id"])
 		Appearance.set_model(model_id)
 		Appearance.set_donkey_head(false)
@@ -143,7 +143,7 @@ func _read_shape(root: Node, shape_id: String) -> float:
 
 func _secao_cabeca() -> void:
 	print("\n[3] a cabeca de jegue cobre os dois personagens")
-	for entry: Dictionary in Appearance.MODELS:
+	for entry: Dictionary in Appearance.models():
 		var model_id := str(entry["id"])
 		Appearance.set_model(model_id)
 
@@ -324,7 +324,7 @@ func _override_count(root: Node) -> int:
 func _secao_altura() -> void:
 	print("\n[5] a altura pedida e a altura que o boneco tem")
 	Appearance.set_donkey_head(false)   # orelha em pe passa da cabeca de proposito
-	for entry: Dictionary in Appearance.MODELS:
+	for entry: Dictionary in Appearance.models():
 		Appearance.set_model(str(entry["id"]))
 		for wanted: float in [Appearance.HEIGHT_MIN, 1.80, Appearance.HEIGHT_MAX]:
 			Appearance.set_height(wanted)
@@ -442,8 +442,8 @@ func _secao_tela() -> void:
 	# "Homem" e continua vendo a mulher — que e o defeito mais provavel aqui.
 	var picker: OptionButton = menu.get("_model_picker")
 	var male_index := -1
-	for i in range(Appearance.MODELS.size()):
-		if str(Appearance.MODELS[i]["id"]) == "masculino":
+	for i in range(Appearance.models().size()):
+		if str(Appearance.models()[i]["id"]) == "masculino":
 			male_index = i
 	picker.select(male_index)
 	picker.item_selected.emit(male_index)

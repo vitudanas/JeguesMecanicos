@@ -124,7 +124,7 @@ func _build_ui() -> void:
 	box.add_child(_section("Quem você é"))
 
 	_model_picker = OptionButton.new()
-	for entry: Dictionary in Appearance.MODELS:
+	for entry: Dictionary in Appearance.models():
 		_model_picker.add_item(str(entry["rotulo"]))
 	_model_picker.item_selected.connect(_on_model_selected)
 	box.add_child(_row("Personagem", _model_picker))
@@ -393,7 +393,7 @@ func _on_preview_input(event: InputEvent) -> void:
 func _on_model_selected(index: int) -> void:
 	if _building:
 		return
-	Appearance.set_model(str(Appearance.MODELS[index]["id"]))
+	Appearance.set_model(str(Appearance.models()[index]["id"]))
 	_rebuild_character()
 	_refresh()
 
@@ -445,8 +445,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _refresh() -> void:
 	_building = true
-	for i in range(Appearance.MODELS.size()):
-		if str(Appearance.MODELS[i]["id"]) == Appearance.model_id:
+	for i in range(Appearance.models().size()):
+		if str(Appearance.models()[i]["id"]) == Appearance.model_id:
 			_model_picker.select(i)
 	_head_picker.select(0 if Appearance.donkey_head else 1)
 	_height_slider.value = Appearance.height

@@ -6,7 +6,15 @@
 # o unzip cuspiu "End-of-central-directory signature not found". O arquivo
 # parcial ja estava na pasta e parecia pronto.
 cd "$(dirname "$0")/.." || exit 1
-mkdir -p assets/realistas/_zips
+
+# Destino: predios (padrao) ou personagens. Sao pastas diferentes porque o
+# pipeline seguinte e outro — predio passa pelo fatiador, personagem passa por
+# tools/preparar_personagens.tscn.
+DEST=assets/realistas
+case "$1" in
+  personagens|chars) DEST=assets/personagens ;;
+esac
+mkdir -p "$DEST/_zips"
 for z in *.zip; do
   [ -e "$z" ] || continue
   anterior=0
@@ -18,11 +26,11 @@ for z in *.zip; do
   done
   nome=$(basename "$z" .zip | tr 'A-Z' 'a-z' \
       | sed 's/_-_low_poly_model//;s/_corner_\[france\]/_corner/;s/[^a-z0-9_]/_/g;s/__*/_/g;s/_$//')
-  rm -rf "assets/realistas/$nome"
-  mkdir -p "assets/realistas/$nome"
-  if unzip -qo "$z" -d "assets/realistas/$nome"; then
-    mv "$z" assets/realistas/_zips/
-    echo "ok  $nome  ($(du -sh "assets/realistas/$nome" | cut -f1))"
+  rm -rf "$DEST/$nome"
+  mkdir -p "$DEST/$nome"
+  if unzip -qo "$z" -d "$DEST/$nome"; then
+    mv "$z" "$DEST/_zips/"
+    echo "ok  $nome  ($(du -sh "$DEST/$nome" | cut -f1))"
   else
     echo "FALHOU $z (zip incompleto?)"
   fi

@@ -29,7 +29,7 @@ API = "https://api.sketchfab.com/v3/search"
 # projeto ja gera em docs/creditos.md (tools/creditos.py).
 LICENCAS_OK = ["cc0", "by"]
 
-MAX_FACES = 120_000   # personagem de jogo; acima disso e scan
+MAX_FACES = 260_000   # o custo entra na tabela; quem filtra e o uso
 MIN_FACES = 800
 
 TERMOS = {
@@ -42,12 +42,22 @@ TERMOS = {
         "old man character rigged",
         "worker character rigged low poly",
         "male npc character game ready",
+        "man walking animation character",
+        "civilian character rigged",
+        "pedestrian character game ready",
+        "elderly man character rigged",
+        "teenager boy character rigged",
     ],
     "mulher": [
         "female character rigged game ready",
         "woman character low poly rigged",
         "casual woman character rigged",
         "female npc character game ready",
+        "woman walking animation character",
+        "civilian woman character rigged",
+        "pedestrian woman game ready",
+        "elderly woman character rigged",
+        "casual girl character rigged low poly",
     ],
 }
 
@@ -61,7 +71,18 @@ VETO = ("medieval", "fantasy", "orc", "goblin", "demon", "zombie", "skeleton",
         # Sem esta lista entraram Sonic, Squidward e "Balerina Capuchino".
         "sonic", "squidward", "spongebob", "mario", "roblox", "fan art",
         "fanart", "anime", "chibi", "psx", "capuchino", "sahur", "meme",
-        "soldier", "soldat", "military", "tactical", "armor", "survivor")
+        "soldier", "soldat", "military", "tactical", "armor", "survivor",
+        # Nao-humanos e franquias que passaram na primeira leva: a busca do
+        # Sketchfab e ruidosa, e como a lista vai ser baixada INTEIRA cada item
+        # errado e download perdido.
+        "dino", "carnotaurus", "dog", "cat ", "bear", "animal", "creature",
+        "pokemon", "castlevania", "nes", "poppy", "playtime", "kobold",
+        "viking", "android", "companion", "zepeto", "tekken", "stickman",
+        "fighter", "boss", "lumberjack", "spirit", "dancing", "halloween",
+        "kid", "girlfriend", "tunic", "cabinet",
+        # Multidao nao e personagem: "Audience On Stage" tem 242 mil faces
+        # porque sao dezenas de pessoas numa malha so.
+        "audience", "crowd", "people watching", "group of")
 
 
 def buscar(termo, max_faces):
@@ -133,12 +154,14 @@ def main():
     print("e rigado precisa da UAL1 aplicada por cima (o esqueleto tem que bater,")
     print("conferir com tools/verify/analisar_realistas.tscn); o que nao tem")
     print("esqueleto NAO serve como jogavel sem passar pelo Blender.\n")
-    print("| animações | rig | faces | licença | modelo | autor |")
+    print("| animações | faces | serve como | licença | modelo | autor |")
     print("|---|---|---|---|---|---|")
     for m in lista[:60]:
+        # "serve como": NPC aparece 72 vezes na tela, jogador uma. O corte de
+        # 18 mil faces sai dai, nao de gosto.
+        uso = "jogador + NPC" if m["faces"] <= 18_000 else "jogador"
         print("| %d | %s | %s | %s | [%s](%s) | %s |" % (
-            m["animacoes"], "sim" if m["rigado"] else "NAO",
-            "{:,}".format(m["faces"]).replace(",", "."),
+            m["animacoes"], "{:,}".format(m["faces"]).replace(",", "."), uso,
             "CC0" if m["licenca"] == "cc0" else "CC-BY",
             (m["nome"] or "?").replace("|", "/"), m["url"], m["autor"]))
 

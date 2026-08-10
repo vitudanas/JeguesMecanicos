@@ -25,7 +25,7 @@ const FORMAT := 1
 ## converte "quero 1,80 m" na escala do visual. Os dois modelos nao tem a mesma
 ## altura nativa (1.788 contra 1.852), entao um fator unico deixaria o masculino
 ## sempre 3,5% mais alto que o pedido.
-const MODELS: Array[Dictionary] = [
+const MODELS_NATIVOS: Array[Dictionary] = [
 	{
 		"id": "feminino",
 		"rotulo": "Mulher",
@@ -39,6 +39,45 @@ const MODELS: Array[Dictionary] = [
 		"altura_modelo": 1.852,
 	},
 ]
+
+## Personagens BAIXADOS, medidos e catalogados por
+## `tools/preparar_personagens.gd`. Ficam num arquivo gerado, e nao escritos
+## aqui a mao, porque a lista cresce: com ~45 modelos, uma linha manual por
+## modelo seriam 45 chances de errar a altura — e altura errada nao acusa em
+## lugar nenhum, o personagem so nasce do tamanho errado (foi assim que os NPCs
+## ficaram com 3,76 m por meses).
+##
+## Carregado por CAMINHO, e nao pela classe: o catalogo so existe depois que
+## alguem baixa algum personagem, e uma referencia dura a `CatalogoPersonagens`
+## faria o autoload nao compilar enquanto a pasta estivesse vazia.
+const CATALOGO := "res://assets/personagens/catalogo.gd"
+
+static var _todos: Array[Dictionary] = []
+static var _todos_prontos := false
+
+## Todos os personagens jogaveis: os dois nativos mais os baixados que TENHAM
+## ESQUELETO. Modelo sem osso e estatua — entra no catalogo pra ser usado como
+## cenario, mas nao como jogador (ver preparar_personagens.gd).
+static func models() -> Array[Dictionary]:
+	if _todos_prontos:
+		return _todos
+	_todos_prontos = true
+	_todos = MODELS_NATIVOS.duplicate(true)
+	if not ResourceLoader.exists(CATALOGO):
+		return _todos
+	var script: Script = load(CATALOGO) as Script
+	if script == null:
+		return _todos
+	var mapa := script.get_script_constant_map()
+	if not mapa.has("PERSONAGENS"):
+		return _todos
+	for e: Dictionary in mapa["PERSONAGENS"]:
+		if int(e.get("ossos", 0)) <= 0:
+			continue
+		if not ResourceLoader.exists(str(e.get("caminho", ""))):
+			continue
+		_todos.append(e)
+	return _todos
 
 ## As formas do corpo, na escala 0..1 das shape keys gravadas no modelo (ver
 ## `tools/build_characters.py`). `so_feminino` marca as que o modelo masculino
@@ -98,10 +137,10 @@ func _ready() -> void:
 ## O dicionario da entrada de `MODELS` escolhida (nunca devolve nulo: id
 ## desconhecido cai no primeiro, que e o padrao do jogo).
 func model() -> Dictionary:
-	for entry: Dictionary in MODELS:
+	for entry: Dictionary in models():
 		if entry["id"] == model_id:
 			return entry
-	return MODELS[0]
+	return models()[0]
 
 func model_scene() -> PackedScene:
 	return load(model()["caminho"]) as PackedScene

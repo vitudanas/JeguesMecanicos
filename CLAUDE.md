@@ -3155,6 +3155,40 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     `street_test` ganhou a trava: cada seção marca que chegou ao fim, e faltar
     marca é falha dura.
 
+- **2026-08-10** — Usuário decidiu **baixar a lista inteira de personagens e
+  usar todos**, "com qualidade", somados aos que já estão no jogo. Preparei o
+  caminho pra isso funcionar sem virar trabalho manual.
+  - **A lista foi limpa antes**: a busca do Sketchfab é ruidosa e a primeira
+    leva deixou passar um dinossauro, um cachorro, um pack de Pokémon,
+    `Castlevania NES` e um urso de armadura. Como agora a lista vai ser baixada
+    INTEIRA, cada item errado é download perdido — o veto foi ampliado e o de
+    "multidão" entrou depois que apareceu uma plateia de show com 242 mil faces
+    (dezenas de pessoas numa malha só, não um personagem).
+  - **O teto de faces subiu de 120 mil para 260 mil** por causa do pedido de
+    qualidade: ele cortava justamente os modelos caprichados. O custo agora fica
+    ANOTADO na tabela, e é ele que decide onde cada modelo serve — **NPC aparece
+    72 vezes na tela ao mesmo tempo e o jogador uma**, então o corte em 18 mil
+    faces separa "jogador + NPC" de "só jogador". Com isso apareceram
+    Renderpeople e Adobe Fuse na lista, que é o nível que ele pediu.
+  - **56 candidatos**, todos com animação própria, 24 deles leves o bastante
+    pra virar pedestre — [docs/garimpo-personagens.md](docs/garimpo-personagens.md).
+  - **O jogo passou a aceitar N personagens sem editar código.** Com ~45
+    modelos, uma linha manual em `Appearance.MODELS` por modelo seriam 45
+    chances de errar a altura — e **altura errada não acusa em lugar nenhum**, o
+    personagem só nasce do tamanho errado (foi assim que os NPCs ficaram com
+    3,76 m por meses). Agora:
+    - `tools/preparar_personagens.gd` (novo, headless) mede cada arquivo
+      recebido — altura, ossos, animações próprias, faces e se veio **deitado**
+      (exportador com Z pra cima) — e gera `assets/personagens/catalogo.gd` com
+      caminhos LITERAIS, que é o que o auditor do `.pck` enxerga;
+    - `Appearance.models()` junta os dois nativos com o catálogo, e **descarta
+      quem não tem osso**: modelo sem esqueleto é estátua, não jogável;
+    - o catálogo é carregado por CAMINHO e não pela classe, senão o autoload não
+      compilaria enquanto a pasta estivesse vazia.
+  - `tools/receber_modelos.sh` ganhou destino: `personagens` extrai pra
+    `assets/personagens/` em vez da pasta de prédios, porque o pipeline seguinte
+    é outro.
+
 ### ONDE PAREI (2026-08-10, fim da sessão)
 
 Estado: tudo commitado, suíte inteira passando e **builds reexportadas nesta

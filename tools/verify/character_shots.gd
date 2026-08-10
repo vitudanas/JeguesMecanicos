@@ -104,7 +104,7 @@ func _frame(angle_deg: float, bottom: float, top: float) -> void:
 func _shots_bodies() -> void:
 	print("\n[corpos]")
 	var index := 1
-	for model: Dictionary in Appearance.MODELS:
+	for model: Dictionary in Appearance.models():
 		for donkey: bool in [true, false]:
 			Appearance.reset()
 			Appearance.set_model(str(model["id"]))
@@ -126,7 +126,7 @@ func _shots_bodies() -> void:
 func _shots_shapes() -> void:
 	print("\n[pontas dos sliders]")
 	var index := 40
-	for model: Dictionary in Appearance.MODELS:
+	for model: Dictionary in Appearance.models():
 		var model_id := str(model["id"])
 		for entry: Dictionary in Appearance.SHAPES:
 			Appearance.reset()
@@ -162,7 +162,7 @@ func _shots_shapes() -> void:
 func _shots_proof() -> void:
 	print("\n[prova magenta]")
 	var index := 90
-	for model: Dictionary in Appearance.MODELS:
+	for model: Dictionary in Appearance.models():
 		Appearance.reset()
 		Appearance.set_model(str(model["id"]))
 		Appearance.set_donkey_head(true)
