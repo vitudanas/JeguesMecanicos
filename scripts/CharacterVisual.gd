@@ -68,6 +68,10 @@ static func randomize_appearance(visual: Node3D) -> void:
 		return
 	randomize_body(visual)
 	randomize_colors(visual)
+	# Chapeu, mochila, sacola. Tipo fisico e cor variam o VOLUME e o TOM; de 20
+	# m — que e a distancia em que se ve pedestre na rua — o que separa uma
+	# pessoa da outra e a SILHUETA. Ver NpcAccessories.gd.
+	NpcAccessories.apply_random(visual)
 
 ## Corpo: um tipo fisico sorteado da tabela + as formas femininas, quando o
 ## modelo as tem.

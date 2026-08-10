@@ -524,12 +524,12 @@ script = ExtResource("418")
 streets_x = Array[float]([-337.5, -247.5, -157.5, -90, 0, 90, 157.5, 247.5, 337.5])
 streets_z = Array[float]([-337.5, -247.5, -157.5, -90, 0, 90, 157.5, 247.5, 337.5])
 traffic_scene = ExtResource("6")
-traffic_routes = 8
-cars_per_route = 3
+traffic_routes = 13
+cars_per_route = 4
 car_models = Array[PackedScene]([ExtResource("101"), ExtResource("102"), ExtResource("103"), ExtResource("104"), ExtResource("105"), ExtResource("106")])
 pedestrian_scene = ExtResource("15")
-pedestrian_routes = 7
-peds_per_route = 4
+pedestrian_routes = 12
+peds_per_route = 6
 character_models = Array[PackedScene]([ExtResource("200"), ExtResource("201")])
 anim_scene = ExtResource("207")
 

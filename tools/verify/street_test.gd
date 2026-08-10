@@ -30,6 +30,7 @@ const FAIXAS := {
 }
 
 var problems: Array[String] = []
+var _secoes_completas: Dictionary = {}
 var main: Node
 var streets: Node = null
 
@@ -55,10 +56,21 @@ func _ready() -> void:
 	_secao_lotes()
 	_secao_cinturao()
 	_secao_arvores()
+	_secao_pedestres()
 	_finish()
 
 func _finish() -> void:
 	print("\n=== RESULTADO ===")
+	# Cada secao marca que chegou ao fim. Sem isso, um erro de script no meio de
+	# uma delas aborta a funcao em silencio e o teste termina dizendo "nenhum
+	# problema" com metade das perguntas NAO FEITAS — foi exatamente o que
+	# aconteceu aqui com a secao de pedestres (changelog 2026-08-09 registra a
+	# mesma armadilha no economy_test).
+	for esperada: String in ["rua", "mobiliario", "lotes", "cinturao", "arvores",
+			"pedestres"]:
+		if not _secoes_completas.has(esperada):
+			problems.append("a secao '%s' nao chegou ao fim — erro de script no meio?"
+				% esperada)
 	if problems.is_empty():
 		print("rua, mobiliario, lotes e cinturao em escala")
 	else:
@@ -84,6 +96,7 @@ func _secao_rua() -> void:
 		fail("pista de %.1f m — estreita demais pra escala dos predios" % (_half * 2.0))
 	if _sidewalk < 2.0:
 		fail("calcada de %.1f m — nao cabe pedestre ao lado do mobiliario" % _sidewalk)
+	_secoes_completas["rua"] = true
 
 # --------------------------------------------------------------- mobiliario
 
@@ -145,6 +158,7 @@ func _secao_mobiliario() -> void:
 			% [largura, comprimento, _half * 2.0])
 		if comprimento < _half * 2.0 * 0.75:
 			fail("barra da faixa com %.1f m numa pista de %.1f m" % [comprimento, _half * 2.0])
+	_secoes_completas["mobiliario"] = true
 
 # -------------------------------------------------------------------- lotes
 
@@ -160,6 +174,7 @@ func _secao_lotes() -> void:
 			alturas.append(_world_aabb(n as Node3D).size.y)
 		alturas.sort()
 		print("    %-16s %d | altura ate %.1f m" % [grupo, nos.size(), alturas[-1]])
+	_secoes_completas["lotes"] = true
 
 # ----------------------------------------------------------------- cinturao
 
@@ -247,6 +262,7 @@ func _secao_cinturao() -> void:
 	print("    densidade: %.1f construcoes por 100 m de anel" % por_100m)
 	if por_100m < 2.0:
 		fail("cinturao ralo: %.1f construcoes por 100 m" % por_100m)
+	_secoes_completas["cinturao"] = true
 
 	# A cidade e 100% realista desde 2026-08-09. Um cinturao do kit estilizado
 	# encosta na cidade lado a lado — que e exatamente a mistura de estilo que
@@ -329,6 +345,7 @@ func _secao_arvores() -> void:
 		print("    campo: %.1f arvores por hectare" % por_hectare)
 		if por_hectare < 3.0:
 			fail("campo ralo: %.1f arvores por hectare" % por_hectare)
+	_secoes_completas["arvores"] = true
 
 func _coletar_arvores(node: Node, out: Dictionary) -> void:
 	var path := node.scene_file_path
@@ -351,6 +368,121 @@ func _coletar_arvores(node: Node, out: Dictionary) -> void:
 		return
 	for c in node.get_children():
 		_coletar_arvores(c, out)
+
+# -------------------------------------------------------------------- pedestres
+
+## Variedade dos pedestres, medida por ASSINATURA e nao por contagem de opcoes:
+## o que importa nao e quantos acessorios existem na tabela, e quantas pessoas
+## DIFERENTES a rua mostra. Dois pedestres com a mesma assinatura sao, pra quem
+## olha da calcada, a mesma pessoa duas vezes.
+func _secao_pedestres() -> void:
+	print("\n[6] variedade dos pedestres")
+	var peds: Array = get_tree().get_nodes_in_group("pedestre")
+	if peds.is_empty():
+		# Sem grupo: cai pro nome da cena, que e o que existe hoje.
+		peds = _achar_por_cena(main, "Pedestrian.tscn")
+	if peds.is_empty():
+		fail("nenhum pedestre na cidade")
+		return
+	var assinaturas: Dictionary = {}
+	var com_acessorio := 0
+	var por_acessorio: Dictionary = {}
+	var alturas: Array[float] = []
+	for p in peds:
+		var n := p as Node3D
+		var visual := _primeiro_visual(n)
+		if visual == null:
+			continue
+		var acessorios := _acessorios(visual)
+		if not acessorios.is_empty():
+			com_acessorio += 1
+		for a: String in acessorios:
+			por_acessorio[a] = int(por_acessorio.get(a, 0)) + 1
+		var caixa := _world_aabb(visual)
+		alturas.append(caixa.size.y)
+		# A assinatura junta o que da pra ver de longe: silhueta (acessorios),
+		# porte (altura arredondada em 5 cm) e a cor da roupa.
+		var chave := "%s|%.2f|%s" % [", ".join(PackedStringArray(acessorios)),
+			snappedf(caixa.size.y, 0.05), _cor_da_roupa(visual)]
+		assinaturas[chave] = int(assinaturas.get(chave, 0)) + 1
+	if alturas.is_empty():
+		fail("pedestres sem visual montado")
+		return
+	alturas.sort()
+	var distintas := assinaturas.size()
+	print("    %d pedestres | %d aparencias distintas (%.0f%%)"
+		% [peds.size(), distintas, 100.0 * float(distintas) / float(peds.size())])
+	print("    altura de %.2f a %.2f m | %d com acessorio (%.0f%%)"
+		% [alturas[0], alturas[-1], com_acessorio,
+			100.0 * float(com_acessorio) / float(peds.size())])
+	var linha: Array[String] = []
+	for a: String in por_acessorio:
+		linha.append("%s %d" % [a, por_acessorio[a]])
+	print("    %s" % ", ".join(PackedStringArray(linha)))
+
+	# Metade da rua repetida e o defeito que este sistema existe pra resolver.
+	if float(distintas) / float(peds.size()) < 0.5:
+		fail("so %d aparencias distintas em %d pedestres" % [distintas, peds.size()])
+	# Um repetido demais denuncia sorteio viciado (foi assim que busto e gluteo
+	# saiam todos parecidos antes de virarem degraus independentes).
+	var pior := 0
+	for k: String in assinaturas:
+		pior = maxi(pior, int(assinaturas[k]))
+	if pior > maxi(3, peds.size() / 8):
+		fail("uma mesma aparencia aparece %d vezes em %d pedestres" % [pior, peds.size()])
+
+	# Jeito de andar: `Walk` pra maioria, `Jog_Fwd` pra alguns, `Sprint` raro.
+	# Uma rua inteira na mesma cadencia le como fila de clones, mesmo com
+	# corpos e roupas diferentes.
+	var por_anim: Dictionary = {}
+	var velocidades: Array[float] = []
+	for p in peds:
+		var nome := str(p.get("walk_anim_name"))
+		por_anim[nome] = int(por_anim.get(nome, 0)) + 1
+		velocidades.append(float(p.get("speed")))
+	var linha2: Array[String] = []
+	for a: String in por_anim:
+		linha2.append("%s %d" % [a, por_anim[a]])
+	velocidades.sort()
+	print("    andar: %s | velocidade de %.1f a %.1f m/s"
+		% [", ".join(PackedStringArray(linha2)), velocidades[0], velocidades[-1]])
+	if por_anim.size() < 2:
+		fail("todos os pedestres andam com a mesma animacao")
+	_secoes_completas["pedestres"] = true
+
+func _acessorios(visual: Node3D) -> Array[String]:
+	var out: Array[String] = []
+	var skeleton := CharacterVisual.find_skeleton(visual)
+	if skeleton == null:
+		return out
+	for c in skeleton.get_children():
+		var nome := String(c.name)
+		if nome.begins_with("Acessorio"):
+			out.append(nome.substr(9))
+	out.sort()
+	return out
+
+func _cor_da_roupa(visual: Node3D) -> String:
+	for mi in _all_meshes(visual):
+		var m := mi.get_surface_override_material(0) as StandardMaterial3D
+		if m != null:
+			return "%.2f,%.2f,%.2f" % [m.albedo_color.r, m.albedo_color.g, m.albedo_color.b]
+	return "-"
+
+func _primeiro_visual(node: Node) -> Node3D:
+	for c in node.get_children():
+		if c is Node3D and CharacterVisual.find_skeleton(c) != null:
+			return c as Node3D
+	return null
+
+func _achar_por_cena(node: Node, sufixo: String) -> Array:
+	var out: Array = []
+	if node.scene_file_path.ends_with(sufixo):
+		out.append(node)
+		return out
+	for c in node.get_children():
+		out.append_array(_achar_por_cena(c, sufixo))
+	return out
 
 # ------------------------------------------------------------------ utilidade
 

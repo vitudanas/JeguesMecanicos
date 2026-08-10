@@ -33,6 +33,7 @@ func _ready() -> void:
 	add_child(cam)
 	cam.make_current()   # o Town tem camera propria; sem isto a foto sai pelo ponto de vista dela
 
+	await _fotografar_pedestres()
 	await _fotografar_mobiliario()
 	await _fotografar_travessia()
 	await _fotografar_lotes()
@@ -65,6 +66,41 @@ func _chao(p: Vector3) -> float:
 func _olhar(de: Vector3, para: Vector3) -> void:
 	cam.global_position = Vector3(de.x, _chao(de) + OLHO, de.z)
 	cam.look_at(Vector3(para.x, _chao(para) + 1.2, para.z), Vector3.UP)
+
+## Os pedestres em GRUPO, e nao um a um: o defeito que a variedade existe pra
+## resolver ("todo mundo igual") so aparece com varios no mesmo quadro.
+func _fotografar_pedestres() -> void:
+	print("\n[pedestres]")
+	var peds: Array = []
+	for n in get_tree().get_nodes_in_group("pedestre"):
+		peds.append(n)
+	if peds.is_empty():
+		for n in main.find_children("*", "RigidBody3D", true, false):
+			if n.scene_file_path.ends_with("Pedestrian.tscn"):
+				peds.append(n)
+	print("  %d pedestres" % peds.size())
+	if peds.is_empty():
+		return
+	# Junta os que estiverem mais perto uns dos outros: e o enquadramento em que
+	# da pra comparar um com o outro.
+	var alvo := (peds[0] as Node3D).global_position
+	var melhor := 0
+	var mais_perto := 0
+	for i in range(peds.size()):
+		var p: Vector3 = (peds[i] as Node3D).global_position
+		var n := 0
+		for j in range(peds.size()):
+			if i != j and p.distance_to((peds[j] as Node3D).global_position) < 26.0:
+				n += 1
+		if n > mais_perto:
+			mais_perto = n
+			melhor = i
+	alvo = (peds[melhor] as Node3D).global_position
+	print("  %d pedestres a menos de 26 m do escolhido" % mais_perto)
+	for k in range(2):
+		var dir := Vector3(cos(TAU * float(k) / 2.0), 0.0, sin(TAU * float(k) / 2.0))
+		_olhar(alvo + dir * 13.0, alvo)
+		await _shot("0%d_pedestres" % k)
 
 func _fotografar_mobiliario() -> void:
 	print("\n[mobiliario]")

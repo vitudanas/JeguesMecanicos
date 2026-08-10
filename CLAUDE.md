@@ -3100,6 +3100,61 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     olhos com o jogador no quadro. O `gaps_test` aprendeu a contar o muro de
     lote: sem isso ele diria "borda vazia" onde o jogador vê um muro com portão.
 
+- **2026-08-10** — Variedade dos NPCs (o item que estava aberto desde
+  2026-08-03), mais dois pedidos que o usuário fez no meio da rodada: **todos os
+  personagens jogáveis** e **baixar homens diferentes**; e depois **animações de
+  andar diferentes para alguns NPCs**.
+  - **O que faltava não era volume nem cor, era SILHUETA.** Tipo físico, altura
+    e tom já variavam por NPC desde 2026-08-03. Só que de 20 m — a distância em
+    que se vê pedestre na rua — isso não separa uma pessoa da outra. Novo
+    `scripts/NpcAccessories.gd`: boné, chapéu de palha, gorro, óculos, mochila e
+    sacola, montados com primitivas (o idioma do projeto: mobiliário urbano,
+    gambiarras e cabeça de jegue são assim), presos num `BoneAttachment3D` pra
+    acompanhar a animação. Medido: **59 aparências distintas em 72 pedestres
+    (82%)**, 60% com algum acessório.
+  - **Mochila e sacola não apareciam, em silêncio.** Eu pedia os ossos `Chest` e
+    `Spine`, que é como o resto do projeto fala do esqueleto; medido no arquivo,
+    eles se chamam **`spine_01..03`**, minúsculo com underscore. `find_bone`
+    devolve -1 e a peça era descartada sem erro — chapéu e óculos (osso `Head`,
+    esse existe) funcionavam, e por isso o defeito passou despercebido na
+    primeira medição.
+  - **Jeito de andar** (pedido do usuário): a UAL1 tem `Walk`, `Jog_Fwd` e
+    `Sprint` (medido no arquivo, junto com mais 38). Agora cada pedestre sorteia
+    um dos quatro jeitos — passeando, normal, apressado, atrasado — e a
+    **velocidade vem JUNTO com a animação**: sorteadas em separado, o boneco em
+    `Jog_Fwd` devagar patina e o em `Walk` rápido desliza. Medido: 59 andando,
+    13 trotando, de 0,9 a 2,9 m/s.
+    - *Erro meu*: sorteei a animação ANTES do bloco em que a rota manda o
+      `walk_anim_name` para todos os seus pedestres — o valor era sobrescrito, e
+      o teste mostrou "Walk 28" com a velocidade já variando, que é exatamente a
+      combinação que faz patinar.
+  - **A cidade estava deserta**: 28 pedestres e 24 carros numa cidade que
+    cresceu para 525 m de lado (uma pessoa a cada 10.000 m²) — a foto do centro
+    saiu com **um** pedestre na tela. Passou para **72 pedestres e 52 carros**.
+  - **Os 7 modelos que o usuário baixou não servem como jogáveis, e a medição é
+    dura**: **6 dos 7 não têm esqueleto nenhum** e **nenhum tem animação** —
+    incluindo o `carol_tennis_player_girl__animated_3d_character`. O único
+    rigado (`anime_girl_rigged`) usa esqueleto VRM (97 ossos, `Hips_01`,
+    `J_Sec_Hair*`) que não bate com o Quaternius que a UAL1 anima. Conferido por
+    dois caminhos (contagem de `skins`/`animations` no glTF e leitura dos
+    `joints`). Personagem sem rig é estátua: não anda e não mexe o braço.
+  - **Daí saiu `tools/garimpo_personagens.py`**, que resolve a causa: ele filtra
+    a API pública do Sketchfab por **`animationCount`**, que era o filtro que
+    faltava. Resultado em [docs/garimpo-personagens.md](docs/garimpo-personagens.md):
+    **30 homens e 18 mulheres, todos com animação própria**, CC-BY. Quando
+    entrarem, é uma linha em `Appearance.MODELS`.
+    - Dois erros meus na ferramenta, os dois vistos na saída: `viewerUrl` vem
+      com o slug `none` nesta rota da API (o link tem que ser montado do uid), e
+      `isRigged` **não vem** na busca — sempre falso. Animação > 0 implica
+      esqueleto, então é isso que a coluna diz agora. O veto também deixava
+      passar Sonic, Squidward e "Balerina Capuchino".
+  - **Erros meus de verificador**: `get_nodes_in_group` devolve `Array[Node]` e
+    reatribuir um `Array` sem tipo é erro de parse — e o erro **abortou a seção
+    e o teste terminou dizendo que passou**, que é a armadilha mais perigosa
+    deste projeto (já registrada no `economy_test` em 2026-08-09). O
+    `street_test` ganhou a trava: cada seção marca que chegou ao fim, e faltar
+    marca é falha dura.
+
 ### ONDE PAREI (2026-08-10, fim da sessão)
 
 Estado: tudo commitado, suíte inteira passando e **builds reexportadas nesta
@@ -3113,17 +3168,24 @@ cores) e o personagem masculino jogável — tudo em 2026-08-10, ver changelog. 
 
 Pedidos do usuário ainda **não** feitos:
 
-1. **Trocar/variar os NPCs**, que hoje saem de 2 corpos base com a mesma roupa.
-   Rosto e modelo de roupa continuam iguais entre dois pedestres do mesmo
-   gênero. O `Appearance` novo não muda isso — ele é só do JOGADOR; quem sorteia
-   NPC continua sendo `CharacterVisual.randomize_appearance`.
-2. **Integrar os modelos baixados** — ver [docs/personagens.md](docs/personagens.md)
-   com os 7 links, todos CC-BY conferidos. O download é do usuário (o navegador
-   embutido não completa). A "Just a girl" sentada precisa de T-pose antes de
-   qualquer rig; o resto já vem em T-pose. Quando entrarem, o caminho está
-   pronto: basta somar uma linha em `Appearance.MODELS` (id, rótulo, caminho e
-   **altura medida** do arquivo) — o menu, o preview, o save e o verificador
-   passam a cobrir o modelo novo sozinhos.
+1. **Baixar os personagens da lista nova.** É o passo que depende de você:
+   [docs/garimpo-personagens.md](docs/garimpo-personagens.md) tem **30 homens e
+   18 mulheres, todos com animação própria** (o filtro que faltou da primeira
+   vez), CC-BY, com link direto. Baixe em glTF, largue o `.zip` na raiz e rode
+   `tools/receber_modelos.sh`. Integrar depois é uma linha em
+   `Appearance.MODELS` com o id, o rótulo, o caminho e a **altura medida** —
+   o menu, o preview, o save e o verificador cobrem o modelo novo sozinhos.
+2. **Os 7 modelos baixados em 2026-08-09 continuam fora**, e por um motivo
+   medido, não por preguiça: 6 dos 7 **não têm esqueleto** e nenhum tem
+   animação. Como jogáveis, só passando pelo Blender (que ESTÁ instalado em
+   `/Applications/Blender.app`, e o projeto já roda ele headless em
+   `tools/build_characters.py`): rig por peso automático + retarget da UAL1. O
+   caminho mais curto é o `anime_girl_rigged`, que ao menos tem esqueleto — mas
+   é VRM, então precisa de `BoneMap`/renomeação. Como cenário (estátua de
+   praça), qualquer um dos 7 entra hoje.
+3. **Rosto e roupa dos NPCs** continuam iguais entre dois pedestres do mesmo
+   gênero: o que varia hoje é corpo, altura, cor, acessório e jeito de andar.
+   Rosto diferente exige outro pacote de personagem — que é o item 1.
 
 ### Pendências pedidas e ainda NÃO feitas
 

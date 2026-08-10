@@ -5,6 +5,10 @@ extends Path3D
 
 @export var route_points: Array[Vector3] = []
 @export var pedestrian_count := 3
+## Sorteia jeito de andar por pedestre (passeando / normal / apressado /
+## atrasado), com a animacao e a velocidade vindo juntas. Desligado, todos usam
+## `walk_anim_name` e a faixa `speed_min/max` abaixo.
+@export var variar_andar := true
 @export var speed_min := 1.0
 @export var speed_max := 1.8
 @export var character_model: PackedScene
@@ -28,6 +32,7 @@ extends Path3D
 @export var walk_anim_name := ""
 
 const PEDESTRIAN_SCENE := preload("res://scenes/npc/Pedestrian.tscn")
+const PEDESTRIAN_SCRIPT := preload("res://scenes/npc/Pedestrian.gd")
 
 func _ready() -> void:
 	curve = Curve3D.new()
@@ -66,4 +71,16 @@ func _spawn_pedestrians() -> void:
 			pedestrian.idle_anim_name = idle_anim_name
 		if walk_anim_name != "":
 			pedestrian.walk_anim_name = walk_anim_name
+		# DEPOIS do bloco acima de proposito: a rota manda o mesmo
+		# `walk_anim_name` pra todos os seus pedestres, e sorteando antes o
+		# valor era sobrescrito — todos saiam com `Walk` e so a velocidade
+		# variava, o que faz o boneco patinar ou deslizar.
+		#
+		# O jeito de andar traz animacao E velocidade JUNTAS (ver
+		# Pedestrian.ANDARES): e o par que mantem o pe no lugar.
+		if variar_andar:
+			var andar: Dictionary = PEDESTRIAN_SCRIPT.sortear_andar()
+			pedestrian.walk_anim_name = str(andar["anim"])
+			var faixa: Vector2 = andar["vel"]
+			pedestrian.speed = randf_range(faixa.x, faixa.y)
 		path_follow.add_child(pedestrian)

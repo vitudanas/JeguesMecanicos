@@ -35,6 +35,35 @@ signal ragdolled
 @export var walk_anim_scene: PackedScene = preload("res://assets/quaternius/universal-animation-library-1/Animations/UAL1_Standard.glb")
 @export var idle_anim_name := "Idle"
 @export var walk_anim_name := "Walk"
+
+## JEITOS DE ANDAR. A UAL1 tem `Walk`, `Jog_Fwd` e `Sprint` (medido no arquivo),
+## e usar so o `Walk` fazia os 84 pedestres andarem no mesmo passo — de longe,
+## uma rua inteira em cadencia unica le como fila de clones.
+##
+## A velocidade vem JUNTO com a animacao, e nao sorteada a parte: um boneco em
+## `Jog_Fwd` a 1,2 m/s patina no chao, e um em `Walk` a 3 m/s desliza. O par
+## (animacao, faixa de velocidade) e o que mantem o pe no lugar.
+##
+## `peso` e a chance relativa: quase todo mundo na rua anda, poucos troteiam e
+## quase ninguem corre.
+const ANDARES: Array[Dictionary] = [
+	{"anim": "Walk", "vel": Vector2(0.85, 1.15), "peso": 3.0},   # passeando
+	{"anim": "Walk", "vel": Vector2(1.25, 1.75), "peso": 5.0},   # ritmo normal
+	{"anim": "Jog_Fwd", "vel": Vector2(2.4, 3.0), "peso": 1.6},  # apressado
+	{"anim": "Sprint", "vel": Vector2(3.6, 4.4), "peso": 0.4},   # atrasado
+]
+
+## Sorteia um jeito de andar (usado pelo PedestrianRoute ao criar cada NPC).
+static func sortear_andar(rng: RandomNumberGenerator = null) -> Dictionary:
+	var total := 0.0
+	for a: Dictionary in ANDARES:
+		total += float(a["peso"])
+	var alvo: float = (rng.randf() if rng != null else randf()) * total
+	for a: Dictionary in ANDARES:
+		alvo -= float(a["peso"])
+		if alvo <= 0.0:
+			return a
+	return ANDARES[1]
 ## Cena de roupa (ex: Quaternius Modular Character Outfits) que compartilha o
 ## MESMO esqueleto do character_model — as malhas de roupa sao transplantadas
 ## pro Skeleton3D do personagem (troca de "skeleton" de cada MeshInstance3D)
