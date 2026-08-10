@@ -151,7 +151,20 @@ static func _attach_donkey_head(visual: Node3D) -> void:
 	attach.bone_idx = bone
 	attach.add_child(DonkeyHead.build())
 
+## Anima o personagem.
+##
+## A UAL1 (Quaternius) so serve pra quem tem o esqueleto dela: as trilhas
+## procuram osso por NOME, e num esqueleto de terceiro nenhuma casa — o Godot
+## enche o log de `_update_caches` e o boneco fica em T-pose. Medido nos
+## recebidos: 38 modelos jogaveis, e a maioria tem esqueleto proprio.
+##
+## Entao a regra e: esqueleto compativel usa a UAL1 (que tem idle/walk/run
+## separados, o que o jogo precisa); os outros usam a animacao QUE VEIO no
+## arquivo — quase todos trazem pelo menos um ciclo de caminhada, que foi
+## justamente o filtro do garimpo.
 static func _setup_animation(visual: Node3D) -> AnimationPlayer:
+	if not _esqueleto_compativel(visual):
+		return _usar_animacao_propria(visual)
 	var lib := AnimationLibrary.new()
 	var any := false
 	for pair: Array in [["idle", IDLE_ANIM], ["walk", WALK_ANIM], ["run", RUN_ANIM]]:
@@ -168,3 +181,55 @@ static func _setup_animation(visual: Node3D) -> AnimationPlayer:
 	player.add_animation_library("", lib)
 	player.play("idle")
 	return player
+
+## O esqueleto tem os ossos que a UAL1 anima? `spine_01` e o marcador: e o nome
+## que o pacote Quaternius usa e que nenhum dos modelos de terceiro recebidos
+## usa (medido).
+static func _esqueleto_compativel(visual: Node3D) -> bool:
+	var skeleton := CharacterVisual.find_skeleton(visual)
+	if skeleton == null:
+		return false
+	return skeleton.find_bone("spine_01") >= 0
+
+## Usa o AnimationPlayer que veio dentro do `.glb`, apelidando a primeira
+## animacao de "idle"/"walk"/"run" — que sao os nomes que o `Player` pede.
+## Modelo com um ciclo so anda e para com o mesmo, que e melhor que T-pose.
+static func _usar_animacao_propria(visual: Node3D) -> AnimationPlayer:
+	var player := _achar_player(visual)
+	if player == null:
+		return null
+	var nomes := PackedStringArray()
+	for lib_name in player.get_animation_library_list():
+		for a in player.get_animation_library(lib_name).get_animation_list():
+			nomes.append(("%s/%s" % [lib_name, a]) if lib_name != "" else str(a))
+	if nomes.is_empty():
+		return null
+	# Prefere uma que pareca caminhada; senao, a primeira que houver.
+	var andar := nomes[0]
+	for n in nomes:
+		var minusculo := n.to_lower()
+		if minusculo.contains("walk") or minusculo.contains("run") \
+				or minusculo.contains("idle"):
+			andar = n
+			break
+	var lib := player.get_animation_library("") 
+	if lib == null:
+		lib = AnimationLibrary.new()
+		player.add_animation_library("", lib)
+	var anim := player.get_animation(andar)
+	if anim:
+		anim.loop_mode = Animation.LOOP_LINEAR
+		for apelido: String in ["idle", "walk", "run"]:
+			if not lib.has_animation(apelido):
+				lib.add_animation(apelido, anim)
+	player.play("idle")
+	return player
+
+static func _achar_player(node: Node) -> AnimationPlayer:
+	if node is AnimationPlayer:
+		return node as AnimationPlayer
+	for c in node.get_children():
+		var f := _achar_player(c)
+		if f:
+			return f
+	return null

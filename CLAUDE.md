@@ -3189,6 +3189,58 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     `assets/personagens/` em vez da pasta de prédios, porque o pipeline seguinte
     é outro.
 
+- **2026-08-10** — Usuário baixou os personagens e pediu para **usar todos**,
+  "com qualidade". Integrados: o jogo foi de **2 para 40 personagens jogáveis**.
+  - **Achado que destravou tudo, e foi o usuário quem apontou**: 35 pastas de
+    personagem estavam **soltas na raiz do projeto, já descompactadas** — o
+    macOS abre `.zip` sozinho. Eu só processava os `.zip` e por isso a maioria
+    do que ele baixou estava sendo ignorada em silêncio, incluindo quase todas
+    as femininas boas. `tools/receber_modelos.sh` ganhou destino
+    (`personagens`), mas o que resolve mesmo é olhar a pasta antes de concluir
+    que "chegou pouca coisa".
+  - **46 arquivos medidos, 38 com esqueleto** (`tools/preparar_personagens.gd`).
+    O que a medição pegou e que nenhum arquivo declara:
+    - **escalas de 0,01 m a 1471 m** — a normalização por altura resolve todas,
+      e é por isso que a altura sai MEDIDA e não escrita à mão;
+    - **11 modelos vêm DEITADOS** (exportados com Z para cima);
+    - **8 não têm esqueleto** (os anime girls, Carol, Tanya, Just a girl, o Lego
+      man, o biquíni) — ficam no catálogo como estátua e o `Appearance` os
+      descarta da lista de jogáveis. São os mesmos que já haviam reprovado em
+      2026-08-09: personagem sem rig é estátua, não anda.
+  - **Erro meu que só a folha de contato pegou**: girei o modelo deitado −90° em
+    X e ele continuou deitado, agora de bruços. O Godot já converte Z-up na
+    importação do glTF; quem chega deitado foi exportado errado na origem, e aí
+    o giro é para o outro lado (+90).
+  - **A animação não podia ser a mesma pra todos.** A UAL1 procura osso por
+    NOME, e num esqueleto de terceiro nenhuma trilha casa — o Godot enche o log
+    de `_update_caches` e o boneco fica em T-pose. Agora `PlayerVisual` checa se
+    o esqueleto tem `spine_01` (o marcador do Quaternius): quem tem usa a UAL1
+    (que traz idle/walk/run separados), quem não tem usa **a animação que veio
+    no próprio arquivo** — que foi justamente o filtro do garimpo.
+  - **O catálogo passou a registrar quais SHAPE KEYS cada modelo tem.** Modelo
+    de terceiro não carrega as sete do `build_characters.py`, e sem isso a tela
+    oferecia sete sliders que não faziam nada — o jogador só descobriria
+    arrastando.
+  - **Garimpo ajustado ao pedido de qualidade**: o teto de faces subiu de 120
+    mil para 260 mil (ele cortava justamente os modelos caprichados, e com isso
+    entraram Renderpeople e Adobe Fuse), e a tabela ganhou a coluna **"serve
+    como"** — NPC aparece 72 vezes na tela e o jogador uma, então o corte em 18
+    mil faces separa "jogador + NPC" de "só jogador". O veto foi ampliado duas
+    vezes: primeiro por não-humanos (dinossauro, cachorro, Pokémon, Castlevania,
+    urso), depois por multidão ("Audience On Stage" tem 242 mil faces porque são
+    dezenas de pessoas numa malha só). "anime" SAIU do veto: o que faltava
+    naqueles modelos não era o estilo, era o rig.
+  - **Aviso registrado**: vários modelos são personagens de outras obras (Ada
+    Wong, Spider-Man, Rem, Mileena). A licença CC-BY cobre **o modelo**, não o
+    personagem — para publicar, é risco jurídico de terceiros.
+  - Os downloads crus (1,9 GB) ficam **fora do git**, mesma política de
+    `assets/realistas/`; o que entra é o catálogo gerado.
+  - **Verificação**: `character_test` aprendeu as duas coisas que os modelos de
+    terceiros trouxeram — altura no eixo Z para quem está deitado, e forma
+    cobrada só quando o modelo declara tê-la — e passa com os 40.
+    `tools/verify/personagens_sheet.tscn` (novo, janela) renderiza todos lado a
+    lado com régua de 2 m: foi ele que pegou a rotação errada.
+
 ### ONDE PAREI (2026-08-10, fim da sessão)
 
 Estado: tudo commitado, suíte inteira passando e **builds reexportadas nesta
@@ -3200,7 +3252,31 @@ escolha com preview 3D, a personalização do corpo por slider (mais altura e
 cores) e o personagem masculino jogável — tudo em 2026-08-10, ver changelog. As
 **três câmeras no V** já estavam prontas da sessão anterior.
 
-Pedidos do usuário ainda **não** feitos:
+**Estado dos personagens:** 40 jogáveis no menu (2 nativos + 38 baixados). Os
+arquivos crus estão em `assets/personagens/` (fora do git). Para acrescentar
+mais: baixe em glTF, largue na raiz (zipado ou não — o macOS descompacta
+sozinho), rode `tools/receber_modelos.sh personagens`, depois
+`godot --headless --path . --editor --quit` (importa) e
+`godot --headless --path . tools/preparar_personagens.tscn` (mede e cataloga).
+
+**O QUE FALTA desta frente (próxima sessão começa por aqui):**
+
+1. **OLHAR a folha de contato dos 40.** Renderizada em
+   `tools/verify/personagens_sheet.tscn` (8 linhas de 5), mas **não conferida**
+   depois da correção da rotação e da animação. É onde vão aparecer os que
+   ficaram tortos, de costas ou com a animação errada — e este projeto já perdeu
+   rodadas por não olhar.
+2. **Rodar a suíte inteira** com os 40 no catálogo (só o `character_test` rodou).
+3. **Reexportar as builds** — não foram exportadas depois da integração. Cuidado:
+   os 1,9 GB de `assets/personagens/` VÃO ENTRAR no `.pck` se ninguém filtrar
+   (`export_filter="all_resources"` leva tudo que está na pasta — foi assim que o
+   build foi de 188 MB para 689 MB em 2026-08-09). Decidir quais modelos ficam e
+   pôr o resto no `exclude_filter`.
+4. **Usar os novos como NPC também**: hoje o catálogo alimenta só o JOGADOR. Os
+   24 marcados "jogador + NPC" na tabela do garimpo poderiam entrar no pool de
+   pedestres, que é o que resolveria de vez o "todo pedestre tem a mesma cara".
+
+Pedidos anteriores ainda **não** feitos:
 
 1. **Baixar os personagens da lista nova.** É o passo que depende de você:
    [docs/garimpo-personagens.md](docs/garimpo-personagens.md) tem **30 homens e
