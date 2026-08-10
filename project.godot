@@ -24,6 +24,7 @@ AudioManager="*res://autoload/AudioManager.gd"
 Dealership="*res://autoload/Dealership.gd"
 Staff="*res://autoload/Staff.gd"
 SaveGame="*res://autoload/SaveGame.gd"
+Appearance="*res://autoload/Appearance.gd"
 
 [display]
 

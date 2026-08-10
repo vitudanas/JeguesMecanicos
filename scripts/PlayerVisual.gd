@@ -1,32 +1,25 @@
 class_name PlayerVisual
 extends RefCounted
-## Monta o corpo do jogador: a mulher de cabeca de jegue.
+## Monta o corpo do jogador a partir do que estiver no autoload `Appearance`.
 ##
-## Reaproveita o mesmo personagem feminino que os pedestres usam
-## (`Female_Dressed.glb`, corpo + roupa + cabelo num arquivo so, gerado por
-## `tools/build_characters.py`) — nao traz modelo novo e nao reintroduz mistura
-## de estilo. O que muda em relacao a um NPC:
+## Reaproveita os mesmos personagens prontos que os pedestres usam
+## (`Female_Dressed.glb` / `Male_Dressed.glb`, corpo + roupa + cabelo num
+## arquivo so, gerados por `tools/build_characters.py`) — nao traz modelo novo e
+## nao reintroduz mistura de estilo. O que muda em relacao a um NPC:
 ##
-##   * as formas do corpo sao FIXAS, nao sorteadas (o jogador e sempre a mesma
-##     personagem);
-##   * cabelo, olhos e sobrancelha somem, e a cabeca humana e coberta pela
-##     cabeca de jegue montada em `DonkeyHead.gd`;
+##   * as formas do corpo NAO sao sorteadas: saem do que o jogador montou na
+##     tela de personagem;
+##   * com a cabeca de jegue ligada, cabelo, olhos e sobrancelha somem e a
+##     cabeca humana e coberta pela cabeca montada em `DonkeyHead.gd`;
 ##   * a cabeca vai num `BoneAttachment3D` do osso `Head`, entao acompanha a
 ##     animacao em vez de ficar flutuando — foi exatamente esse o bug do cabelo
 ##     dos NPCs em 2026-08-03.
+##
+## Esta funcao e o UNICO caminho de montagem: o jogador de verdade e o preview
+## 3D da tela de personagem chamam a mesma coisa. E de proposito — preview que
+## monta o boneco por conta propria deixa de provar o que o jogador vai ver.
 
-const MODEL := preload("res://assets/quaternius/characters-dressed/Female_Dressed.glb")
 const ANIM_LIB := preload("res://assets/quaternius/universal-animation-library-1/Animations/UAL1_Standard.glb")
-
-## Formas do corpo, na escala 0..1 das shape keys do modelo (ver
-## `CharacterVisual.BUILDS`). Bunda grande mas nao exagerada e peito medio:
-## 0.72 fica no terceiro dos quatro degraus que os NPCs usam, e 0.50 no meio
-## dos cinco de busto — ou seja, acima da media da cidade sem ir no maximo.
-const BUST := 0.50
-const BUTT := 0.72
-## O quadril acompanha o gluteo pelo mesmo motivo do NPC: bunda grande com
-## quadril estreito le como deformidade, nao como tipo fisico.
-const HIPS := BUTT * 0.7
 
 ## O modelo olha pro +Z; o -Z de um CharacterBody3D e a frente. Sem os 180 o
 ## jogador anda de costas — mesma correcao dos pedestres e dos carros de IA.
@@ -40,19 +33,35 @@ const RUN_ANIM := "Run"
 
 ## Monta tudo debaixo de `parent` e devolve a raiz do visual.
 static func build(parent: Node3D) -> Node3D:
-	var visual := MODEL.instantiate() as Node3D
+	var scene := Appearance.model_scene()
+	if scene == null:
+		push_warning("PlayerVisual: modelo '%s' nao carregou" % Appearance.model_id)
+		return null
+	var visual := scene.instantiate() as Node3D
 	visual.name = "Visual"
 	parent.add_child(visual)
 	visual.rotation_degrees.y = FACING_DEGREES
+	# A altura pedida vira escala do visual. O `Player` escala junto a capsula e
+	# a cabeca — visual e colisao com alturas diferentes poe o boneco flutuando
+	# ou enterrado.
+	visual.scale = Vector3.ONE * Appearance.visual_scale()
 
-	_apply_shape(visual)
-	_hide_human_head_parts(visual)
-	_attach_donkey_head(visual)
+	apply_shape(visual)
+	apply_tints(visual)
+	if Appearance.donkey_head:
+		_hide_human_head_parts(visual)
+		_attach_donkey_head(visual)
 	_setup_animation(visual)
 	return visual
 
-static func _apply_shape(node: Node) -> void:
-	var weights := {"Bust": BUST, "Butt": BUTT, "Hips": HIPS}
+## Escreve os pesos do `Appearance` nas shape keys do modelo ja instanciado.
+## Publico porque a tela de personagem chama isso a cada arrasto de slider, em
+## vez de remontar o boneco inteiro (remontar perde a pose da animacao e pisca).
+static func apply_shape(node: Node, weights: Dictionary = {}) -> void:
+	var values: Dictionary = weights if not weights.is_empty() else Appearance.active_shapes()
+	_write_shapes(node, values)
+
+static func _write_shapes(node: Node, weights: Dictionary) -> void:
 	if node is MeshInstance3D:
 		var mi := node as MeshInstance3D
 		for shape_name: String in weights:
@@ -60,13 +69,61 @@ static func _apply_shape(node: Node) -> void:
 			if idx >= 0:
 				mi.set_blend_shape_value(idx, weights[shape_name])
 	for c in node.get_children():
-		_apply_shape(c)
+		_write_shapes(c, weights)
 
+## Pele, roupa e cabelo. Cada superficie recebe uma COPIA do material: material
+## vindo de `.glb` e compartilhado entre todas as instancias da cena, entao
+## pintar direto pintaria os pedestres da cidade junto (licao de 2026-08-03).
+static func apply_tints(node: Node, tints: Dictionary = {}) -> void:
+	var values: Dictionary = tints if not tints.is_empty() else Appearance.tints()
+	_write_tints(node, values)
+
+static func _write_tints(node: Node, tints: Dictionary) -> void:
+	if node is MeshInstance3D:
+		var mi := node as MeshInstance3D
+		var mesh := mi.mesh
+		if mesh:
+			for surface in range(mesh.get_surface_count()):
+				var source := mi.get_active_material(surface) as StandardMaterial3D
+				if source == null:
+					continue
+				var kind := CharacterVisual._material_kind(source.resource_name)
+				if kind == "":
+					continue
+				# Cor neutra nao precisa de material proprio: solta o override e
+				# deixa o material que veio do `.glb` valer. Isso e o caso PADRAO
+				# do jogo (as tres paletas comecam no multiplicador 1,1,1), e sem
+				# esta saida cada personagem nascia com 8 materiais duplicados
+				# que so repetem o original. Soltar tambem e o que faz voltar pra
+				# cor neutra na tela realmente voltar.
+				if (tints[kind] as Color).is_equal_approx(Color(1, 1, 1)):
+					mi.set_surface_override_material(surface, null)
+					continue
+				# `get_active_material` ja devolve o override quando existe, entao
+				# arrastar o slider duas vezes multiplicaria a cor de novo em cima
+				# da anterior e o personagem iria escurecendo. A cor base vem
+				# sempre da malha.
+				var base := mesh.surface_get_material(surface) as StandardMaterial3D
+				if base == null:
+					base = source
+				var copy := base.duplicate() as StandardMaterial3D
+				copy.albedo_color = base.albedo_color * (tints[kind] as Color)
+				mi.set_surface_override_material(surface, copy)
+	for c in node.get_children():
+		_write_tints(c, tints)
+
+## Esconde o que a cabeca de jegue substitui. Cabelo e escondido por PREFIXO, e
+## nao por nome exato: medido, o feminino usa `Hair_Long` e o masculino
+## `Hair_SimpleParted` — com a lista de nomes fixos, o cabelo do homem ficava
+## dentro do cranio do jegue.
 static func _hide_human_head_parts(visual: Node3D) -> void:
-	for mesh_name: String in DonkeyHead.HIDE_MESHES:
-		var node := visual.find_child(mesh_name, true, false)
-		if node is MeshInstance3D:
-			(node as MeshInstance3D).visible = false
+	_hide_recursive(visual)
+
+static func _hide_recursive(node: Node) -> void:
+	if node is MeshInstance3D and DonkeyHead.is_head_part(node.name):
+		(node as MeshInstance3D).visible = false
+	for c in node.get_children():
+		_hide_recursive(c)
 
 static func _attach_donkey_head(visual: Node3D) -> void:
 	var skeleton := CharacterVisual.find_skeleton(visual)

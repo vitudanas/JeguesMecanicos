@@ -74,6 +74,7 @@ func _ready() -> void:
 	interact_ray.add_exception(self)
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	hud = get_tree().get_first_node_in_group("hud")
+	_apply_height()
 	visual = PlayerVisual.build(self)
 	if visual:
 		_anim = visual.get_node_or_null("AnimationPlayer")
@@ -82,6 +83,33 @@ func _ready() -> void:
 	third_person_arm.add_excluded_object(get_rid())
 	_build_free_camera()
 	_apply_camera_mode()
+
+## Altura escolhida na tela de personagem (`Appearance.height`), aplicada ao
+## CORPO — nao so ao desenho.
+##
+## O `PlayerVisual` ja escala a malha; se a capsula e a cabeca ficassem no
+## tamanho do arquivo de cena, um jogador de 1,60 m andaria com a camera acima
+## do proprio cranio e um de 1,95 m com os pes enterrados. Tudo sai de
+## `BASE_HEIGHT`, que e a altura pra qual o `Player.tscn` foi desenhado.
+##
+## O RAIO da capsula fica como esta de proposito: engrossar o jogador junto com
+## a altura mudaria por onde ele passa (vao de cerca, corredor do patio), e isso
+## e geometria que o resto do jogo ja mede.
+const BASE_HEIGHT := 1.80
+
+func _apply_height() -> void:
+	var factor := Appearance.height / BASE_HEIGHT
+	var shape_node := $CollisionShape3D as CollisionShape3D
+	var capsule := shape_node.shape as CapsuleShape3D
+	if capsule:
+		# Duplicar: o `SubResource` do `.tscn` e COMPARTILHADO entre instancias da
+		# cena, entao escrever direto mudaria a capsula de qualquer outro Player
+		# vivo (e o verificador instancia mais de um).
+		capsule = capsule.duplicate() as CapsuleShape3D
+		capsule.height = BASE_HEIGHT * factor
+		shape_node.shape = capsule
+		shape_node.position.y = capsule.height * 0.5
+	head.position.y = 1.6 * factor
 
 ## Monta o braco da camera LIVRE em codigo.
 ##

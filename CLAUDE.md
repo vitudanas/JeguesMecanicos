@@ -209,6 +209,13 @@ local hard-coded sempre que possível.
   do que você pediu, e pedir acima do que ele topa deixa a lábia mais difícil.
 - **Menus:** o jogo abre num menu principal (Jogar/Sair); Esc a qualquer momento
   dentro da partida pausa e abre Continuar/Sair para o Menu/Sair do Jogo.
+- **Personagem** (botão no menu principal): escolhe **mulher ou homem**, cabeça
+  de jegue ou humana, **altura de 1,60 a 1,95 m** e as formas do corpo por
+  slider (busto, glúteo e quadril na mulher; peitoral no homem; barriga, porte e
+  magreza nos dois), mais cor de pele, roupa e cabelo. Tem preview 3D ao vivo —
+  arrasta pra girar, roda do mouse aproxima — com uma régua de 1,80 m ao lado.
+  A escolha é salva em `user://aparencia.cfg` e **não é apagada por "Novo
+  jogo"**: aparência não é progresso.
 
 ## Estrutura do projeto
 
@@ -223,7 +230,9 @@ autoload/               GameManager.gd, Economy.gd (valor do carro, peças,
                         DeliveryManager.gd (sorteia a casa da entrega da vez),
                         GraphicsSettings.gd, AudioManager.gd (biblioteca de sons,
                         barramentos, piscina de vozes e volume),
-                        SaveGame.gd (progresso em user://progresso.cfg)
+                        SaveGame.gd (progresso em user://progresso.cfg),
+                        Appearance.gd (o personagem do jogador: modelo, formas,
+                        altura e cores, em user://aparencia.cfg)
 shaders/                city_surface.gdshader (fachada/asfalto: atlas do kit +
                         PBR triplanar + sombreamento facetado),
                         ground.gdshader (chao do mundo por ruido, sem textura),
@@ -264,7 +273,10 @@ scenes/traffic/         TrafficCar.tscn/gd, TrafficRoute.tscn/gd — carros de I
 scenes/npc/             BuyerNPC.tscn/gd, Pedestrian.tscn/gd, PedestrianRoute.tscn/gd
 scenes/ui/              HUD.tscn/gd — dinheiro, prompt de interação, barra de lábia;
                         MainMenu.tscn/gd (tela inicial, cena de entrada do jogo);
-                        PauseMenu.tscn/gd (Esc pausa a árvore, some com o mouse)
+                        PauseMenu.tscn/gd (Esc pausa a árvore, some com o mouse);
+                        SettingsMenu.gd, CharacterMenu.gd e LoadingScreen.gd —
+                        os três montados 100% EM CÓDIGO, sem .tscn, porque cena
+                        escrita à mão já ficou de fora do .pck exportado
 assets/kenney/          pacotes CC0 do Kenney.nl (roads, commercial, suburban,
                         industrial, car-kit, animated-characters-protagonists) —
                         toda a CIDADE (ruas e os 175 prédios) é só desses kits, de
@@ -2912,33 +2924,131 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     sobreposição, 0 quarteirão vazio) e passam `obstacles`, `scale`, `loop`,
     `drive`, `yard`, `staff` e `loading`.
 
-### ONDE PAREI (2026-08-09, fim da sessão)
+- **2026-08-10** — Fechados os itens 1, 2 e 3 do handoff anterior: **menu de
+  escolha de personagem com preview 3D, personalização do corpo por slider e
+  personagem masculino jogável**. A aparência deixou de ser constante escrita no
+  código (`BUST = 0.50`, `BUTT = 0.72`, sempre a mulher de cabeça de jegue) e
+  virou o autoload `Appearance`, com dono único — três coisas passaram a ler os
+  mesmos valores (o jogador de verdade, o preview da tela e o verificador), e
+  valor repetido em três lugares vira três valores.
+  - **Medi os dois modelos antes de desenhar a tela**, e a medição achou um
+    defeito que já estava lá: o cabelo tem **nome diferente** em cada arquivo
+    (`Hair_Long` na mulher, `Hair_SimpleParted` no homem), e `DonkeyHead`
+    escondia só o primeiro. Ou seja, o homem entraria no jogo **com o cabelo
+    dentro do crânio do jegue**. O esconde-esconde passou a ser por PREFIXO.
+    Outras medidas que viraram tabela: formas por modelo (mulher tem
+    `Bust`/`Butt`/`Hips`, homem tem `Chest`, os dois têm
+    `Belly`/`Bulk`/`Skinny`), osso `Head` em y = 1,55 contra 1,60, e altura
+    nativa **1,788 m contra 1,852 m** — sem esse par de números, um fator único
+    de escala deixaria o homem sempre 3,5% mais alto que o pedido.
+  - **A altura mexe no CORPO, não só no desenho**: cápsula, cabeça e câmera
+    saem de `Player.BASE_HEIGHT`. Só o visual escalado poria a câmera acima do
+    próprio crânio a 1,60 m. O RAIO da cápsula fica como está de propósito —
+    engrossar o jogador mudaria por onde ele passa, e isso é geometria que o
+    resto do projeto já mede. A cápsula é **duplicada** antes de mexer: o
+    `SubResource` do `.tscn` é compartilhado entre instâncias.
+  - **A faixa de altura é 1,60–1,95 m e foi VERIFICADA contra a mecânica
+    central**: o `character_test` carrega o `Main.tscn` nas duas pontas e cobra
+    que os 4 pontos de gambiarra continuem alcançáveis (4/4 nas duas). A altura
+    move a câmera, e é da câmera que sai a mira — um personagem baixinho não
+    pode perder acesso ao que o jogo inteiro gira em torno.
+  - **O preview usa `PlayerVisual.build()`, o mesmo caminho do jogador de
+    verdade.** Preview com montagem própria deixa de provar o que o jogador vai
+    ver — foi assim que a cabeça de jegue passou dias sem ser olhada
+    (2026-08-08). Junto vai uma **régua de 2 m** listrada a cada 10 cm com a
+    faixa de 1,80 destacada: sem referência de tamanho no quadro não dá pra
+    julgar escala, e foi exatamente assim que os NPCs ficaram com 3,76 m por
+    meses.
+  - **Armadilha evitada de propósito** (vale pra quem mexer no tint):
+    `get_active_material` devolve o *override* quando ele existe, então tingir a
+    partir dele multiplicaria a cor de novo em cima da anterior — o personagem
+    iria escurecendo a cada clique na seta. A cor base vem sempre da malha.
+  - **Erros meus, e como cada um foi pego:**
+    1. *Nome de nó repetido*: `queue_free()` não tira da árvore na hora, então o
+       boneco novo entrava com o antigo ainda lá e o Godot o renomeava pra
+       "Visual2" — dois personagens no mesmo lugar por um quadro, e o
+       verificador dizendo "preview vazio". É a mesma armadilha que em
+       2026-08-03 fez um teste achar 2 semáforos de 50. Agora sai da árvore
+       antes de liberar.
+    2. *Procurei os pontos de gambiarra no lugar errado* (filhos diretos do
+       carro; eles vivem em `AttachPoints`). O teste reprovou "0 de 4
+       alcançáveis" **com a lista de nomes vazia** — e foi a lista vazia que
+       denunciou que o defeito era do medidor, não do jogo. Contagem zero numa
+       varredura é sempre suspeita do medidor primeiro.
+    3. *Chão estimado em vez de medido*: pus o jogador em `alvo.y - 0.6` em vez
+       de jogar um raio pra baixo. Mesmo erro de 2026-08-04, quando medir a
+       altura pelo centro de uma Area3D deixou jogador e carro boiando na foto.
+    4. *Botões de sair dentro da coluna rolável*: caíam abaixo da dobra, e quem
+       abrisse a tela em janela menor não acharia como voltar. **Só a foto
+       pegou** — o teste dizia que os controles estavam todos lá. Foram pro
+       rodapé fixo, e o `character_test` ganhou a trava (o botão tem que caber
+       na tela sem rolar). Esc também volta.
+    5. *Amostras de cor brancas*: a paleta guarda MULTIPLICADORES sobre a
+       textura, então o item neutro (1,1,1) desenhava um retângulo branco onde
+       devia estar pele, tecido e cabelo. Também só a foto pegou. Agora a
+       amostra multiplica por um tom médio do material e tem contador (1/6).
+    6. *28 erros de `Parameter "material" is null`* no fim do `player_shots`.
+       **Provei de que lado estava** antes de mexer, que é a lição que este
+       arquivo repete: dei `git stash` nas minhas mudanças e rodei o mesmo
+       roteiro — zero erros no código antigo, 28 no novo. Era meu. A causa:
+       eu duplicava material em TODA superfície de pele/roupa/cabelo, mesmo
+       quando o multiplicador era o neutro (1,1,1), que é o caso padrão do
+       jogo — oito materiais por personagem que só repetiam o original, e na
+       destruição da cena o servidor de render ia consultá-los depois de já
+       liberados. Cor neutra passou a **soltar** o override em vez de duplicar:
+       zero erro, menos material, e de quebra é o que faz voltar pra cor
+       original realmente voltar na tela. O `character_test` ganhou a trava
+       dos três casos (neutro não duplica, cor escolhida duplica, voltar ao
+       neutro solta).
+  - **Aparência fica FORA do `SaveGame`**, e o teste cobra isso: quem aperta
+    "Novo jogo" perde dinheiro e níveis da loja, e não pode perder o personagem
+    que montou.
+  - **33 MB de lixo no build, achados de passagem**: cruzando cada pacote de
+    `assets/realistas/` contra o que as cenas fatiadas realmente referenciam,
+    dois deles (`low_poly_city_buildings` e `simple_low_poly_village_buildings`)
+    aparecem com **zero referência** — são os que a folha de contato reprovou em
+    2026-08-09, e ficaram viajando porque `export_filter="all_resources"` leva
+    tudo que está na pasta. Entraram no `exclude_filter` e o pacote foi de 385
+    para **355 MB**. Conferido depois, item a item, que os dois estão FORA do
+    `.pck` e que o que o jogo usa continua dentro — mexer nesse filtro já quebrou
+    o jogo inteiro uma vez (2026-08-02).
+    - Conferido também que os **7 `.zip` de personagem** que o usuário baixou na
+      raiz do projeto **não** entram no pacote (161 MB): o exportador não os
+      reconhece como recurso. Diferente das pastas de assets, que entram.
+  - **Verificação**: `tools/verify/character_test.tscn` (novo, headless) lê o
+    peso da shape key **de volta** do modelo montado, mexe na tela pelo próprio
+    `HSlider` (o mesmo `value_changed` que o mouse dispara) e cobra a cobertura
+    do crânio nos dois modelos — 4,1% de exposição na mulher (pior 2,2 cm) e
+    3,0% no homem (pior 4,7 cm), com a mesma ressalva de sempre: a conta erra no
+    centímetro e quem decide são as fotos. `tools/verify/character_shots.tscn`
+    (novo, janela) rende 37 fotos, incluindo a **prova magenta** (corpo humano
+    pintado, cabeça de jegue normal) nos dois modelos: **nenhum magenta na
+    cabeça**, ou seja o crânio calibrado na mulher engole também a do homem.
 
-Estado: **tudo commitado e verificado**, mas as builds NÃO foram reexportadas
-depois da rua nova — o `.app` e o `.exe` são de antes. Reexportar é a primeira
-coisa a fazer.
+### ONDE PAREI (2026-08-10, fim da sessão)
 
-Pedidos do usuário ainda **não** feitos, em ordem de prioridade:
+Estado: tudo commitado, suíte inteira passando e **builds reexportadas nesta
+rodada** (o `.app` extraído também foi refeito — ele não se atualiza sozinho
+quando o zip é regravado, lição de 2026-08-04).
 
-1. **Menu de escolha de personagem**, com a mulher-jegue entre as opções e
-   **preview 3D**. Nada disso existe ainda.
-2. **Personalização do corpo** (bunda, peito, etc.) por slider. A base já
-   existe: são as *shape keys* `Bust`/`Butt`/`Hips`/`Belly`/`Bulk`/`Chest`/
-   `Skinny` que o `tools/build_characters.py` grava, e que o `PlayerVisual.gd`
-   hoje aplica com valores FIXOS (`BUST = 0.50`, `BUTT = 0.72`). O trabalho é
-   trocar as constantes por um autoload de aparência, salvar em disco e montar a
-   tela.
-3. **Personagens masculinos** entre as opções (pedido explícito). O
-   `Male_Dressed.glb` já está no repo e já é usado nos NPCs.
-4. **Trocar/variar os NPCs**, que hoje saem de 2 corpos base com a mesma roupa.
-5. **Integrar os modelos baixados** — ver [docs/personagens.md](docs/personagens.md)
+Da frente de personagem, **três dos cinco pedidos estão fechados**: o menu de
+escolha com preview 3D, a personalização do corpo por slider (mais altura e
+cores) e o personagem masculino jogável — tudo em 2026-08-10, ver changelog. As
+**três câmeras no V** já estavam prontas da sessão anterior.
+
+Pedidos do usuário ainda **não** feitos:
+
+1. **Trocar/variar os NPCs**, que hoje saem de 2 corpos base com a mesma roupa.
+   Rosto e modelo de roupa continuam iguais entre dois pedestres do mesmo
+   gênero. O `Appearance` novo não muda isso — ele é só do JOGADOR; quem sorteia
+   NPC continua sendo `CharacterVisual.randomize_appearance`.
+2. **Integrar os modelos baixados** — ver [docs/personagens.md](docs/personagens.md)
    com os 7 links, todos CC-BY conferidos. O download é do usuário (o navegador
    embutido não completa). A "Just a girl" sentada precisa de T-pose antes de
-   qualquer rig; o resto já vem em T-pose.
-
-O que já está pronto desta frente: as **três câmeras no V** (1ª, 3ª atrás e 3ª
-livre), com `tools/verify/camera_test.tscn` provando que na livre o mouse gira a
-câmera e **não** o boneco.
+   qualquer rig; o resto já vem em T-pose. Quando entrarem, o caminho está
+   pronto: basta somar uma linha em `Appearance.MODELS` (id, rótulo, caminho e
+   **altura medida** do arquivo) — o menu, o preview, o save e o verificador
+   passam a cobrir o modelo novo sozinhos.
 
 ### Pendências pedidas e ainda NÃO feitas
 

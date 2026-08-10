@@ -26,7 +26,19 @@ godot --headless --path . tools/verify/staff_test.tscn   # lote, vagas do pátio
 godot --path . tools/verify/mix_shots.tscn    # a cidade realista: custo e foto
 godot --path . tools/verify/realistas_sheet.tscn  # folha de contato dos predios fatiados
 godot --path . tools/verify/camera_test.tscn   # as tres cameras do V
+godot --headless --path . tools/verify/character_test.tscn  # personagem, formas, altura, tela
 ```
+
+`character_test` faz sempre a mesma pergunta: **o que o jogador escolhe chega
+na malha?** Ele percorre o caminho real (Appearance → PlayerVisual →
+MeshInstance3D) e lê o peso da shape key **de volta** do modelo montado, em vez
+de conferir a tabela contra ela mesma. A tela também é montada de verdade e
+mexida pelo controle — escrever no `HSlider` dispara o mesmo `value_changed` que
+o mouse dispararia —, porque tela montada em código já falhou aqui renderizando
+**invisível** com todos os controles no lugar. A seção 7 carrega o `Main.tscn`
+nas duas pontas da altura e cobra que os 4 pontos de gambiarra continuem
+alcançáveis: a altura mexe na posição da câmera, e é dela que sai a mira na
+mecânica central do jogo.
 
 `staff_test` junta lote, pátio e equipe **de propósito**: são três sistemas que
 não valem separados. O lote dá mais de uma carcaça pra escolher, o pátio deixa
@@ -63,6 +75,7 @@ rasterizar não há foto nem contagem de desenho):
 godot --path . tools/verify/quality_shots.tscn   # fotos + chamadas de desenho
 godot --path . tools/verify/settings_test.tscn   # o menu de gráficos faz efeito?
 godot --path . tools/verify/player_shots.tscn    # a jogadora de cabeça de jegue
+godot --path . tools/verify/character_shots.tscn # os dois personagens e a tela que os monta
 godot --path . tools/verify/ui_shot.tscn         # menu principal e configuração
 godot --path . tools/verify/yard_shots.tscn      # vagas pintadas e o mecânico
 godot --path . tools/verify/gambiarra_shot.tscn  # a gambiarra com o carro ANDANDO

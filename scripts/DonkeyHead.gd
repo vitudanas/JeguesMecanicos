@@ -23,7 +23,22 @@ extends RefCounted
 ## e sobrancelha sao malhas SEPARADAS no .glb, entao dá pra escondê-las. A
 ## cabeça humana em si NAO da — ela faz parte da mesma malha do corpo —, e por
 ## isso o crânio abaixo tem que engolir ela.
-const HIDE_MESHES: Array[String] = ["Hair_Long", "Eyes", "Eyebrows"]
+##
+## O cabelo entra por PREFIXO, e nao por nome exato: medido nos dois arquivos, o
+## modelo feminino usa `Hair_Long` e o masculino `Hair_SimpleParted`. Com a
+## lista de nomes fixos que existia aqui, o cabelo do homem continuava ligado e
+## aparecia atravessando o crânio.
+const HIDE_MESHES: Array[String] = ["Eyes", "Eyebrows"]
+const HIDE_PREFIXES: Array[String] = ["Hair"]
+
+## Esta malha some quando a cabeca de jegue entra?
+static func is_head_part(mesh_name: String) -> bool:
+	if HIDE_MESHES.has(mesh_name):
+		return true
+	for prefix: String in HIDE_PREFIXES:
+		if mesh_name.begins_with(prefix):
+			return true
+	return false
 
 const FUR := Color(0.45, 0.41, 0.38)        ## pelo cinza-pardo de jegue
 const FUR_DARK := Color(0.30, 0.27, 0.25)

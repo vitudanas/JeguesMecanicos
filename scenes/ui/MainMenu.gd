@@ -9,8 +9,10 @@ extends Control
 ## Script, nao cena: ver o comentario em SettingsMenu._ready().
 const SETTINGS_SCRIPT := preload("res://scenes/ui/SettingsMenu.gd")
 const LOADING_SCRIPT := preload("res://scenes/ui/LoadingScreen.gd")
+const CHARACTER_SCRIPT := preload("res://scenes/ui/CharacterMenu.gd")
 
 var _settings: Control = null
+var _character: Control = null
 var _loading: Control = null
 
 func _ready() -> void:
@@ -18,6 +20,7 @@ func _ready() -> void:
 	$VBox/PlayButton.pressed.connect(_on_play)
 	$VBox/SettingsButton.pressed.connect(_on_settings)
 	$VBox/QuitButton.pressed.connect(_on_quit)
+	_add_character_button()
 	if SaveGame.has_save:
 		_add_continue_button()
 		$VBox/PlayButton.text = "Novo jogo"
@@ -38,6 +41,38 @@ func _add_continue_button() -> void:
 	$VBox.add_child(button)
 	$VBox.move_child(button, $VBox/PlayButton.get_index())
 	button.grab_focus()
+
+## Botao "Personagem", criado em codigo pelo mesmo motivo do "Continuar": mexer
+## a mao no `.tscn` ja custou o menu inteiro uma vez (o `script` que faltava, em
+## 2026-08-02). Fica logo acima de Configuracoes — depois de jogar, e a segunda
+## coisa que se quer abrir.
+func _add_character_button() -> void:
+	var button := Button.new()
+	button.text = "Personagem"
+	button.custom_minimum_size = $VBox/SettingsButton.custom_minimum_size
+	var font_size: int = $VBox/SettingsButton.get_theme_font_size("font_size")
+	if font_size > 0:
+		button.add_theme_font_size_override("font_size", font_size)
+	button.pressed.connect(_on_character)
+	$VBox.add_child(button)
+	$VBox.move_child(button, $VBox/SettingsButton.get_index())
+
+## Mesma regra da tela de graficos: criada na hora e destruida ao voltar. Viva
+## por tras do menu, ela continuaria recebendo clique atraves do painel — e
+## nesta o preview 3D ainda ficaria renderizando a cada quadro sem ninguem ver.
+func _on_character() -> void:
+	if _character != null:
+		return
+	_character = Control.new()
+	_character.set_script(CHARACTER_SCRIPT)
+	_character.back_pressed.connect(_on_character_closed)
+	add_child(_character)
+
+func _on_character_closed() -> void:
+	if _character == null:
+		return
+	_character.queue_free()
+	_character = null
 
 func _on_continue() -> void:
 	# Os autoloads sobrevivem a troca de cena, entao da pra encher o GameManager
