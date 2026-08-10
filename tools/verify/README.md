@@ -23,6 +23,7 @@ godot --headless --path . tools/verify/loading_test.tscn # a tela de carregament
 godot --headless --path . tools/verify/economy_test.tscn # valor, peças, clientes
 godot --headless --path . tools/verify/shop_test.tscn    # as áreas da loja destravam
 godot --headless --path . tools/verify/staff_test.tscn   # lote, vagas do pátio e funcionários
+godot --path . tools/verify/mix_shots.tscn    # predio gerado x kit: custo e foto
 ```
 
 `staff_test` junta lote, pátio e equipe **de propósito**: são três sistemas que

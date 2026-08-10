@@ -78,12 +78,25 @@ func _run() -> void:
 
 ## Caixa real da construcao: a CollisionShape3D que AutoCollisionBody gerou
 ## (nao uma estimativa), como Rect2 no plano XZ em coordenadas de mundo.
+## Pegada da caixa de colisao NO MUNDO.
+##
+## A caixa pode estar GIRADA, e isso nao e detalhe: o predio do kit poe a rotacao
+## no visual e deixa o corpo alinhado aos eixos, mas o predio gerado gira o
+## proprio corpo. Lendo `size.x`/`size.z` cru, um lote virado 90 graus vem com
+## largura e profundidade TROCADAS — e uma fileira perfeitamente alinhada aparece
+## invadindo a rua e atravessando o vizinho (foi o que este verificador acusou na
+## primeira rodada do gerador: 10 invasoes e 40 sobreposicoes, todas falsas).
+## Alinhado aos eixos o resultado e identico ao de antes.
 func _body_rect(body: Node3D) -> Rect2:
 	for child in body.get_children():
 		if child is CollisionShape3D and (child as CollisionShape3D).shape is BoxShape3D:
-			var box: BoxShape3D = (child as CollisionShape3D).shape
-			var c: Vector3 = (child as CollisionShape3D).global_position
-			return Rect2(c.x - box.size.x * 0.5, c.z - box.size.z * 0.5, box.size.x, box.size.z)
+			var cs := child as CollisionShape3D
+			var e: Vector3 = ((cs.shape as BoxShape3D).size) * 0.5
+			var b := cs.global_transform.basis
+			var ex: float = absf(b.x.x) * e.x + absf(b.y.x) * e.y + absf(b.z.x) * e.z
+			var ez: float = absf(b.x.z) * e.x + absf(b.y.z) * e.y + absf(b.z.z) * e.z
+			var c: Vector3 = cs.global_position
+			return Rect2(c.x - ex, c.z - ez, ex * 2.0, ez * 2.0)
 	return Rect2()
 
 func _body_height(body: Node3D) -> float:
@@ -160,6 +173,19 @@ func _census(streets_x: Array) -> void:
 		area += r.size.x * r.size.y
 	print("predios: %d | altura media %.1fm | mais alto %.1fm" % [
 		buildings.size(), hsum / maxf(buildings.size(), 1), tallest])
+
+	# Quanto da cidade sai do gerador (ver BuildingFactory/CityBlocks). Contagem
+	# ZERO com a taxa ligada e falha dura, e nao um numero curioso no relatorio:
+	# ja aconteceu de um gerador inteiro nao rodar (id de recurso colidindo, em
+	# 2026-08-09) e o verificador seguir dizendo "nenhum problema".
+	var gerados := get_tree().get_nodes_in_group("predio_gerado").size()
+	var taxa: float = town.get_node("CityBlocks").get("generated_ratio")
+	print("gerados: %d de %d (%.0f%%) | taxa pedida %.0f%%" % [
+		gerados, buildings.size(), 100.0 * gerados / maxf(buildings.size(), 1), taxa * 100.0])
+	if taxa > 0.0 and gerados == 0:
+		fail("taxa de geracao e %.2f mas nenhum predio gerado existe na cidade" % taxa)
+	if taxa < 1.0 and gerados == buildings.size() and buildings.size() > 0:
+		fail("taxa de geracao e %.2f mas TODO predio saiu do gerador" % taxa)
 
 	var span: float = float(streets_x[streets_x.size() - 1]) - float(streets_x[0])
 	print("ocupacao: %.0f m2 em %.0f m2 = %.0f%%" % [area, span * span, 100.0 * area / (span * span)])

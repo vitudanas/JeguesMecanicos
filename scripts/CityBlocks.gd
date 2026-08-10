@@ -46,6 +46,17 @@ static var _footprint_cache: Dictionary = {}
 @export var house_scenes: Array[PackedScene] = []
 @export var industrial_scenes: Array[PackedScene] = []
 
+## Fracao dos lotes construidos com geometria GERADA (ver BuildingFactory.gd) em
+## vez de um modelo do kit. 0 = so kit, 1 = so gerado.
+##
+## POR QUE MISTURAR, e nao trocar tudo. A medicao de 2026-08-03 apontou que o
+## aspecto de desenho vem da GEOMETRIA (caixa lisa com a janela pintada na
+## textura), e o gerador resolve isso — janela e vao de verdade, e cada predio e
+## unico. Mas o kit tem silhuetas que o gerador nao faz (recuo de andar, terreo
+## saliente, torre com base larga), e uma cidade 100% gerada fica com um ritmo
+## de fachada regular demais. Misturado, um cobre a fraqueza do outro.
+@export_range(0.0, 1.0) var generated_ratio := 0.62
+
 ## Tons de fachada sorteados por predio. Ficam perto do branco de proposito:
 ## sao multiplicados por cima da textura do kit, entao valores muito saturados
 ## deixariam a cidade com cara de desenho de novo.
@@ -150,7 +161,8 @@ func _build_block(x_street_a: float, x_street_b: float, z_street_a: float, z_str
 			return
 
 	var pool := _pool_for(center)
-	if pool.is_empty():
+	var kinds := _kinds_for(center)
+	if pool.is_empty() and kinds.is_empty():
 		return
 
 	# Nenhum predio pode passar da metade do quarteirao: assim as duas bordas
@@ -168,14 +180,14 @@ func _build_block(x_street_a: float, x_street_b: float, z_street_a: float, z_str
 
 	# Norte/sul ocupam a largura toda; guardamos a profundidade usada pra
 	# recuar as laterais e nao sobrepor nos cantos.
-	var depth_south := _fill_edge(pool, x_min, x_max, z_min, true, false, depth_budget_z)
-	var depth_north := _fill_edge(pool, x_min, x_max, z_max, true, true, depth_budget_z)
+	var depth_south := _fill_edge(pool, kinds, x_min, x_max, z_min, true, false, depth_budget_z)
+	var depth_north := _fill_edge(pool, kinds, x_min, x_max, z_max, true, true, depth_budget_z)
 
 	var z_side_min := z_min + depth_south + lot_gap
 	var z_side_max := z_max - depth_north - lot_gap
 	if z_side_max - z_side_min > 2.0:
-		_fill_edge(pool, z_side_min, z_side_max, x_min, false, false, depth_budget_x)
-		_fill_edge(pool, z_side_min, z_side_max, x_max, false, true, depth_budget_x)
+		_fill_edge(pool, kinds, z_side_min, z_side_max, x_min, false, false, depth_budget_x)
+		_fill_edge(pool, kinds, z_side_min, z_side_max, x_max, false, true, depth_budget_x)
 
 	var shops := _shop_batch.build("Vitrines")
 	if shops != null:
@@ -448,7 +460,7 @@ func _place_prop(scene: PackedScene, pos: Vector3, rot_deg: float, prop_scale: f
 ## - horizontal=true: anda no eixo X, a borda esta em Z=edge_coord
 ## - far_side=true: a borda e a de maior coordenada (norte/leste), entao o
 ##   predio cresce pra dentro no sentido negativo e vira 180 graus.
-func _fill_edge(pool: Array, run_min: float, run_max: float, edge_coord: float, horizontal: bool, far_side: bool, depth_budget: float) -> float:
+func _fill_edge(pool: Array, kinds: Array, run_min: float, run_max: float, edge_coord: float, horizontal: bool, far_side: bool, depth_budget: float) -> float:
 	var cursor := run_min
 	var max_depth := 0.0
 	var guard := 0
@@ -458,22 +470,41 @@ func _fill_edge(pool: Array, run_min: float, run_max: float, edge_coord: float, 
 		# Sorteia ate achar um modelo que caiba no espaco que sobrou. Sem isso,
 		# um unico sorteio largo demais abandonava a borda inteira e deixava
 		# buracos grandes na quadra.
+		#
+		# O lote pode sair GERADO (geometria propria, ver BuildingFactory) ou do
+		# kit. A decisao e por LOTE, e nao por quarteirao, pra os dois se
+		# misturarem na mesma fileira — quarteirao inteiro de um so tipo faria a
+		# diferenca de estilo virar uma emenda visivel na esquina.
+		var use_gen := not kinds.is_empty() \
+			and (pool.is_empty() or _rng.randf() < generated_ratio)
 		var scene: PackedScene = null
+		var recipe: Dictionary = {}
 		var width := 0.0
 		var depth := 0.0
 		for _try in range(FIT_ATTEMPTS):
+			if use_gen:
+				# O gerador ja produz em METROS e com a fachada no -Z, entao a
+				# largura corre sempre ao longo da borda e a profundidade sempre
+				# entra no quarteirao — nao ha o swap de eixo do kit.
+				var d := BuildingFactory.roll(_rng, kinds[_rng.randi() % kinds.size()])
+				if cursor + float(d["width"]) <= run_max and float(d["depth"]) <= depth_budget:
+					recipe = d
+					width = d["width"]
+					depth = d["depth"]
+					break
+				continue
 			var candidate: PackedScene = pool[_rng.randi() % pool.size()]
 			var fp := _footprint(candidate, rot_deg)
 			if fp == Vector2.ZERO:
 				continue
 			var w: float = fp.x if horizontal else fp.y
-			var d: float = fp.y if horizontal else fp.x
-			if cursor + w <= run_max and d <= depth_budget:
+			var dd: float = fp.y if horizontal else fp.x
+			if cursor + w <= run_max and dd <= depth_budget:
 				scene = candidate
 				width = w
-				depth = d
+				depth = dd
 				break
-		if scene == null:
+		if scene == null and recipe.is_empty():
 			break
 
 		var along := cursor + width * 0.5
@@ -487,15 +518,27 @@ func _fill_edge(pool: Array, run_min: float, run_max: float, edge_coord: float, 
 		# Centro geometrico do lote, antes de descontar o offset da malha: e
 		# dele que sai o ponto de entrega na calcada (ver _register_house).
 		var slot_pos := pos
-		# Desconta o deslocamento da malha, pra caixa real cair onde foi planejado.
-		var off := _center_offset(scene, rot_deg)
-		pos -= Vector3(off.x, 0.0, off.y)
+		if scene != null:
+			# Desconta o deslocamento da malha, pra caixa real cair onde foi
+			# planejado. O gerado ja nasce centrado na propria origem.
+			var off := _center_offset(scene, rot_deg)
+			pos -= Vector3(off.x, 0.0, off.y)
 
 		if not _is_excluded(pos):
-			var body := _place(scene, pos, rot_deg)
-			if body != null and scene in house_scenes:
+			var casa: bool = recipe["kind"] == BuildingFactory.Kind.CASA \
+				if not recipe.is_empty() else scene in house_scenes
+			# A vitrine em relevo (StreetFurniture) e a vitrine do gerador
+			# ocupam o MESMO terreo. Decidir antes de construir deixa o gerador
+			# fechar aquele pano com parede lisa, senao ficam dois vidros a 26 cm
+			# um do outro e a fachada le como janela dupla.
+			var shop := _wants_storefront(casa)
+			if not recipe.is_empty():
+				recipe["storefront"] = shop
+			var body: Node3D = _place_generated(recipe, pos, rot_deg) \
+				if not recipe.is_empty() else _place(scene, pos, rot_deg)
+			if body != null and casa:
 				_register_house(body, slot_pos, rot_deg, depth)
-			if body != null and not (scene in house_scenes):
+			if body != null and shop:
 				_add_storefront(slot_pos, rot_deg, width, depth)
 			max_depth = maxf(max_depth, depth)
 		cursor += width + lot_gap
@@ -508,9 +551,16 @@ func _fill_edge(pool: Array, run_min: float, run_max: float, edge_coord: float, 
 ## O ponto sai do MESMO calculo do ponto de entrega (`_register_house`) — o
 ## plano da fachada e o centro do lote deslocado meia profundidade pra rua —
 ## entao os dois nao podem divergir quando alguem mexer na geracao.
+## Sorteia se este lote leva vitrine. Separado do desenho de proposito: o predio
+## GERADO precisa saber disso ANTES de ser construido (ver _fill_edge), e o
+## sorteio tem que acontecer uma vez so — rolar duas vezes consumiria o RNG em
+## dobro e mudaria o layout da cidade inteira.
+func _wants_storefront(casa: bool) -> bool:
+	if casa or not storefronts_enabled:
+		return false
+	return _rng.randf() <= storefront_chance
+
 func _add_storefront(slot_pos: Vector3, rot_deg: float, width: float, depth: float) -> void:
-	if not storefronts_enabled or _rng.randf() > storefront_chance:
-		return
 	var dir := Vector3(0.0, 0.0, -1.0).rotated(Vector3.UP, deg_to_rad(rot_deg))
 	var origin := Vector3(slot_pos.x, 0.0, slot_pos.z) + dir * (depth * 0.5)
 	# O +Z da vitrine olha pra rua; `dir` ja e a direcao da rua.
@@ -596,6 +646,20 @@ func _pool_for(center: Vector2) -> Array:
 		pool.append_array(industrial_scenes)
 	return pool
 
+## O mesmo zoneamento do `_pool_for`, do lado do gerador. Anda junto com ele de
+## proposito: se as duas listas discordarem, o miolo ganha casa gerada ao lado de
+## arranha-ceu do kit e o zoneamento perde sentido.
+func _kinds_for(center: Vector2) -> Array:
+	var ring: float = maxf(absf(center.x), absf(center.y))
+	if ring < downtown_extent:
+		# Torre em dobro, mesma razao do pool do kit: com uma copia so ela se
+		# perde no meio do comercio e o centro nao ganha silhueta alta.
+		return [BuildingFactory.Kind.TORRE, BuildingFactory.Kind.TORRE,
+			BuildingFactory.Kind.COMERCIO]
+	if ring < midtown_extent:
+		return [BuildingFactory.Kind.COMERCIO, BuildingFactory.Kind.CASA]
+	return [BuildingFactory.Kind.CASA, BuildingFactory.Kind.GALPAO]
+
 func _is_excluded(pos: Vector3) -> bool:
 	for e in exclude_points:
 		if Vector2(pos.x - e.x, pos.z - e.z).length() < exclude_radius:
@@ -613,6 +677,78 @@ func _place(scene: PackedScene, pos: Vector3, rot_deg: float) -> Node3D:
 	_tint(body)
 	_add_rooftop_props(scene, pos, rot_deg)
 	return body
+
+## Um predio construido em geometria (ver BuildingFactory.gd).
+##
+## Nao passa pelo `CityBuilding.tscn`/`AutoCollisionBody`: aquilo existe pra
+## MEDIR a caixa de um modelo de kit que ninguem sabe o tamanho. Aqui as medidas
+## sao a entrada da receita, entao a colisao sai delas direto — mais barato e
+## exato, sem varrer vertice no carregamento.
+func _place_generated(d: Dictionary, pos: Vector3, rot_deg: float) -> Node3D:
+	var body := StaticBody3D.new()
+	body.name = "PredioGerado"
+	body.add_to_group("city_building")
+	# Grupo, e nao o nome: irmaos de nome repetido viram `@PredioGerado@N`, e
+	# contar por nome ja fez um verificador achar 2 semaforos de 50 (changelog
+	# 2026-08-03) — e me fez achar 1 predio gerado de 780 na primeira medicao.
+	body.add_to_group("predio_gerado")
+	add_child(body)
+	body.position = pos
+	body.rotation_degrees.y = rot_deg
+	# O gerador ja escolhe a propria cor e o proprio material (a fachada nao tem
+	# atlas de kit pra tingir por cima), entao aqui nao ha `_tint`.
+	body.add_child(BuildingFactory.build(d, facade_texture_size, facade_saturation,
+		facade_grime))
+
+	var h := BuildingFactory.height_of(d)
+	var shape := BoxShape3D.new()
+	shape.size = Vector3(d["width"], h, d["depth"])
+	var coll := CollisionShape3D.new()
+	coll.shape = shape
+	coll.position = Vector3(0.0, h * 0.5, 0.0)
+	body.add_child(coll)
+
+	_add_generated_rooftop_props(d, pos, rot_deg)
+	return body
+
+## Entulho de cobertura no predio gerado. Mesma ideia do `_add_rooftop_props`, mas
+## sem a parte dificil: la a laje precisa ser MEDIDA nos vertices porque o topo da
+## caixa e o ponto mais alto do modelo inteiro (mastro, casa de maquinas) e o prop
+## saia boiando. Aqui a altura da laje e um dado da receita.
+func _add_generated_rooftop_props(d: Dictionary, pos: Vector3, rot_deg: float) -> void:
+	if not rooftop_props_enabled or not bool(d["parapet"]):
+		return
+	if _rng.randf() > rooftop_prop_chance:
+		return
+	var w: float = d["width"]
+	var dp: float = d["depth"]
+	var slab := BuildingFactory.slab_y(d)
+	var inset := 1.4
+	var rot := deg_to_rad(rot_deg)
+	for i in range(_rng.randi_range(1, 3)):
+		var maker: Callable
+		match _rng.randi() % 3:
+			0:
+				maker = StreetFurniture.water_tank
+			1:
+				maker = StreetFurniture.antenna
+			_:
+				maker = StreetFurniture.ac_unit
+		var prop: Node3D = maker.call()
+		add_child(prop)
+		# Sorteado no espaco do PREDIO e girado depois: o lote e retangular e a
+		# fileira pode estar virada pra qualquer um dos 4 lados, entao sortear
+		# direto em X/Z do mundo jogaria prop pra fora da laje nas bordas
+		# leste/oeste, onde largura e profundidade trocam de eixo.
+		var lx: float = _rng.randf_range(-1.0, 1.0) * maxf(w * 0.5 - inset, 0.2)
+		var lz: float = _rng.randf_range(-1.0, 1.0) * maxf(dp * 0.5 - inset, 0.2)
+		# `-rot`, e nao `rot`: a convencao de sinal do Vector2.rotated e a
+		# CONTRARIA da rotacao em Y de um Node3D. Errar isso ja tinha mandado
+		# prop de telhado pra 27 m de altura (changelog 2026-08-04); aqui, com
+		# rotacao multipla de 90 numa laje simetrica, sairia calado.
+		var off := Vector2(lx, lz).rotated(-rot)
+		prop.position = Vector3(pos.x + off.x, slab, pos.z + off.y)
+		prop.rotation_degrees.y = _rng.randf_range(0.0, 360.0)
 
 ## Entulho de cobertura (caixa d'agua, ar condicionado, antena). E o que quebra
 ## a silhueta de caixa que ainda fazia a cidade ler como maquete de longe,

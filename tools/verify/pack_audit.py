@@ -124,10 +124,34 @@ def collect_refs() -> set:
     return refs
 
 
+## Fontes mais novas que o build que estamos auditando.
+##
+## POR QUE ISTO EXISTE. O caminho do build e FIXO aqui, e exportar pra outro
+## lugar (`--export-release "macOS" builds/outro.zip`) nao da erro nenhum: o
+## auditor simplesmente le o zip ANTIGO e diz "nenhum problema encontrado" sobre
+## um build que ninguem acabou de gerar. Foi o que aconteceu em 2026-08-09 —
+## aprovei um pacote de 142 MB enquanto o recem-exportado tinha 674 MB. Auditar
+## build velho e pior que nao auditar, porque da confianca.
+def newer_than_build(zip_path: pathlib.Path) -> list:
+    build_mtime = zip_path.stat().st_mtime
+    fontes = []
+    for sub in ("scripts", "scenes", "autoload", "shaders"):
+        for f in (ROOT / sub).rglob("*"):
+            if f.suffix.lower() in (".gd", ".tscn", ".gdshader") \
+                    and f.stat().st_mtime > build_mtime:
+                fontes.append(str(f.relative_to(ROOT)))
+    for nome in ("project.godot", "export_presets.cfg"):
+        f = ROOT / nome
+        if f.exists() and f.stat().st_mtime > build_mtime:
+            fontes.append(nome)
+    return sorted(fontes)
+
+
 def main() -> int:
     zip_path = ROOT / "builds" / "macos" / "JeguesMecanicos.zip"
     if not zip_path.exists():
         sys.exit("build nao encontrado: %s (exporte antes)" % zip_path)
+    stale = newer_than_build(zip_path)
     data = pack_bytes(zip_path)
     refs = collect_refs()
 
@@ -166,6 +190,12 @@ def main() -> int:
         print("caminhos montados em runtime: %d arquivos casados" % expanded)
     for alvo in check_pbr_sets():
         missing.append((alvo, "CONJUNTO PBR INCOMPLETO (falta no disco)"))
+    if stale:
+        for f in stale[:5]:
+            missing.append((f, "MAIS NOVO QUE O BUILD (reexporte)"))
+        if len(stale) > 5:
+            missing.append(("... e mais %d arquivo(s)" % (len(stale) - 5),
+                            "MAIS NOVO QUE O BUILD"))
     if missing:
         print("\n%d PROBLEMA(S):" % len(missing))
         for ref, why in missing:

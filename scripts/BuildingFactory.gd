@@ -36,13 +36,34 @@ const SURFACES := {
 	Kind.GALPAO: ["concreto", "concreto", "tijolo"],
 }
 
-## Paleta de fachada: tons de reboco/pintura de rua, dessaturados de propósito
-## (cor saturada foi o que devolvia o aspecto de desenho em 2026-08-03).
-const PALETTE: Array[Color] = [
-	Color(0.86, 0.84, 0.79), Color(0.78, 0.75, 0.70), Color(0.72, 0.68, 0.63),
-	Color(0.80, 0.76, 0.68), Color(0.68, 0.70, 0.72), Color(0.74, 0.71, 0.66),
-	Color(0.82, 0.79, 0.74), Color(0.65, 0.63, 0.60), Color(0.79, 0.72, 0.65),
-]
+## Paleta de fachada. Dessaturada em relação a uma cor pura (cor saturada foi o
+## que devolvia o aspecto de desenho em 2026-08-03), mas com HUE de verdade —
+## a primeira versão eram nove cinzas quentes quase iguais, e a vista aérea saía
+## com a cidade inteira branca: as únicas cores da foto vinham dos telhados do
+## kit. Reboco de rua não é branco, é ocre, terracota, sálvia, chumbo.
+const CREME := Color(0.86, 0.83, 0.77)
+const AREIA := Color(0.82, 0.74, 0.60)
+const OCRE := Color(0.76, 0.62, 0.40)
+const TERRACOTA := Color(0.70, 0.45, 0.34)
+const TIJOLO := Color(0.58, 0.37, 0.31)
+const SALVIA := Color(0.62, 0.66, 0.55)
+const VERDETE := Color(0.52, 0.61, 0.61)
+const ARDOSIA := Color(0.50, 0.56, 0.65)
+const CINZA_CLARO := Color(0.78, 0.78, 0.76)
+const CINZA := Color(0.62, 0.61, 0.59)
+const CHUMBO := Color(0.44, 0.44, 0.45)
+const ROSA_VELHO := Color(0.74, 0.62, 0.58)
+
+## A cor combina com o TIPO, e não é sorteada de um saco só: arranha-céu de
+## terracota e barracão cor-de-rosa foram exatamente o tipo de escolha que fez o
+## material do kit parecer errado em 2026-08-03. Torre é concreto e vidro; casa é
+## que pode ser pintada.
+const PALETTE := {
+	Kind.TORRE: [CINZA_CLARO, CINZA, ARDOSIA, VERDETE, CREME, CHUMBO],
+	Kind.COMERCIO: [CREME, AREIA, OCRE, TERRACOTA, SALVIA, ARDOSIA, ROSA_VELHO, CINZA],
+	Kind.CASA: [CREME, AREIA, OCRE, TERRACOTA, TIJOLO, SALVIA, ROSA_VELHO, CINZA_CLARO],
+	Kind.GALPAO: [CINZA, CINZA_CLARO, ARDOSIA, SALVIA, CHUMBO, AREIA],
+}
 
 # --------------------------------------------------------------- as medidas
 
@@ -73,17 +94,29 @@ static func roll(rng: RandomNumberGenerator, kind: Kind) -> Dictionary:
 			d["floor_h"] = rng.randf_range(5.0, 7.0)
 	# Térreo mais alto que os andares de cima, como em prédio de verdade.
 	d["ground_h"] = float(d["floor_h"]) * (1.35 if kind != Kind.CASA else 1.05)
-	d["color"] = PALETTE[rng.randi() % PALETTE.size()]
+	var cores: Array = PALETTE[kind]
+	d["color"] = cores[rng.randi() % cores.size()]
 	var opts: Array = SURFACES[kind]
 	d["surface"] = opts[rng.randi() % opts.size()]
 	d["parapet"] = kind != Kind.CASA
 	d["balcony"] = kind == Kind.COMERCIO and rng.randf() < 0.45
+	# O terreo da frente ganha vitrine em RELEVO por fora (StreetFurniture), posta
+	# por quem constroi o quarteirao. Quando ganha, o gerador fecha aquele pano com
+	# parede lisa: as duas vitrines ocupam o mesmo terreo e ficariam dois vidros a
+	# 26 cm um do outro. Default false — sozinho, o gerador faz a propria vitrine.
+	d["storefront"] = false
 	d["seed"] = rng.randi()
 	return d
 
 static func height_of(d: Dictionary) -> float:
-	return float(d["ground_h"]) + float(d["floors"] - 1) * float(d["floor_h"]) \
-		+ (0.9 if bool(d["parapet"]) else 2.2)
+	return slab_y(d) + (0.9 if bool(d["parapet"]) else 2.2)
+
+## Altura da LAJE — o topo da ultima parede, antes do parapeito ou do telhado.
+## E onde o entulho de cobertura pousa. Separado de `height_of` porque o topo da
+## construcao NAO e a superficie em que se apoia: confundir os dois ja pos caixa
+## d'agua boiando sobre a cidade (changelog 2026-08-04).
+static func slab_y(d: Dictionary) -> float:
+	return float(d["ground_h"]) + float(d["floors"] - 1) * float(d["floor_h"])
 
 # ------------------------------------------------------------- a construção
 
@@ -162,9 +195,22 @@ static func _ring(wall: SurfaceTool, trim: SurfaceTool, glass: SurfaceTool,
 		var jw: float = minf(passo * 0.52, 1.5)
 		var jh: float = alt * (0.42 if terreo else 0.52)
 		var jy: float = alt * (0.30 if terreo else 0.26)   # relativo ao piso
+		# Térreo da frente com vitrine em relevo por fora: parede lisa aqui, senão
+		# o vão do gerador aparece atrás do vidro da loja (ver `roll`).
+		if terreo and i == 0 and bool(d["storefront"]):
+			_solid_face(wall, centro, eixo, fora, comp, y, alt)
+			continue
 		# Vitrine no térreo da frente: vidro alto, do chão quase ao teto.
+		#
+		# Em vão DOBRADO, e não num pano largo só. Com `passo * 0.78` saía uma
+		# lâmina de vidro de ~2 x 2.8 m sem nada no meio, e da calçada — a 40 cm
+		# dela — a fachada virava um retângulo azul-marinho chapado ocupando meia
+		# tela. Montante é o que dá escala a vitrine, e é por isso que a vitrine
+		# em relevo do StreetFurniture já põe um a cada 1.6 m.
 		if terreo and i == 0 and kind != Kind.CASA:
-			jw = passo * 0.78
+			vaos *= 2
+			passo = comp / float(vaos)
+			jw = passo * 0.72
 			jh = alt * 0.62
 			jy = alt * 0.16
 		_face(wall, trim, glass, centro, eixo, fora, comp, y, alt,

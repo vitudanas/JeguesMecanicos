@@ -2622,6 +2622,90 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     já em uso nas fachadas desde 2026-08-03) e **props avulsos** de rua. Fica
     registrado pra não pesquisar isto uma quarta vez.
 
+- **2026-08-09** — Usuário pediu pra continuar. O handoff da sessão anterior era
+  explícito sobre o próximo passo: o `BuildingFactory` estava pronto e **não
+  estava ligado na cidade**, e a ordem prática registrada era ligar o gerador
+  primeiro. Feito: `generated_ratio = 0.62` em `CityBlocks`, e hoje **553 dos
+  876 prédios** da cidade são geometria gerada.
+  - **Por que misturar, e não trocar tudo**: a janela do gerador é um vão de
+    verdade (rebaixado, com vidro no fundo) e cada prédio é único, que era o
+    problema apontado em 2026-08-03; mas o kit tem silhuetas que o gerador não
+    faz (recuo de andar, térreo saliente) e uma cidade 100% gerada fica com um
+    ritmo de fachada regular demais. A decisão é **por lote**, não por
+    quarteirão — por quarteirão, a diferença de estilo viraria uma emenda
+    visível na esquina.
+  - **Medido nos três ajustes** (mesmo ponto de vista, cidade inteira
+    carregada): o prédio gerado é **2,8x mais barato em triângulo** (1,15 M →
+    0,41 M indo de 0% a 100% de geração) e custa **~270 chamadas de desenho a
+    mais** (1370 → 1650), porque modelo de kit é instanciado e malha gerada é
+    única. Na taxa escolhida: 0,70 M de triângulo e 1648 chamadas. **Ressalva
+    honesta**: mudar a taxa muda quanto RNG cada lote consome, então as três
+    cidades não são a mesma cidade com fachadas trocadas — são cidades
+    comparáveis. Pro custo agregado tanto faz; pra aparência, a foto vale como
+    amostra.
+  - **O verificador tinha um ponto cego que inventou 12 defeitos.** Na primeira
+    rodada ele acusou 10 prédios invadindo a rua e 40 se atravessando — todos
+    **falsos**. `_body_rect` lia `size.x`/`size.z` da caixa de colisão CRUS,
+    ignorando rotação: funcionava porque o prédio do kit põe a rotação no visual
+    e deixa o corpo alinhado aos eixos, e o gerado gira o próprio corpo. Num
+    lote virado 90°, largura e profundidade vinham TROCADAS. Passou a usar o AABB
+    da caixa girada (idêntico ao anterior quando não há rotação). **Lição**: antes
+    de "consertar" o que o verificador acusa, conferir se ele sabe medir o caso
+    novo — eu quase fui mexer na geração, que estava certa.
+  - **Erro meu, e já estava documentado neste arquivo**: contei os prédios
+    gerados por `name.begins_with("PredioGerado")` e a medição disse **1 de
+    780**. Irmãos de nome repetido viram `@PredioGerado@N` — é exatamente a
+    armadilha que em 2026-08-03 fez um verificador achar 2 semáforos de 50.
+    Passou a ser grupo (`predio_gerado`).
+  - **Duas correções que só a FOTO pegou:**
+    1. *Vitrine de vidro sem montante*: o térreo saía com um pano de ~2 x 2,8 m
+       liso, e da calçada — a 40 cm dele — a fachada virava um retângulo
+       azul-marinho chapado tomando meia tela. Passou a vão dobrado, que é o que
+       dá escala (a vitrine em relevo do `StreetFurniture` já punha um montante
+       a cada 1,6 m).
+    2. *A cidade inteira branca*: a paleta do gerador eram nove cinzas quentes
+       quase iguais, e na vista aérea as únicas cores da foto vinham dos
+       telhados do kit. Agora tem hue de verdade (ocre, terracota, sálvia,
+       ardósia, chumbo) e a cor combina com o TIPO — torre é concreto e vidro,
+       casa é que pode ser pintada. Arranha-céu de terracota foi o mesmo tipo de
+       escolha que fez o material do kit parecer errado em 2026-08-03.
+  - **Erro meu de arnês**: as primeiras fotos foram tiradas de x = 4,2, que é a
+    **calçada** (vai de 3,0 a 4,5, com a fachada em 4,6) — ou seja a 40 cm da
+    parede. Saíram com uma fachada só preenchendo a tela, sem dar pra julgar nem
+    o prédio nem a rua. As câmeras foram pra pista.
+  - **Duas armadilhas que não viraram bug porque já estavam anotadas aqui**: o
+    entulho de telhado do gerado pousa na LAJE (`BuildingFactory.slab_y`), e não
+    no topo da construção, que inclui o parapeito — confundir os dois já pôs
+    caixa d'água boiando em 2026-08-04; e o sorteio da posição do prop usa
+    `Vector2.rotated(-rot)`, porque a convenção de sinal do rotated 2D é a
+    contrária da rotação em Y.
+  - **O build tinha inchado de 188 MB pra 689 MB, e não era o gerador.** Os 480
+    MB de `assets/realistas/` baixados na sessão anterior estavam na pasta do
+    projeto, e `export_filter="all_resources"` leva **tudo que está na pasta**,
+    mesmo o que nenhuma cena referencia — o `.pck` foi de 142 MB pra **674 MB**.
+    Nada disso está integrado ainda (falta fatiar). Entraram no `exclude_filter`
+    dos dois presets, junto das 4 pastas-fonte que já estavam lá pelo mesmo
+    motivo. Voltou pra 188 MB / 240 MB.
+  - **E o auditor aprovou o build errado.** O caminho do `.pck` é fixo dentro do
+    `pack_audit.py` (`builds/macos/JeguesMecanicos.zip`), e eu tinha exportado
+    pra `builds/JeguesMecanicos-macOS.zip` — exportar pra outro lugar não dá erro
+    nenhum, então ele leu o zip ANTIGO e disse "nenhum problema encontrado" sobre
+    um pacote de 142 MB enquanto o recém-exportado tinha 674 MB. **Auditar build
+    velho é pior que não auditar, porque dá confiança.** O auditor passou a
+    comparar a data do zip com a de todo `.gd`/`.tscn`/`.gdshader` mais
+    `project.godot`/`export_presets.cfg`, e reprova se alguma fonte for mais
+    nova. Conferido que ele reprova de propósito (e sai com código 1) antes de
+    confiar nele.
+  - **Verificação**: `tools/verify/mix_shots.tscn` (novo) carrega a cidade
+    inteira em três taxas, mede no mesmo ponto e fotografa; mais um passeio de
+    rua nas três zonas do zoneamento. O `city.gd` ganhou censo de gerados e
+    **falha dura em contagem zero** com a taxa ligada — que é a assinatura de um
+    gerador que não rodou (aconteceu em 2026-08-09 com id de recurso colidindo, e
+    o verificador seguiu dizendo "nenhum problema"). Conferido que a trava
+    dispara de propósito antes de confiar nela. Suíte inteira passa: city, drive,
+    loop, attach, scale, yard, settings, audio, ui, obstacles, save, loading,
+    economy, shop, staff.
+
 ### Pendências pedidas e ainda NÃO feitas
 
 Nenhuma das três pendências anteriores continua aberta. O que sobrou de
@@ -2807,21 +2891,21 @@ Três problemas, todos reais:
    hoje. Só então escalar.
 5. **Tela de créditos** no menu, alimentada por `docs/creditos.md`.
 
-### Decisão de design ainda em aberto
+### Decisão de design: resolvida em parte (2026-08-09)
 
-O `BuildingFactory` (prédios GERADOS, com janela rebaixada de verdade — ver
-changelog) está pronto e **também não está ligado na cidade**. As duas frentes
-resolvem o mesmo problema por caminhos diferentes:
+O `BuildingFactory` **já está ligado na cidade** (`generated_ratio = 0.62`, ver
+changelog) — era o primeiro passo recomendado, e não dependia de mais nada. As
+duas frentes resolvem o mesmo problema por caminhos diferentes:
 
 - **gerado**: variedade infinita, 3 chamadas de desenho por prédio, sem
   repetição, mas o estilo é o que eu consigo montar com primitivas;
 - **baixado**: aparência de verdade, mas 15 pacotes viram talvez 30-40 prédios
   distintos repetidos ~20 vezes cada — e realismo PIORA a repetição.
 
-A recomendação registrada é **usar os dois**: gerado como base da cidade
-inteira, baixado no miolo (onde o jogador dirige). A ordem prática é ligar o
-gerador primeiro (não depende de mais nada) e ir substituindo por realista no
-centro conforme os pacotes forem sendo fatiados.
+Falta a segunda metade: **substituir por realista no miolo** conforme os pacotes
+forem sendo fatiados. O ponto de entrada já existe e é pequeno —
+`CityBlocks._fill_edge` escolhe entre gerado e kit por lote, e um terceiro caso
+("realista, só no miolo") entra ali do mesmo jeito.
 
 ## Prédios realistas: notas sobre os sites
 
