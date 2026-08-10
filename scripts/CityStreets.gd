@@ -35,7 +35,10 @@ extends Node3D
 ## Em todos os cruzamentos vira poluicao visual (e muito no pra desenhar).
 @export var traffic_light_street_step := 2
 @export var bus_stops_enabled := true
-@export var bus_stop_every_n_tiles := 9
+## Um abrigo a cada N tiles retos. 9 dava 252 abrigos na cidade (um a cada
+## 67 m): ponto de onibus de verdade fica a cada 300-400 m, e a foto mostrava
+## abrigo em toda esquina.
+@export var bus_stop_every_n_tiles := 42
 ## Distancia da linha de centro da rua ate o prop. Cai na calcada, que vai de
 ## road_half_width (2.4) ate a fachada (3.8).
 @export var furniture_offset := 3.05
@@ -257,7 +260,7 @@ func _ensure_road_resources() -> void:
 	# Barra da faixa de pedestre: atravessa a pista, entao e fina no sentido da
 	# rua e comprida no sentido oposto.
 	_mesh_faixa = PlaneMesh.new()
-	_mesh_faixa.size = Vector2(0.45, largura - 0.8)
+	_mesh_faixa.size = Vector2(0.55, largura - 1.2)
 	# Escuro de verdade. O primeiro valor foi 0.62 e na foto o asfalto ficou do
 	# mesmo tom da calcada — a rua lia como uma laje de concreto larga. Asfalto
 	# de rua reflete pouca luz; o contraste com a calcada (0.5) e o que faz o
@@ -296,11 +299,17 @@ func _asfalto_reto(pos: Vector3, rot_y_deg: float, com_faixa: bool) -> void:
 		# de pavimento, a checagem de continuidade via 6 pecas por tile a 0,9 m
 		# uma da outra e acusava 3872 "sobreposicoes" numa rua perfeita.
 		get_child(get_child_count() - 1).add_to_group("via_faixa")
-		var n := 6
+		# Proporcao de faixa de verdade: barra de 0,55 m com vao de 0,60 m. Com
+		# 0,45/0,45 as barras liam grossas demais e a travessia virava um bloco
+		# branco no asfalto (visto na foto 10 de street_shots).
+		var n := 5
 		for i in range(n):
-			var off := _ao_longo((float(i) - (n - 1) * 0.5) * 0.9, rot_y_deg)
+			var off := _ao_longo((float(i) - (n - 1) * 0.5) * 1.15, rot_y_deg)
+			# Grupo proprio: `via_tinta` tambem tem o traco central da pista, e
+			# medir "uma tinta qualquer" fazia o verificador pegar o traco
+			# (0,14 x 2,4 m) achando que era barra de faixa.
 			_quad(_mesh_faixa, _mat_tinta,
-				Vector3(chao.x + off.x, tinta_y, chao.z + off.z), rot_y_deg, "via_tinta")
+				Vector3(chao.x + off.x, tinta_y, chao.z + off.z), rot_y_deg, "via_faixa_barra")
 		return
 	for s in [-0.25, 0.25]:
 		var off := _ao_longo(s * tile_size, rot_y_deg)

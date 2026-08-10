@@ -15,6 +15,47 @@ extends Node3D
 
 const CITY_BUILDING_SCENE := preload("res://scenes/world/CityBuilding.tscn")
 
+## Constroi o cinturao com os mesmos PREDIOS REALISTAS da cidade
+## (`assets/realistas_prontos/`, ver CatalogoRealistas), e nao com o kit Kenney.
+##
+## O kit era o que estava aqui, e ele encosta na cidade LADO A LADO: quem chega
+## pela estrada via casa de desenho na frente e predio fotografado logo atras.
+## E a mesma mistura de estilo que este projeto ja corrigiu duas vezes
+## (changelog 2026-08-02 e 2026-08-03) — so que desta vez na moldura da cidade,
+## que e justamente por onde o jogador entra.
+@export var usar_realistas := true
+
+## De quais pacotes o cinturao pode tirar construcao.
+##
+## Filtrar por ALTURA nao basta, e a foto mostrou por que: um tanque de
+## refinaria do pacote industrial tem a mesma altura de um sobrado, e apareceu
+## plantado no meio do mato ao lado da jogadora. Cinturao e periferia
+## residencial — casa geminada, sobrado, predio de esquina. Torre de escritorio
+## (`downtown_buildings`) e equipamento industrial ficam de fora por serem o que
+## sao, nao pelo tamanho.
+@export var pacotes: Array[String] = [
+	"brownstone_building_set",
+	"old_building_pack_lowpoly",
+	"tenement_house",
+	"bordeaux_flat_1_corner_france",
+	"bordeaux_flat_2_corner_france",
+	"new_york_buildings",
+]
+
+## Altura ALVO, em metros, colada na cidade e na borda do campo.
+##
+## O degrade sai da ESCOLHA do modelo (alto perto, baixo longe), e nao de
+## esticar a escala. Esticar era o que estava aqui — `scale_near = 6.5` num kit
+## cujo modelo mede ~1,4 m — e num modelo realista isso infla porta e janela
+## junto: medido na foto, a porta de uma casa do cinturao dava 4,5 m contra os
+## 1,80 m da jogadora ao lado. E a mesma armadilha da grama gigante de
+## 2026-08-04: configurar em ESCALA CRUA em vez de altura em metros.
+@export var altura_perto := 12.0
+@export var altura_longe := 6.0
+## Quanto a altura de cada construcao pode variar em torno do alvo. Sem folga o
+## anel inteiro fica com a mesma silhueta.
+@export var altura_tolerancia := 4.0
+
 @export var scenes: Array[PackedScene] = []
 ## Onde a cidade acaba e onde o campo comeca (Chebyshev, a partir do centro).
 @export var inner_extent := 104.0
@@ -54,8 +95,57 @@ const CITY_BUILDING_SCENE := preload("res://scenes/world/CityBuilding.tscn")
 var _rng := RandomNumberGenerator.new()
 var _placed: Array = []
 
+## Pool do cinturao: cada entrada e {cena, altura} com a altura MEDIDA do
+## modelo. Cache estatico porque o pool e o mesmo pra todas as tentativas e
+## medir custa instanciar a cena.
+static var _pool_cache: Array = []
+static var _pool_pronto := false
+
+func _pool() -> Array:
+	if not usar_realistas:
+		var out: Array = []
+		for s: PackedScene in scenes:
+			out.append({"cena": s, "altura": 0.0})
+		return out
+	if _pool_pronto:
+		return _pool_cache
+	_pool_pronto = true
+	for pacote: String in pacotes:
+		for caminho: String in CatalogoRealistas.POR_PACOTE.get(pacote, []):
+			var cena := load(caminho) as PackedScene
+			if cena == null:
+				continue
+			var inst := cena.instantiate()
+			var box := _local_aabb(inst, Transform3D.IDENTITY)
+			inst.free()
+			# Sem altura util nao da pra escolher pelo tamanho, que e o unico
+			# criterio deste anel.
+			if box.size.y < 1.0:
+				continue
+			_pool_cache.append({"cena": cena, "altura": box.size.y,
+				"raio": Vector2(box.size.x, box.size.z).length() * 0.5})
+	_pool_cache.sort_custom(func(a, b): return float(a["altura"]) < float(b["altura"]))
+	return _pool_cache
+
+## O modelo cuja altura mais se aproxima do alvo, sorteando dentro da folga —
+## assim o degrade existe e mesmo assim nao sai uma fileira de clones.
+func _escolher(alvo: float) -> Dictionary:
+	var pool := _pool()
+	if pool.is_empty():
+		return {}
+	# Os mais PROXIMOS do alvo, e nao um sorteio uniforme dentro da folga: o
+	# catalogo tem muito mais predio alto que casa baixa, entao sortear parelho
+	# dentro de +/-4 m puxava tudo pra cima — medido, a borda do campo saia com
+	# 9,9 m tendo 6 m como alvo e 15 modelos de ate 8 m disponiveis.
+	var ordenado := pool.duplicate()
+	ordenado.sort_custom(func(a, b):
+		return absf(float(a["altura"]) - alvo) < absf(float(b["altura"]) - alvo))
+	# Uma janela pequena mantem a variedade sem perder o alvo de vista.
+	var janela: int = mini(4, ordenado.size())
+	return ordenado[_rng.randi() % janela]
+
 func _ready() -> void:
-	if scenes.is_empty():
+	if scenes.is_empty() and not usar_realistas:
 		return
 	_rng.seed = rng_seed
 	for i in range(attempts):
@@ -70,8 +160,16 @@ func _ready() -> void:
 		var t := pow(_rng.randf(), 1.6)
 		if _rng.randf() > lerpf(1.0, keep_chance_far, t):
 			continue
-		var scene: PackedScene = scenes[_rng.randi() % scenes.size()]
-		var prop_scale := lerpf(scale_near, scale_far, t) * _rng.randf_range(0.9, 1.1)
+		var escolha := _escolher(lerpf(altura_perto, altura_longe, t)) if usar_realistas \
+			else {"cena": scenes[_rng.randi() % scenes.size()]}
+		if escolha.is_empty():
+			continue
+		var scene: PackedScene = escolha["cena"]
+		# Modelo realista ja vem em METROS (o fatiador normaliza), entao a escala
+		# fica em 1.0 com um jitter pequeno — o suficiente pra quebrar a
+		# repeticao sem esticar porta e janela. So o kit precisa de fator grande.
+		var prop_scale := _rng.randf_range(0.94, 1.06) if usar_realistas \
+			else lerpf(scale_near, scale_far, t) * _rng.randf_range(0.9, 1.1)
 		var radius := _radius(scene, prop_scale)
 		# A faixa vale pra CONSTRUCAO INTEIRA, nao so pro centro: e por isso
 		# que o inicio da faixa util ja desconta o raio — senao uma casa larga
@@ -140,6 +238,17 @@ func _place(scene: PackedScene, pos: Vector3, prop_scale: float) -> void:
 	var body := CITY_BUILDING_SCENE.instantiate()
 	body.visual_scene = scene
 	body.visual_scale = prop_scale
+	# Colisao pela SILHUETA na altura de transito, e nao pelo AABB inteiro.
+	#
+	# O predio realista tem recuo, sacada e telhado em L, entao o AABB e bem
+	# maior que a planta na altura do carro: medido depois de trocar o kit por
+	# realista, 15 construcoes do cinturao ficaram com ate **12,2 m de ar
+	# solido** ao lado — parede invisivel no caminho de quem entra na cidade.
+	#
+	# Aqui e seguro ligar (ao contrario do CityBlocks, onde isso deixaria os
+	# props de telhado sem apoio, ver AutoCollisionBody): o cinturao nao tem
+	# entulho de cobertura.
+	body.slim_collision = true
 	# Fachada virada pro lado da cidade (com folga sorteada), pra ler como
 	# subudrbio que cresceu voltado pro centro, nao como cenario espalhado.
 	body.visual_rotation_y_degrees = _facing(pos) + _rng.randf_range(-12.0, 12.0)
@@ -153,6 +262,11 @@ func _facing(pos: Vector3) -> float:
 	return 0.0 if pos.z > 0.0 else 180.0
 
 func _tint(body: Node3D) -> void:
+	# Predio realista mantem a propria textura, pela mesma razao do CityBlocks:
+	# o `CitySurface` existe pra salvar o atlas de 64x64 do kit, e jogado por
+	# cima de uma fachada fotografada so apaga o que ela tem de bom.
+	if usar_realistas:
+		return
 	if facade_colors.is_empty():
 		return
 	var color: Color = facade_colors[_rng.randi() % facade_colors.size()]

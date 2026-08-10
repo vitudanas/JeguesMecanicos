@@ -36,6 +36,28 @@ func _caixa(body: Node3D) -> Rect2:
 			return Rect2(c.x - ex, c.z - ez, ex * 2.0, ez * 2.0)
 	return Rect2()
 
+func _aabb_visual(root: Node) -> AABB:
+	var box := AABB()
+	var first := true
+	for mi in _malhas(root):
+		if mi.mesh == null:
+			continue
+		var world := mi.global_transform * mi.mesh.get_aabb()
+		if first:
+			box = world
+			first = false
+		else:
+			box = box.merge(world)
+	return box
+
+func _malhas(node: Node) -> Array[MeshInstance3D]:
+	var out: Array[MeshInstance3D] = []
+	if node is MeshInstance3D:
+		out.append(node as MeshInstance3D)
+	for c in node.get_children():
+		out.append_array(_malhas(c))
+	return out
+
 ## Ha um lote com funcao (praca/posto/estacionamento/feira) neste quarteirao?
 func _lote_especial(x0: float, x1: float, z0: float, z1: float) -> bool:
 	for g in ["lote_praca", "lote_posto", "lote_estacionamento", "lote_feira"]:
@@ -56,7 +78,21 @@ func _rodar() -> void:
 		var r := _caixa(b)
 		if r.size.x > 0.0:
 			caixas.append(r)
-	print("predios: %d | recuo da fachada: %.1f m" % [caixas.size(), recuo])
+	var predios := caixas.size()
+
+	# O MURO DE LOTE tambem fecha a quadra. Ele nao e `city_building` (nao tem
+	# colisao nem AutoCollisionBody — e um pano de alvenaria montado em codigo),
+	# entao precisa ser medido pela malha. Sem contar o muro, o teste diz que a
+	# borda esta vazia num lugar onde o jogador ve um muro com portao.
+	var muros := 0
+	for m in get_tree().get_nodes_in_group("muro_lote"):
+		var box := _aabb_visual(m as Node3D)
+		if box.size.x <= 0.0 and box.size.z <= 0.0:
+			continue
+		caixas.append(Rect2(box.position.x, box.position.z, box.size.x, box.size.z))
+		muros += 1
+	print("predios: %d | muros de lote: %d | recuo da fachada: %.1f m"
+		% [predios, muros, recuo])
 
 	# Faixa junto de cada borda: quem encosta na calcada daquele lado.
 	var faixa := 14.0

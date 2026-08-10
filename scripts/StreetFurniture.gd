@@ -78,21 +78,35 @@ static func traffic_light() -> Node3D:
 	# pai ja tem um filho com aquele nome, entao filtrar por nome nao acha os
 	# props depois (foi assim que uma verificacao minha "achou" so 2 semaforos).
 	root.add_to_group("street_furniture")
-	_piece(root, _cylinder_mesh("tl_pole", 0.07, 3.4), _material("metal", METAL),
-			Vector3(0.0, 1.7, 0.0))
-	# Braco curto pro cabecote ficar sobre a calcada, nao colado no poste.
-	_piece(root, _box_mesh("tl_arm", Vector3(0.5, 0.09, 0.09)), _material("metal", METAL),
-			Vector3(0.25, 3.3, 0.0))
-	_piece(root, _box_mesh("tl_head", Vector3(0.30, 0.80, 0.26)), _material("dark", DARK),
-			Vector3(0.5, 2.95, 0.0))
+	root.add_to_group("semaforo")
+	# Poste de 5,2 m com BRACO sobre a pista, e nao um postinho de 3,4 m na
+	# calcada. A rua tem 11,4 m de pista desde que foi alargada (2026-08-09), e
+	# em rua desse porte o cabecote fica pendurado sobre as faixas — na calcada
+	# ele some atras do carro parado e a rua le como viela larga.
+	_piece(root, _cylinder_mesh("tl_pole", 0.10, 5.2), _material("metal", METAL),
+			Vector3(0.0, 2.6, 0.0))
+	# Braco projetado: alcanca a primeira faixa de rolamento.
+	_piece(root, _box_mesh("tl_arm", Vector3(3.2, 0.12, 0.12)), _material("metal", METAL),
+			Vector3(1.6, 5.05, 0.0))
+	# Cabecote principal, pendurado na ponta do braco.
+	_piece(root, _box_mesh("tl_head", Vector3(0.34, 1.00, 0.30)), _material("dark", DARK),
+			Vector3(3.0, 4.45, 0.0))
 	var lamps := [
-		["red", Color(0.95, 0.15, 0.12), 3.20],
-		["yellow", Color(0.98, 0.78, 0.15), 2.95],
-		["green", Color(0.25, 0.85, 0.35), 2.70],
+		["red", Color(0.95, 0.15, 0.12), 4.78],
+		["yellow", Color(0.98, 0.78, 0.15), 4.45],
+		["green", Color(0.25, 0.85, 0.35), 4.12],
 	]
 	for lamp: Array in lamps:
-		_piece(root, _box_mesh("tl_lamp", Vector3(0.16, 0.16, 0.06)),
-				_material(lamp[0], lamp[1], true), Vector3(0.5, lamp[2], 0.14))
+		_piece(root, _box_mesh("tl_lamp", Vector3(0.20, 0.20, 0.07)),
+				_material(lamp[0], lamp[1], true), Vector3(3.0, lamp[2], 0.16))
+	# Repetidor na altura do olho, no proprio poste: e o que o pedestre ve, e o
+	# que o motorista parado na faixa de retencao ainda enxerga.
+	_piece(root, _box_mesh("tl_head_low", Vector3(0.26, 0.76, 0.24)), _material("dark", DARK),
+			Vector3(0.0, 2.95, 0.20))
+	for lamp: Array in lamps:
+		_piece(root, _box_mesh("tl_lamp_low", Vector3(0.15, 0.15, 0.06)),
+				_material(lamp[0], lamp[1], true),
+				Vector3(0.0, 2.95 + (float(lamp[2]) - 4.45) * 0.72, 0.33))
 	return root
 
 
@@ -102,29 +116,88 @@ static func bus_stop() -> Node3D:
 	var root := Node3D.new()
 	root.name = "PontoDeOnibus"
 	root.add_to_group("street_furniture")
+	root.add_to_group("ponto_onibus")
 	var metal := _material("metal", METAL)
-	_piece(root, _box_mesh("bs_roof", Vector3(3.2, 0.12, 1.3)), metal,
-			Vector3(0.0, 2.45, 0.0))
+	# Abrigo de 4,8 x 1,9 m e 2,9 m de altura. O anterior tinha 3,2 x 1,3 m —
+	# abrigo de verdade cobre a fila de quem espera, e numa calcada de 3,5 m um
+	# abrigo estreito le como ponto de taxi.
+	_piece(root, _box_mesh("bs_roof", Vector3(4.8, 0.14, 1.9)), metal,
+			Vector3(0.0, 2.90, 0.0))
 	for side in [-1.0, 1.0]:
-		_piece(root, _box_mesh("bs_post", Vector3(0.10, 2.4, 0.10)), metal,
-				Vector3(side * 1.5, 1.2, 0.55))
-	_piece(root, _box_mesh("bs_back", Vector3(3.1, 1.9, 0.06)), _material("glass", GLASS),
-			Vector3(0.0, 1.35, 0.60))
-	_piece(root, _box_mesh("bs_bench", Vector3(2.6, 0.10, 0.42)), _material("wood", WOOD),
-			Vector3(0.0, 0.52, 0.42))
-	_piece(root, _box_mesh("bs_bench_leg", Vector3(2.6, 0.42, 0.08)), metal,
-			Vector3(0.0, 0.26, 0.60))
+		_piece(root, _box_mesh("bs_post", Vector3(0.12, 2.85, 0.12)), metal,
+				Vector3(side * 2.3, 1.43, 0.82))
+		_piece(root, _box_mesh("bs_post_front", Vector3(0.12, 2.85, 0.12)), metal,
+				Vector3(side * 2.3, 1.43, -0.82))
+	_piece(root, _box_mesh("bs_back", Vector3(4.7, 2.2, 0.07)), _material("glass", GLASS),
+			Vector3(0.0, 1.60, 0.88))
+	# Painel lateral de vidro: e o que fecha o abrigo contra o vento e o que dá
+	# volume a ele visto de lado, que e como o motorista o ve.
+	for side in [-1.0, 1.0]:
+		_piece(root, _box_mesh("bs_side", Vector3(0.06, 2.2, 1.7)), _material("glass", GLASS),
+				Vector3(side * 2.35, 1.60, 0.0))
+	_piece(root, _box_mesh("bs_bench", Vector3(3.8, 0.10, 0.46)), _material("wood", WOOD),
+			Vector3(0.0, 0.52, 0.55))
+	_piece(root, _box_mesh("bs_bench_leg", Vector3(3.8, 0.42, 0.08)), metal,
+			Vector3(0.0, 0.26, 0.76))
 	# Placa na ponta, virada pra quem vem pela calcada.
-	_piece(root, _cylinder_mesh("bs_sign_pole", 0.05, 2.6), metal,
-			Vector3(1.85, 1.3, 0.0))
-	_piece(root, _box_mesh("bs_sign", Vector3(0.5, 0.36, 0.05)),
-			_material("sign", Color(0.20, 0.42, 0.72)), Vector3(1.85, 2.45, 0.0))
+	_piece(root, _cylinder_mesh("bs_sign_pole", 0.06, 3.2), metal,
+			Vector3(2.75, 1.6, 0.0))
+	_piece(root, _box_mesh("bs_sign", Vector3(0.62, 0.44, 0.06)),
+			_material("sign", Color(0.20, 0.42, 0.72)), Vector3(2.75, 3.0, 0.0))
+	return root
+
+
+## Muro de lote: fecha o pedaco de quarteirao onde nao coube predio.
+##
+## Existe porque enfileirar predios sempre sobra um resto — nenhum modelo tem a
+## largura exata do que ficou. Medido antes de existir: 73 vaos de 6 m ou mais,
+## o maior com 17,6 m, e a quadra lia como dente faltando. Em cidade de verdade
+## esse resto e muro de lote, terreno murado ou portao de garagem, e nao
+## descampado.
+##
+## `comprimento` corre no eixo X; o -Z aponta pra rua.
+static func lot_wall(comprimento: float) -> Node3D:
+	var root := Node3D.new()
+	root.name = "MuroDeLote"
+	root.add_to_group("muro_lote")
+	var altura := 2.6
+	var reboco := _material("wall", Color(0.70, 0.68, 0.63))
+	var pano := BoxMesh.new()
+	pano.size = Vector3(comprimento, altura, 0.28)
+	var mi := MeshInstance3D.new()
+	mi.mesh = pano
+	mi.set_surface_override_material(0, reboco)
+	mi.position = Vector3(0.0, altura * 0.5, 0.0)
+	root.add_child(mi)
+	# Pilarete a cada ~4 m: sem eles o muro le como uma placa lisa comprida.
+	var passo := 4.0
+	var n: int = maxi(2, int(comprimento / passo))
+	for i in range(n + 1):
+		var x := -comprimento * 0.5 + comprimento * float(i) / float(n)
+		var pilar := BoxMesh.new()
+		pilar.size = Vector3(0.36, altura + 0.18, 0.40)
+		var pm := MeshInstance3D.new()
+		pm.mesh = pilar
+		pm.set_surface_override_material(0, _material("wall_post", Color(0.62, 0.60, 0.56)))
+		pm.position = Vector3(x, (altura + 0.18) * 0.5, 0.0)
+		root.add_child(pm)
+	# Portao de garagem quando ha largura pra isso: e o detalhe que faz o muro
+	# ler como lote de alguem, e nao como tapume.
+	if comprimento >= 6.0:
+		var portao := BoxMesh.new()
+		portao.size = Vector3(3.0, 2.2, 0.10)
+		var pg := MeshInstance3D.new()
+		pg.mesh = portao
+		pg.set_surface_override_material(0, _material("gate", Color(0.34, 0.30, 0.27)))
+		pg.position = Vector3(0.0, 1.1, -0.16)
+		root.add_child(pg)
 	return root
 
 
 static func bench() -> Node3D:
 	var root := Node3D.new()
 	root.name = "Banco"
+	root.add_to_group("banco")
 	_piece(root, _box_mesh("bench_seat", Vector3(1.6, 0.08, 0.45)), _material("wood", WOOD),
 			Vector3(0.0, 0.45, 0.0))
 	_piece(root, _box_mesh("bench_back", Vector3(1.6, 0.40, 0.07)), _material("wood", WOOD),

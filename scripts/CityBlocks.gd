@@ -77,6 +77,10 @@ static var _footprint_cache: Dictionary = {}
 ## (modelos CC-BY baixados, fatiados e normalizados por tools/fatiar_realistas.gd).
 ## Desligando, a cidade volta pro kit do Kenney + o gerador de geometria.
 @export var usar_realistas := true
+## Fecha com muro de lote o pedaco de borda onde nao coube predio (ver
+## `_fechar_resto`). Desligado, a quadra volta a ter os 73 vaos medidos em
+## 2026-08-10.
+@export var muros_de_lote := true
 
 ## Zoneamento: que pacotes entram em cada zona. Os pacotes tem carater bem
 ## diferente entre si, e e isso que faz a cidade ter bairros em vez de uma
@@ -675,7 +679,34 @@ func _fill_edge(pool: Array, kinds: Array, run_min: float, run_max: float, edge_
 				_add_storefront(slot_pos, rot_deg, width, depth)
 			max_depth = maxf(max_depth, depth)
 		cursor += width + lot_gap
+	# O que sobrou da borda vira MURO DE LOTE. O laco acima para quando nenhum
+	# modelo cabe no resto, e esse resto ficava como descampado — medido, 73
+	# vaos de 6 m ou mais, o maior com 17,6 m.
+	_fechar_resto(cursor, run_max, edge_coord, horizontal, far_side)
 	return max_depth
+
+## Muro no trecho de borda que ficou sem predio.
+const MURO_MINIMO := 3.0
+
+func _fechar_resto(cursor: float, run_max: float, edge_coord: float,
+		horizontal: bool, far_side: bool) -> void:
+	if not muros_de_lote:
+		return
+	var sobra := run_max - cursor
+	if sobra < MURO_MINIMO:
+		return
+	var along := cursor + sobra * 0.5
+	# O muro fica no plano da FACHADA (fundo raso), e nao no meio do lote: e a
+	# linha que o pedestre ve da calcada.
+	var inward: float = -0.2 if far_side else 0.2
+	var pos: Vector3 = Vector3(along, 0.0, edge_coord + inward) if horizontal \
+		else Vector3(edge_coord + inward, 0.0, along)
+	if _is_excluded(pos):
+		return
+	var muro := StreetFurniture.lot_wall(sobra)
+	add_child(muro)
+	muro.position = pos
+	muro.rotation_degrees.y = _facing_rotation(horizontal, far_side)
 
 ## Loja no terreo, encostada na fachada que da pra rua (ver
 ## StreetFurniture.storefront). So em predio de comercio/torre/galpao: casa de

@@ -3025,6 +3025,81 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     pintado, cabeça de jegue normal) nos dois modelos: **nenhum magenta na
     cabeça**, ou seja o crânio calibrado na mulher engole também a do homem.
 
+- **2026-08-10** — Usuário reportou, jogando: o entorno da cidade tem **casas
+  do pack inicial e fora de escala**, o **mobiliário urbano** (semáforo, ponto
+  de ônibus, faixa, posto) "está tudo ruim fora de escala", há **buracos nos
+  quarteirões**, e depois: **as árvores** e "na zona rural deve ter muitas
+  árvores". Tudo medido e fotografado antes de mexer.
+  - **A primeira hipótese estava errada, e foi a foto que corrigiu.** Achei que
+    o mobiliário estivesse plantado com os offsets da rua antiga (o `.gd` ainda
+    dizia "a calçada vai de 2.4 a 3.8") — mas o `Town.tscn` já os corrigira na
+    rodada da rua larga. Ler código não bastava: só fotografando da **altura
+    dos olhos com o jogador no quadro** dá pra julgar escala. É a mesma razão
+    de existir da régua de 1,80 m do preview de personagem.
+  - **Cinturão: eram 29 modelos do kit Kenney**, esticados por `scale_near =
+    6.5`. Numa foto ao lado da jogadora, a PORTA de uma casa dava ~4,5 m. Agora
+    ele usa os mesmos **prédios realistas** da cidade, e o degradê de tamanho
+    vem da **escolha do modelo**, não de esticar a escala — esticar modelo
+    realista infla porta e janela junto. É a armadilha da grama gigante de
+    2026-08-04: configurar em escala crua em vez de altura em metros. Medido:
+    mediana 5,7 m → **11,5 m**, com a borda da cidade ao lado em 13,2 m, e o
+    degradê de 12,5 m colado na cidade a 8,5 m na borda do campo.
+  - **Filtrar por altura não bastava, e de novo foi a foto que mostrou**: um
+    **tanque de refinaria** tem a altura de um sobrado, e apareceu plantado no
+    mato ao lado da jogadora, junto de uma torre de escritório. O pool do
+    cinturão passou a ser por PACOTE (residencial), não por tamanho.
+  - **252 pontos de ônibus** — um a cada 37 m, porque o `Town.tscn` pedia um a
+    cada 5 tiles. Ponto de ônibus de verdade fica a cada 300-400 m. Agora são
+    **18**. O abrigo também era estreito (3,2 m) pra uma calçada de 3,5 m: foi
+    pra 4,8 m, com painel lateral de vidro.
+  - **Semáforo virou semáforo de cidade**: 5,2 m com **braço projetado sobre a
+    pista** e repetidor na altura do olho, no lugar do postinho de 3,4 m na
+    calçada. A rua tem 11,4 m de pista desde que foi alargada — na calçada o
+    cabeçote some atrás do primeiro carro parado.
+  - **Buracos nos quarteirões**: o preenchimento de borda para quando nenhum
+    modelo cabe no resto, e esse resto ficava como descampado — 73 vãos de 6 m
+    ou mais, o maior com 17,6 m. Agora o resto vira **muro de lote** com
+    pilaretes e portão de garagem (montado em código, o idioma do projeto).
+    Medido: 91% → **93%** de borda fechada, 73 → **58** vãos, e 62 muros.
+  - **Árvores**: no campo já estavam em altura de metros (a correção de
+    2026-08-04), mas o topo ia a 20 m — moderado pra 15. O que faltava era
+    QUANTIDADE: 780 sólidos em ~1 km² davam uma árvore a cada 2.500 m². Agora
+    são **2400** (1400 árvores, 14,9 por hectare), com mediana de 10,3 m.
+  - **Erros meus, os dois de MEDIDOR e não de jogo** (e os dois já documentados
+    neste arquivo como armadilhas):
+    1. *Classifiquei mobiliário por nome de nó*: irmãos de nome repetido viram
+       `@Node3D@N`, e o teste jogou **300 dos 302 props** num balde "?". Passou
+       a ser por grupo (`semaforo`, `ponto_onibus`, `banco`), que o
+       `StreetFurniture` agora atribui.
+    2. *Medi a barra da faixa pegando "uma tinta qualquer"*: o grupo `via_tinta`
+       também tem o **traço central** da pista, então o teste reportou barra de
+       0,14 × 2,4 m e reprovou a cidade. As barras ganharam grupo próprio;
+       medida certa: 0,55 m de largura × 10,2 m atravessando uma pista de
+       11,4 m.
+    3. *E um de processo*: rodei o teste novo com `| tail -40`, que segura a
+       saída — 10 minutos parecendo travamento, e a causa era **erro de parse**
+       no meu próprio script (`node.name` é StringName e não aceita subscript;
+       `get_script()` devolve Variant e o projeto trata aviso como erro). O
+       próprio CLAUDE.md já registrava essa armadilha desde 2026-08-04.
+  - **Um defeito que EU introduzi, e que a suíte pegou**: trocar o kit por
+    modelo realista no cinturão criou **parede invisível**. Prédio realista tem
+    recuo, sacada e telhado em L, então o AABB é bem maior que a planta na
+    altura do carro — medido pelo `obstacles_test`, 15 construções com até
+    **12,2 m de ar sólido** ao lado, bem no caminho de quem entra na cidade.
+    Resolvido ligando `slim_collision` (colisão pela silhueta na altura de
+    trânsito), que aqui é seguro porque o cinturão não tem prop de telhado —
+    ao contrário do `CityBlocks`, onde ligar isso deixaria a caixa d'água sem
+    apoio. **Vale a lição**: trocar o pacote de modelos de um gerador exige
+    reconferir a COLISÃO, não só a aparência.
+  - **Verificação**: `tools/verify/street_test.tscn` (novo, headless) mede cada
+    peça contra duas referências que não mudam — o jogador de 1,80 m e a largura
+    real da pista lida do próprio `CityStreets` da cena — e cobra que o
+    mobiliário fique na calçada, que a barra da faixa atravesse a pista, que o
+    cinturão afine indo pro campo e que ele não venha do kit.
+    `tools/verify/street_shots.tscn` (novo, janela) fotografa tudo da altura dos
+    olhos com o jogador no quadro. O `gaps_test` aprendeu a contar o muro de
+    lote: sem isso ele diria "borda vazia" onde o jogador vê um muro com portão.
+
 ### ONDE PAREI (2026-08-10, fim da sessão)
 
 Estado: tudo commitado, suíte inteira passando e **builds reexportadas nesta

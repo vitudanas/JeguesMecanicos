@@ -27,7 +27,15 @@ godot --path . tools/verify/mix_shots.tscn    # a cidade realista: custo e foto
 godot --path . tools/verify/realistas_sheet.tscn  # folha de contato dos predios fatiados
 godot --path . tools/verify/camera_test.tscn   # as tres cameras do V
 godot --headless --path . tools/verify/character_test.tscn  # personagem, formas, altura, tela
+godot --headless --path . tools/verify/street_test.tscn     # escala da rua, mobiliário, cinturão, árvores
 ```
+
+`street_test` mede cada peça de rua contra duas referências que **não mudam**: o
+jogador de 1,80 m e a largura real da pista, lida do próprio `CityStreets` da
+cena. Ele existe porque a cidade mudou de escala duas vezes e o mobiliário tinha
+sido calibrado antes — e porque ler o código não bastava para julgar: a primeira
+suspeita (offsets antigos) estava errada, e quem mostrou o problema de verdade
+foi a foto do `street_shots`, tirada da altura dos olhos com o jogador no quadro.
 
 `character_test` faz sempre a mesma pergunta: **o que o jogador escolhe chega
 na malha?** Ele percorre o caminho real (Appearance → PlayerVisual →
@@ -76,6 +84,7 @@ godot --path . tools/verify/quality_shots.tscn   # fotos + chamadas de desenho
 godot --path . tools/verify/settings_test.tscn   # o menu de gráficos faz efeito?
 godot --path . tools/verify/player_shots.tscn    # a jogadora de cabeça de jegue
 godot --path . tools/verify/character_shots.tscn # os dois personagens e a tela que os monta
+godot --path . tools/verify/street_shots.tscn    # rua e mobiliário da altura dos olhos
 godot --path . tools/verify/ui_shot.tscn         # menu principal e configuração
 godot --path . tools/verify/yard_shots.tscn      # vagas pintadas e o mecânico
 godot --path . tools/verify/gambiarra_shot.tscn  # a gambiarra com o carro ANDANDO
