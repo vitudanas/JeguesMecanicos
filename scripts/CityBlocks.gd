@@ -25,6 +25,19 @@ const FIT_ATTEMPTS := 12
 ## entao o NPC fica na frente da casa e o carro encosta na pista.
 const FRONT_YARD_OFFSET := 1.1
 
+## Quanto precisa sobrar no meio do quarteirao, depois das quatro fileiras de
+## fachada, pra valer a pena construir um anel interno. Abaixo disso o que sobra
+## e patio de fundo, que e o que uma quadra de verdade tem mesmo.
+const MIOLO_MINIMO := 42.0
+
+## Miolo maximo pra um lote virar praca/posto/estacionamento/feira.
+##
+## Esses lotes foram calibrados quando todo quarteirao tinha 28 m de miolo. Numa
+## quadra de 90 m eles viram um descampado de 80 m: a foto da rua no anel do meio
+## saiu com metade da tela ocupada por um estacionamento vazio ate o horizonte.
+## Quadra grande sempre recebe predio; lote especial so nas curtas e medias.
+const MIOLO_MAX_LOTE_ESPECIAL := 62.0
+
 ## Cache de AABB por cena: medir instanciando e descartando e caro, entao
 ## cada modelo so e medido uma vez (mesmo padrao do cache estatico de
 ## animacoes em Pedestrian.gd).
@@ -46,8 +59,52 @@ static var _footprint_cache: Dictionary = {}
 @export var house_scenes: Array[PackedScene] = []
 @export var industrial_scenes: Array[PackedScene] = []
 
+## A cidade e construida com os PREDIOS REALISTAS de assets/realistas_prontos/
+## (modelos CC-BY baixados, fatiados e normalizados por tools/fatiar_realistas.gd).
+## Desligando, a cidade volta pro kit do Kenney + o gerador de geometria.
+@export var usar_realistas := true
+
+## Zoneamento: que pacotes entram em cada zona. Os pacotes tem carater bem
+## diferente entre si, e e isso que faz a cidade ter bairros em vez de uma
+## mistura uniforme — brownstone de tijolo com escada de incendio le como bairro
+## antigo, e torre de vidro le como centro.
+## Toda zona precisa de opcao RASA, e nao so por estilo: o orcamento de
+## profundidade e metade do miolo do quarteirao, entao numa quadra de 45 m ele e
+## 17.6 m — e TODO modelo do pacote downtown tem de 19 a 40 m de profundidade.
+## Sem uma opcao que caiba, a quadra inteira nascia vazia (aconteceu com 2).
+## Predio baixo e antigo espremido entre torres tambem e o que downtown de
+## verdade tem.
+const ZONAS := {
+	"centro": ["downtown_buildings", "new_york_buildings",
+		"old_building_pack_lowpoly", "bordeaux_flat_1_corner_france"],
+	"meio": ["brownstone_building_set", "new_york_buildings", "tenement_house",
+		"bordeaux_flat_2_corner_france", "bordeaux_flat_1_corner_france",
+		"old_building_pack_lowpoly"],
+	"borda": ["old_building_pack_lowpoly", "brownstone_building_set",
+		"bordeaux_flat_1_corner_france", "tenement_house"],
+	"industrial": ["industrial_buildings_sets", "old_building_pack_lowpoly"],
+}
+
+## Pacotes cuja construcao serve de CASA de entrega. Galpao industrial e torre
+## de escritorio nao servem: o cliente espera na calcada em frente de casa.
+const RESIDENCIAIS := ["brownstone_building_set", "tenement_house",
+	"bordeaux_flat_1_corner_france", "bordeaux_flat_2_corner_france",
+	"old_building_pack_lowpoly"]
+
+## Bolsoes industriais, em coordenada de mundo. "Industrial a parte" e por
+## POSICAO, e nao por anel de distancia: zona industrial de cidade de verdade e
+## um pedaco continuo do mapa (perto da ferrovia, do porto, da saida), nao uma
+## casca em volta do centro.
+@export var industrial_centers: Array[Vector3] = []
+@export var industrial_radius := 90.0
+
+## Props de praca (arvore, banco, coreto, ponte) que vieram no pacote
+## `european_buildings_pack3` — que apesar do nome NAO tem predio nenhum.
+@export var usar_props_realistas := true
+
 ## Fracao dos lotes construidos com geometria GERADA (ver BuildingFactory.gd) em
-## vez de um modelo do kit. 0 = so kit, 1 = so gerado.
+## vez de um modelo do kit. 0 = so kit, 1 = so gerado. Ignorado quando
+## `usar_realistas` esta ligado.
 ##
 ## POR QUE MISTURAR, e nao trocar tudo. A medicao de 2026-08-03 apontou que o
 ## aspecto de desenho vem da GEOMETRIA (caixa lisa com a janela pintada na
@@ -146,7 +203,16 @@ func _build_block(x_street_a: float, x_street_b: float, z_street_a: float, z_str
 	if _is_excluded(Vector3(center.x, 0.0, center.y)):
 		return
 
-	match _lot_kind():
+	# Lote especial so cabe em quarteirao curto ou medio (ver
+	# MIOLO_MAX_LOTE_ESPECIAL). O sorteio acontece SEMPRE, mesmo quando o
+	# resultado e descartado: ele consome o RNG, e pular o sorteio nas quadras
+	# grandes mudaria o layout de toda a cidade depois delas — a mesma armadilha
+	# do sorteio de material em 2026-08-03.
+	var especial := _lot_kind()
+	var miolo: float = minf(x_max - x_min, z_max - z_min)
+	if miolo > MIOLO_MAX_LOTE_ESPECIAL:
+		especial = "buildings"
+	match especial:
 		"park":
 			_build_park(x_min, x_max, z_min, z_max)
 			return
@@ -185,9 +251,39 @@ func _build_block(x_street_a: float, x_street_b: float, z_street_a: float, z_str
 
 	var z_side_min := z_min + depth_south + lot_gap
 	var z_side_max := z_max - depth_north - lot_gap
+	var depth_west := 0.0
+	var depth_east := 0.0
 	if z_side_max - z_side_min > 2.0:
-		_fill_edge(pool, kinds, z_side_min, z_side_max, x_min, false, false, depth_budget_x)
-		_fill_edge(pool, kinds, z_side_min, z_side_max, x_max, false, true, depth_budget_x)
+		depth_west = _fill_edge(pool, kinds, z_side_min, z_side_max, x_min, false, false, depth_budget_x)
+		depth_east = _fill_edge(pool, kinds, z_side_min, z_side_max, x_max, false, true, depth_budget_x)
+
+	# MIOLO: um segundo anel de predios, quando ainda sobra patio depois do
+	# primeiro.
+	#
+	# Com a grade uniforme antiga (miolo de 28 m) nunca sobrava nada. Com
+	# quarteirao de 90 m o miolo tem 80 m, e as quatro fileiras de fachada
+	# deixavam um vazio de 20 a 40 m no meio — que na foto aerea aparece como uma
+	# clareira pavimentada dentro de cada quadra, e da rua aparece como um descampado
+	# entre dois predios. Quadra grande de cidade de verdade e construida por
+	# dentro tambem.
+	#
+	# O anel interno e recuado pela profundidade JA USADA em cada borda, entao ele
+	# nao pode sobrepor o externo por construcao — mesma garantia que ja protege
+	# as bordas opostas de se encontrarem no meio.
+	var ix_min := x_min + depth_west + lot_gap
+	var ix_max := x_max - depth_east - lot_gap
+	var iz_min := z_side_min + depth_south + lot_gap
+	var iz_max := z_side_max - depth_north - lot_gap
+	if ix_max - ix_min > MIOLO_MINIMO and iz_max - iz_min > MIOLO_MINIMO:
+		var ib_z := (iz_max - iz_min) * 0.5 - lot_gap
+		var ib_x := (ix_max - ix_min) * 0.5 - lot_gap
+		var id_s := _fill_edge(pool, kinds, ix_min, ix_max, iz_min, true, false, ib_z)
+		var id_n := _fill_edge(pool, kinds, ix_min, ix_max, iz_max, true, true, ib_z)
+		var iz2_min := iz_min + id_s + lot_gap
+		var iz2_max := iz_max - id_n - lot_gap
+		if iz2_max - iz2_min > 2.0:
+			_fill_edge(pool, kinds, iz2_min, iz2_max, ix_min, false, false, ib_x)
+			_fill_edge(pool, kinds, iz2_min, iz2_max, ix_max, false, true, ib_x)
 
 	var shops := _shop_batch.build("Vitrines")
 	if shops != null:
@@ -231,14 +327,24 @@ func _build_park(x_min: float, x_max: float, z_min: float, z_max: float) -> void
 	# Arvores numa grade com sacudida, nao em posicao puramente sorteada: com
 	# sorteio livre duas caem uma dentro da outra (a verificacao pegou 8 pares
 	# assim). O passo sai da largura real do maior modelo do pool.
-	if not tree_scenes.is_empty():
+	# Arvore realista quando ha (ver _arvores_realistas). A do kit e estilizada e
+	# ficava gritando ao lado de uma fachada fotografada — e exatamente a mistura
+	# de estilos que este projeto ja corrigiu duas vezes.
+	var pool_arv: Array = tree_scenes
+	var esc_arv := tree_scale
+	var reais := _arvores_realistas()
+	if usar_props_realistas and not reais.is_empty():
+		pool_arv = reais
+		esc_arv = 1.0   # o fatiador ja normaliza pra metros
+
+	if not pool_arv.is_empty():
 		# Maior lado, nao diagonal: copa de arvore e aproximadamente redonda,
 		# entao o AABB quase nao cresce ao girar. Com a diagonal (como estava),
 		# a arvore maior estourava meio quarteirao, o numero de colunas virava
 		# ZERO e a praca ficava sem arvore nenhuma.
 		var step := 0.0
-		for scene: PackedScene in tree_scenes:
-			var fp := _footprint(scene, 0.0, tree_scale)
+		for scene: PackedScene in pool_arv:
+			var fp := _footprint(scene, 0.0, esc_arv)
 			step = maxf(step, maxf(fp.x, fp.y))
 		# Copa pode se tocar um pouco (arvore nao e caixa), entao o passo da
 		# grade e menor que a largura medida — senao cabe uma arvore por
@@ -252,13 +358,13 @@ func _build_park(x_min: float, x_max: float, z_min: float, z_max: float) -> void
 					for cz in range(rows):
 						if _rng.randf() < 0.15:
 							continue
-						var scene: PackedScene = tree_scenes[_rng.randi() % tree_scenes.size()]
+						var scene: PackedScene = pool_arv[_rng.randi() % pool_arv.size()]
 						var jitter := step * 0.18
 						var pos := Vector3(
 							center.x + sx * (2.2 + cx * step + _rng.randf_range(-jitter, jitter)),
 							0.0,
 							center.z + sz * (2.2 + cz * step + _rng.randf_range(-jitter, jitter)))
-						_place_prop(scene, pos, _rng.randf_range(0.0, 360.0), tree_scale)
+						_place_prop(scene, pos, _rng.randf_range(0.0, 360.0), esc_arv)
 
 	# Bancos de frente pro caminho central (o -Z do banco e o encosto).
 	for side in [-1.0, 1.0]:
@@ -493,17 +599,30 @@ func _fill_edge(pool: Array, kinds: Array, run_min: float, run_max: float, edge_
 					depth = d["depth"]
 					break
 				continue
-			var candidate: PackedScene = pool[_rng.randi() % pool.size()]
-			var fp := _footprint(candidate, rot_deg)
-			if fp == Vector2.ZERO:
-				continue
-			var w: float = fp.x if horizontal else fp.y
-			var dd: float = fp.y if horizontal else fp.x
-			if cursor + w <= run_max and dd <= depth_budget:
-				scene = candidate
-				width = w
-				depth = dd
+			# Sorteia entre os que CABEM, em vez de sortear e torcer.
+			#
+			# Antes eram 12 tentativas ao acaso e, falhando as 12, a borda inteira
+			# era abandonada. Com o pool realista a maioria dos modelos e funda
+			# (10 a 40 m), entao numa quadra estreita quase todo sorteio falhava:
+			# 2 quarteiroes da cidade nasceram COMPLETAMENTE vazios, e o resto
+			# ficou mais ralo do que precisava. Como a pegada de cada modelo e
+			# medida uma vez e fica em cache, varrer o pool aqui e barato.
+			var cabem: Array = []
+			for candidate: PackedScene in pool:
+				var fp := _footprint(candidate, rot_deg)
+				if fp == Vector2.ZERO:
+					continue
+				var w: float = fp.x if horizontal else fp.y
+				var dd: float = fp.y if horizontal else fp.x
+				if cursor + w <= run_max and dd <= depth_budget:
+					cabem.append([candidate, w, dd])
+			if cabem.is_empty():
 				break
+			var escolha: Array = cabem[_rng.randi() % cabem.size()]
+			scene = escolha[0]
+			width = escolha[1]
+			depth = escolha[2]
+			break
 		if scene == null and recipe.is_empty():
 			break
 
@@ -526,7 +645,7 @@ func _fill_edge(pool: Array, kinds: Array, run_min: float, run_max: float, edge_
 
 		if not _is_excluded(pos):
 			var casa: bool = recipe["kind"] == BuildingFactory.Kind.CASA \
-				if not recipe.is_empty() else scene in house_scenes
+				if not recipe.is_empty() else _e_casa(scene)
 			# A vitrine em relevo (StreetFurniture) e a vitrine do gerador
 			# ocupam o MESMO terreo. Decidir antes de construir deixa o gerador
 			# fechar aquele pano com parede lisa, senao ficam dois vidros a 26 cm
@@ -556,6 +675,11 @@ func _fill_edge(pool: Array, kinds: Array, run_min: float, run_max: float, edge_
 ## sorteio tem que acontecer uma vez so — rolar duas vezes consumiria o RNG em
 ## dobro e mudaria o layout da cidade inteira.
 func _wants_storefront(casa: bool) -> bool:
+	# Predio realista ja vem com o terreo comercial modelado (vitrine, toldo,
+	# porta). Colar a vitrine de primitivas por cima poria duas lojas no mesmo
+	# pano de parede.
+	if usar_realistas:
+		return false
 	if casa or not storefronts_enabled:
 		return false
 	return _rng.randf() <= storefront_chance
@@ -596,7 +720,7 @@ func _footprint(scene: PackedScene, rot_deg: float, scale := -1.0) -> Vector2:
 		return Vector2.ZERO
 	var swapped := int(round(absf(rot_deg) / 90.0)) % 2 == 1
 	var fp := Vector2(base.y, base.x) if swapped else base
-	return fp * (scale if scale > 0.0 else building_scale)
+	return fp * (scale if scale > 0.0 else _scale_of(scene))
 
 func _base_footprint(scene: PackedScene) -> Vector2:
 	return _measure(scene)["size"]
@@ -607,7 +731,7 @@ func _base_footprint(scene: PackedScene) -> Vector2:
 ## e os predios acabam se sobrepondo ou invadindo a rua.
 func _center_offset(scene: PackedScene, rot_deg: float, scale := -1.0) -> Vector2:
 	var c: Vector2 = _measure(scene)["center"]
-	return c.rotated(-deg_to_rad(rot_deg)) * (scale if scale > 0.0 else building_scale)
+	return c.rotated(-deg_to_rad(rot_deg)) * (scale if scale > 0.0 else _scale_of(scene))
 
 func _measure(scene: PackedScene) -> Dictionary:
 	var key := scene.resource_path
@@ -630,6 +754,8 @@ func _measure(scene: PackedScene) -> Dictionary:
 ## grade): miolo = arranha-ceu/comercio, meio = comercio/casa, borda =
 ## casa/galpao industrial.
 func _pool_for(center: Vector2) -> Array:
+	if usar_realistas:
+		return _pool_realista(_zona_de(center))
 	var ring: float = maxf(absf(center.x), absf(center.y))
 	var pool: Array = []
 	if ring < downtown_extent:
@@ -650,6 +776,11 @@ func _pool_for(center: Vector2) -> Array:
 ## proposito: se as duas listas discordarem, o miolo ganha casa gerada ao lado de
 ## arranha-ceu do kit e o zoneamento perde sentido.
 func _kinds_for(center: Vector2) -> Array:
+	# Cidade realista nao usa o gerador de geometria: os dois resolvem o mesmo
+	# problema, e misturar geometria gerada com fotogrametria e a mistura de
+	# estilos que este projeto ja corrigiu duas vezes.
+	if usar_realistas:
+		return []
 	var ring: float = maxf(absf(center.x), absf(center.y))
 	if ring < downtown_extent:
 		# Torre em dobro, mesma razao do pool do kit: com uma copia so ela se
@@ -660,6 +791,86 @@ func _kinds_for(center: Vector2) -> Array:
 		return [BuildingFactory.Kind.COMERCIO, BuildingFactory.Kind.CASA]
 	return [BuildingFactory.Kind.CASA, BuildingFactory.Kind.GALPAO]
 
+## Em que zona cai um quarteirao. O bolsao industrial e testado ANTES do anel,
+## porque ele e uma regiao do mapa e nao um degrau de distancia — um bolsao pode
+## encostar no meio da cidade.
+func _zona_de(center: Vector2) -> String:
+	for c in industrial_centers:
+		if Vector2(center.x - c.x, center.y - c.z).length() < industrial_radius:
+			return "industrial"
+	var ring: float = maxf(absf(center.x), absf(center.y))
+	if ring < downtown_extent:
+		return "centro"
+	if ring < midtown_extent:
+		return "meio"
+	return "borda"
+
+## Cenas de uma zona, carregadas do catálogo gerado pelo fatiador.
+##
+## Cache estatico: sao 93 cenas, cada quarteirao pede a lista da sua zona, e
+## carregar de novo a cada um dos ~200 quarteiroes multiplicaria o tempo de
+## carga da cidade por nada.
+static var _cache_zona: Dictionary = {}
+
+func _pool_realista(zona: String) -> Array:
+	if _cache_zona.has(zona):
+		return _cache_zona[zona]
+	var pool: Array = []
+	for pacote: String in ZONAS.get(zona, []):
+		for caminho: String in CatalogoRealistas.POR_PACOTE.get(pacote, []):
+			var cena := load(caminho) as PackedScene
+			if cena != null:
+				pool.append(cena)
+	_cache_zona[zona] = pool
+	return pool
+
+## Escala de um modelo. Os predios realistas ja vem em METROS (o fatiador
+## normaliza), enquanto o kit do Kenney usa o modulo 7.5 — e a mesma cena de
+## quiosque/guarda-sol do kit continua sendo usada nos lotes especiais, entao
+## nao da pra ter um numero so.
+func _scale_of(scene: PackedScene) -> float:
+	if scene != null and scene.resource_path.begins_with("res://assets/realistas_prontos/"):
+		return 1.0
+	return building_scale
+
+## As ARVORES do pacote `european_buildings_pack3`, que apesar do nome nao tem
+## predio nenhum: sao arvore, banco, poste, coreto e ponte de praca.
+##
+## Classificadas pela MEDIDA, e nao por indice no catalogo. Indice fixo quebraria
+## calado toda vez que o fatiador mudasse de criterio e renumerasse as pecas — e
+## ele ja renumerou tres vezes nesta sessao. Arvore aqui e o que e alto o
+## bastante pra dar sombra e estreito o bastante pra caber numa praca.
+static var _arvores_cache: Array = []
+static var _arvores_prontas := false
+
+func _arvores_realistas() -> Array:
+	if _arvores_prontas:
+		return _arvores_cache
+	_arvores_prontas = true
+	for caminho: String in CatalogoRealistas.POR_PACOTE.get("european_buildings_pack3", []):
+		var cena := load(caminho) as PackedScene
+		if cena == null:
+			continue
+		var d := _measure(cena)
+		var tam: Vector2 = d["size"]
+		var alt: float = float(d["top"])
+		if alt >= 5.0 and alt <= 22.0 and maxf(tam.x, tam.y) <= 12.0:
+			_arvores_cache.append(cena)
+	return _arvores_cache
+
+## Serve de casa de entrega? Nos realistas, sai do PACOTE de origem; no kit
+## antigo, da lista de cenas de casa.
+func _e_casa(scene: PackedScene) -> bool:
+	if scene == null:
+		return false
+	if not usar_realistas:
+		return scene in house_scenes
+	var arq := scene.resource_path.get_file()
+	for p: String in RESIDENCIAIS:
+		if arq.begins_with(p):
+			return true
+	return false
+
 func _is_excluded(pos: Vector3) -> bool:
 	for e in exclude_points:
 		if Vector2(pos.x - e.x, pos.z - e.z).length() < exclude_radius:
@@ -669,7 +880,7 @@ func _is_excluded(pos: Vector3) -> bool:
 func _place(scene: PackedScene, pos: Vector3, rot_deg: float) -> Node3D:
 	var body := CITY_BUILDING_SCENE.instantiate()
 	body.visual_scene = scene
-	body.visual_scale = building_scale
+	body.visual_scale = _scale_of(scene)
 	body.visual_rotation_y_degrees = rot_deg
 	body.add_to_group("city_building")
 	add_child(body)
@@ -756,12 +967,16 @@ func _add_generated_rooftop_props(d: Dictionary, pos: Vector3, rot_deg: float) -
 ## So em telhado plano: casa do kit suburbano tem telhado inclinado e o prop
 ## ficaria flutuando.
 func _add_rooftop_props(scene: PackedScene, pos: Vector3, rot_deg: float) -> void:
+	# Os modelos realistas ja trazem o proprio entulho de cobertura (caixa
+	# d'agua, casa de maquinas, antena) modelado.
+	if usar_realistas:
+		return
 	if not rooftop_props_enabled or scene in house_scenes:
 		return
 	if _rng.randf() > rooftop_prop_chance:
 		return
 	var footprint := _footprint(scene, rot_deg)
-	var top: float = float(_measure(scene)["top"]) * building_scale
+	var top: float = float(_measure(scene)["top"]) * _scale_of(scene)
 	if footprint.x < 3.0 or footprint.y < 3.0:
 		return
 	# Recuo generoso: prop encostado na borda fica meio pra fora do telhado nos
@@ -802,6 +1017,11 @@ func _add_rooftop_props(scene: PackedScene, pos: Vector3, rot_deg: float) -> voi
 ## cidade inteira fica da mesma cor. albedo_color multiplica a textura, entao
 ## um tom por predio da variedade de fachada sem perder o desenho das janelas.
 func _tint(body: Node3D) -> void:
+	# Predio realista mantem a propria textura. O `CitySurface` foi feito pra
+	# salvar o atlas de 64x64 do kit; jogado por cima de uma fachada
+	# fotografada, so apaga o que ela tem de bom.
+	if usar_realistas:
+		return
 	if facade_colors.is_empty():
 		return
 	var color: Color = facade_colors[_rng.randi() % facade_colors.size()]

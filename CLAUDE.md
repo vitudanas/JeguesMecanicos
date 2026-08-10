@@ -2706,6 +2706,110 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     loop, attach, scale, yard, settings, audio, ui, obstacles, save, loading,
     economy, shop, staff.
 
+- **2026-08-09** — Usuário pediu pra tirar a cidade inteira e refazer **só com os
+  prédios realistas**, com boa densidade e diversidade, quarteirões maiores e
+  menores, área industrial à parte e o campo mais cheio. No meio da rodada pediu
+  também pra ir com calma, sem pular etapas, conferindo tudo. Feito.
+  - **Fatiador** (`tools/fatiar_realistas.gd`, duas passadas: `medir` e
+    `fatiar`). Dos 15 pacotes baixados, **9 deram 107 peças** —
+    93 prédios e 14 props de praça. Os outros 6 ficaram de fora, e a razão é
+    diferente em cada um:
+    - *não dá pra fatiar por código* — `city_pack_7` tem 105 malhas agrupadas
+      **por material** (cada uma com vários prédios fundidos, espalhados por
+      69 km), `factory_low_poly` são 4 malhas de 10 km,
+      `old_industrial_building` 5 de 3,4 km e `warehouses` é **uma** malha de
+      246 m. Os quatro precisam do Blender.
+    - *fatiam bem mas não servem* — e **os três só apareceram na folha de
+      contato, nenhum número os denunciaria**: `low_poly_city_buildings` é uma
+      **maquete de skyline inteira** fundida num bloco; `simple_low_poly_village`
+      são cabanas medievais de palha (mistura de estilo, que este projeto já
+      corrigiu duas vezes); e `european_buildings_pack3`, apesar do nome, **não
+      tem prédio nenhum** — é árvore, banco, poste, coreto e ponte. Esse último
+      virou a arborização das praças, que era justamente onde ainda havia árvore
+      estilizada ao lado de fachada fotografada.
+  - **Nenhum pacote vinha em metros** (de 4,8 m a 69 km de caixa), então a escala
+    sai de uma altura-alvo por pacote, calibrada olhando a folha de contato com
+    uma **régua de 1,80 m** — a altura do jogador — ao lado de cada prédio. Sem
+    referência humana no quadro não dá pra julgar escala: prédio bonito sozinho
+    parece certo em qualquer tamanho.
+  - **Metade dos prédios nascia de COSTAS pra rua.** A primeira versão só punha o
+    lado mais longo em X, e largura/profundidade não dizem onde é a frente — a
+    folha do brownstone saiu com fileira de parede de tijolo lisa onde devia ter
+    janela e escada de entrada. O sinal que resolveu é a **densidade de geometria
+    por lado**: fachada tem janela, cornija e portal modelados, fundo é parede
+    quase chapada, então contar vértice por direção separa os dois sem depender
+    de textura nem de nome de material.
+  - **Quarteirões variados** (`tools/expand_world.py variado`): o espaçamento
+    deixou de ser 37,5 em todo lugar e passou a alternar **90, 45, 67,5, 90, 45**
+    do centro pra fora (todos múltiplos exatos do tile de 7,5, que é a trava
+    documentada da malha viária). Não era só estética: o orçamento de
+    profundidade é metade do miolo, e com 37,5 ele dava 13,8 m — os prédios
+    realistas têm de 7 a 40 m de profundidade e **a maioria simplesmente não
+    cabia**.
+    - A ordem do padrão saiu de MEDIÇÃO: com o 90 no meio, as quadras do centro
+      ficavam com 45 e 67,5 e **nenhuma torre alta cabia** — a cidade nascia com
+      37 m de prédio mais alto tendo modelos de 102 m no catálogo.
+  - **Miolo de quarteirão construído** (`MIOLO_MINIMO`): com quadra de 90 m sobra
+    um vazio de 20 a 40 m depois das quatro fileiras de fachada, que da rua lê
+    como descampado entre dois prédios. Agora um segundo anel é levantado lá
+    dentro, recuado pela profundidade já usada — então não pode sobrepor o
+    externo por construção.
+  - **Lote especial só em quadra curta ou média** (`MIOLO_MAX_LOTE_ESPECIAL`):
+    praça/posto/estacionamento/feira foram calibrados quando todo miolo tinha
+    28 m; numa quadra de 90 m viravam um descampado de 80 m. A foto do anel do
+    meio saiu com metade da tela ocupada por um estacionamento vazio até o
+    horizonte.
+  - **Sortear entre os que CABEM**, em vez de sortear e torcer: eram 12 tentativas
+    ao acaso e, falhando as 12, a borda inteira era abandonada. Com o pool
+    realista (a maioria funda) isso falhava muito. Trocado por varrer o pool
+    filtrando quem cabe — 1005 → 1074 prédios só com isso.
+  - **Zona industrial à parte** é por POSIÇÃO (dois bolsões de 95 m de raio), e
+    não por anel de distância: zona industrial de cidade de verdade é um pedaço
+    contínuo do mapa, não uma casca em volta do centro.
+  - **Resultado medido**: **1036 prédios, todos realistas**, altura média 18,3 m
+    (era 8,3), mais alto 80,8 m, 35% de ocupação, 435 casas de entrega, 100
+    quarteirões e **nenhum vazio**. E mais barato que a cidade antiga: **1116
+    chamadas de desenho** contra 1370. Campo com 3580 props (era ~1130) e os 8
+    clusters rurais de volta ao anel de natureza.
+  - **Três defeitos que eram das FERRAMENTAS, não do jogo** — e os três me
+    fizeram quase "consertar" código que estava certo:
+    1. *O `expand_world.py` não era idempotente*. Ele patcheia a partir de
+       valores literais do estado original, então rodando sobre um mundo já
+       expandido: não achava os campos (viraram regex), escalava a posição dos
+       clusters **de novo** (as 5 fazendas foram parar a ~1240 do centro, ALÉM
+       da serra) e — o pior — **alocava ids de ExtResource novos enquanto pulava
+       a declaração**, porque via que o script já estava declarado. O `Town.tscn`
+       ficou apontando pra `ExtResource("421")` inexistente e o Godot recusava a
+       cena inteira com um "Parse error" que só aponta a linha do nó.
+    2. *O verificador achava o quarteirão dividindo a coordenada por UM
+       espaçamento.* Isso só vale em grade uniforme. Com quadras de 45/67,5/90 o
+       índice saía errado: quadra cheia aparecia vazia e outra contava em dobro.
+       **Ele reprovou a cidade três vezes por um defeito dele** — e eu cheguei a
+       fazer duas mudanças no gerador tentando resolver "quarteirão vazio" antes
+       de ir ler como o teste media. As duas mudanças ficaram (são boas por
+       conta própria), mas o motivo que eu dei pra elas estava errado.
+    3. *A lista de exclusão apontava pro lugar errado*: a oficina do jogador
+       estava escrita à mão em -377,5 no meu script enquanto o `expand_world` a
+       punha em -400. Passou a ser LIDA do arquivo — número repetido em dois
+       lugares vira dois números.
+  - **Risco de build que quase passou**: as cenas fatiadas embutem a malha mas
+    **referenciam as texturas** dentro de `assets/realistas/`, que estava inteiro
+    no `exclude_filter`. Exportar assim daria a cidade toda sem textura no
+    binário — o mesmo defeito de 2026-08-02. O filtro passou a cortar só a
+    geometria crua (`scene.gltf`/`scene.bin`, já assada nos `.scn`) e os 4
+    pacotes inúteis, mantendo as texturas.
+  - **Catálogo com caminhos literais** (`assets/realistas_prontos/catalogo.gd`,
+    gerado): a alternativa era varrer o diretório em runtime, e caminho montado
+    por varredura fica **invisível pro auditor do `.pck`** — a cidade nasceria
+    vazia só no binário exportado, sem erro nenhum em desenvolvimento.
+  - **Achado que vale pra próxima sessão**: `tools/verify/attach_test.tscn` é
+    **instável**, e não por causa desta rodada. `Vehicle` sorteia o modelo com
+    `rng.randomize()`, então o teste mede um dos 6 carros ao acaso: na suíte ele
+    reprovou o ponto do radiador ("só 19% das posições conseguem mirar") e,
+    rodado sozinho logo depois, passou com 75%. Ou o teste passa a cobrir os 6
+    modelos (como o `drive_test` já faz), ou um dos modelos tem mesmo o radiador
+    difícil — e aí é defeito de jogo, na mecânica central. **Não investigado.**
+
 ### Pendências pedidas e ainda NÃO feitas
 
 Nenhuma das três pendências anteriores continua aberta. O que sobrou de

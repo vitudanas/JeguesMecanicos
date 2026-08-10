@@ -35,6 +35,38 @@ def street_axes(blocks: int):
     return [round(-half + i * SPACING, 3) for i in range(blocks + 1)]
 
 
+# Espacamento dos quarteiroes, do centro pra fora, espelhado nos dois lados.
+#
+# POR QUE VARIADO. A grade era uniforme (37.5 em todo lugar), e com ela o miolo
+# de cada quarteirao dava 28.3 m: um orcamento de profundidade de 13.8 m por
+# lote. Os predios realistas tem de 7 a 40 m de profundidade, entao a maioria
+# simplesmente NAO CABIA. Alem disso quarteirao todo igual e o que mais denuncia
+# grade gerada — cidade de verdade tem quadra grande e quadra curta.
+#
+# Todo valor e multiplo EXATO do tile de 7.5 (45 = 6 tiles, 67.5 = 9, 90 = 12).
+# Essa e a trava documentada da malha viaria: espacamento que nao e multiplo do
+# tile abre um vao em cada aproximacao de esquina (changelog 2026-08-03).
+# Ordem escolhida por MEDIDA, nao por gosto: as torres do pacote downtown tem
+# 35 a 41 m de PROFUNDIDADE, e o orcamento de um quarteirao e metade do miolo.
+# Com o 90 no meio do padrao, as quadras do centro ficavam com 45 e 67.5 (17.6 e
+# 28.9 m de orcamento) e NENHUMA torre alta cabia — a cidade nascia com 37 m de
+# predio mais alto tendo modelos de 102 m no catalogo. Com o 90 encostado no
+# centro, o miolo tem 80.8 m e as torres entram.
+PADRAO = [90.0, 45.0, 67.5, 90.0, 45.0]
+
+
+def street_axes_variado(padrao=None):
+    padrao = padrao or PADRAO
+    for s in padrao:
+        if abs(s / 7.5 - round(s / 7.5)) > 1e-6:
+            raise SystemExit("espacamento %g nao e multiplo do tile 7.5" % s)
+    pos, acc = [0.0], 0.0
+    for s in padrao:
+        acc += s
+        pos.append(acc)
+    return [round(-v, 3) for v in reversed(pos[1:])] + [round(v, 3) for v in pos]
+
+
 def fmt_floats(vals):
     return "Array[float](%s)" % ("[" + ", ".join(_num(v) for v in vals) + "]")
 
@@ -72,7 +104,7 @@ class Patcher:
         print("  ok  %s" % label)
         self.flush()
 
-    def re_sub(self, pattern, new, label, count):
+    def re_sub(self, pattern, new, label, count=1):
         found = len(re.findall(pattern, self.text, re.M))
         if found != count:
             raise SystemExit("FALHOU %s: esperava %d, achei %d (%s)"
@@ -90,13 +122,17 @@ class Patcher:
 def main():
     if len(sys.argv) < 2:
         raise SystemExit(__doc__)
-    blocks = int(sys.argv[1])
     dry = "--dry" in sys.argv
-    if blocks % 2 or blocks < 2:
-        raise SystemExit("use um numero PAR de quarteiroes (a cidade e centrada em 0)")
+    if sys.argv[1] == "variado":
+        axes = street_axes_variado()
+        blocks = len(axes) - 1
+    else:
+        blocks = int(sys.argv[1])
+        if blocks % 2 or blocks < 2:
+            raise SystemExit("use um numero PAR de quarteiroes (a cidade e centrada em 0)")
+        axes = street_axes(blocks)
 
     old_half = OLD_BLOCKS * SPACING / 2.0          # 112.5
-    axes = street_axes(blocks)
     half = axes[-1]                                 # meia-largura da cidade
     k = half / old_half                             # fator dos aneis externos
     city_reach = half + ROAD_REACH                  # ate onde vai o asfalto
@@ -133,34 +169,35 @@ def main():
     # ------------------------------------------------------------ grade de ruas
     old_grid = re.search(r"streets_x = (Array\[float\]\(\[[^\]]*\]\))", p.text).group(1)
     p.re_sub(r"^streets_x = Array\[float\]\(\[[^\]]*\]\)$", "streets_x = " + grid,
-             "streets_x", 2)
+             "streets_x", 4)
     p.re_sub(r"^streets_z = Array\[float\]\(\[[^\]]*\]\)$", "streets_z = " + grid,
-             "streets_z", 2)
+             "streets_z", 4)
     p.re_sub(r"^street_axes_x = Array\[float\]\(\[[^\]]*\]\)$",
              "street_axes_x = " + grid, "street_axes_x", 1)
     p.re_sub(r"^street_axes_z = Array\[float\]\(\[[^\]]*\]\)$",
              "street_axes_z = " + grid, "street_axes_z", 1)
 
     # --------------------------------------------------------------- os aneis
-    p.sub("shader_parameter/city_extent = 135.0",
-          "shader_parameter/city_extent = %.1f" % city_reach, "city_extent do chao")
-    p.sub("inner_extent = 120.0\nouter_extent = 154.0",
+    p.re_sub(r"^shader_parameter/city_extent = [-\d.]+$",
+          "shader_parameter/city_extent = %.1f" % city_reach, "city_extent do chao", 1)
+    p.re_sub(r"^inner_extent = [-\d.]+\nouter_extent = [-\d.]+$",
           "inner_extent = %.1f\nouter_extent = %.1f" % (outskirts_in, outskirts_out),
           "cinturao de transicao")
-    p.sub("exclude_radius = 30.0\nrng_seed = 20260803",
+    p.re_sub(r"^exclude_radius = [-\d.]+\nrng_seed = 20260803$",
           "exclude_radius = 44.0\nrng_seed = 20260803",
           "folga em volta dos clusters (o cinturao encostou no ferro-velho)", 2)
-    p.sub("street_reach = 135.0", "street_reach = %.1f" % street_reach,
+    p.re_sub(r"^street_reach = [-\d.]+$", "street_reach = %.1f" % street_reach,
           "alcance das ruas no cinturao")
-    p.sub("inner_extent = 140.0", "inner_extent = %.1f" % nature_in,
+    p.re_sub(r"^inner_extent = [-\d.]+(?=\nouter_radius)", "inner_extent = %.1f" % nature_in,
           "borda interna da natureza")
-    p.sub("outer_radius = 228.0", "outer_radius = %.1f" % nature_out,
+    p.re_sub(r"^outer_radius = [-\d.]+$", "outer_radius = %.1f" % nature_out,
           "borda externa da natureza")
-    p.sub("foot_radius = 300.0", "foot_radius = %.1f" % mount_foot, "raio da serra")
+    p.re_sub(r"^foot_radius = [-\d.]+$", "foot_radius = %.1f" % mount_foot, "raio da serra", 1)
     # Mais montanhas pra fechar um circulo maior; o TAMANHO delas nao muda.
     novo_count = int(round(44 * mount_foot / 300.0))
-    p.sub("count = 44", "count = %d" % novo_count, "quantidade de montanhas")
-    p.re_sub(r"^size = Vector3\(2200, 1, 2200\)$", "size = Vector3(%d, 1, %d)"
+    p.re_sub(r"(?<=foot_spread = 90.0\n)count = \d+",
+             "count = %d" % novo_count, "quantidade de montanhas")
+    p.re_sub(r"^size = Vector3\(\d+, 1, \d+\)$", "size = Vector3(%d, 1, %d)"
              % (ground, ground), "tamanho do chao", 2)
 
     # -------------------------------------------------- fazendas e ferros-velhos
@@ -192,17 +229,16 @@ def main():
              "exclude_points = " + excl, "exclude_points (natureza e cinturao)", 2)
 
     # ------------------------------------------------------- marcos do jogador
-    p.sub("[node name=\"Junkyard\" parent=\".\" instance=ExtResource(\"3\")]\n"
-          "transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -175, 0, 40)",
-          "[node name=\"Junkyard\" parent=\".\" instance=ExtResource(\"3\")]\n"
-          "transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, %s, 0, %s)"
-          % (_num(junk[0]), _num(junk[1])), "ferro-velho")
-    p.sub("[node name=\"Workshop\" parent=\".\" instance=ExtResource(\"4\")]\n"
-          "transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -175, 0, 0)",
-          "[node name=\"Workshop\" parent=\".\" instance=ExtResource(\"4\")]\n"
-          "transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, %s, 0, 0)"
-          % _num(shop_x), "oficina")
-    p.sub("transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -169, 0.4, 6)",
+    p.re_sub(r'(?<=\[node name="Junkyard" parent="\." instance=ExtResource\("3"\)\]\n)'
+             r'transform = Transform3D\([^)]*\)',
+             "transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, %s, 0, %s)"
+             % (_num(junk[0]), _num(junk[1])), "ferro-velho")
+    p.re_sub(r'(?<=\[node name="Workshop" parent="\." instance=ExtResource\("4"\)\]\n)'
+             r'transform = Transform3D\([^)]*\)',
+             "transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, %s, 0, 0)"
+             % _num(shop_x), "oficina")
+    p.re_sub(r'(?<=\[node name="PlayerSpawn" type="Marker3D" parent="\."\]\n)'
+             r'transform = Transform3D\([^)]*\)',
           "transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, %s, 0.4, %s)"
           % (_num(spawn[0]), _num(spawn[1])), "nascimento do jogador")
 
@@ -235,7 +271,28 @@ def main():
     usados = {int(x) for x in re.findall(r'^\[ext_resource [^\]]*id="(\d+)"\]$',
                                         p.text, re.M)}
     livre = max(usados) + 1
-    ids = {"life": livre, "hazards": livre + 1, "pothole": livre + 2}
+
+    def id_declarado(caminho):
+        """Id de um ext_resource ja declarado, ou None."""
+        m = re.search(r'^\[ext_resource [^\]]*path="%s"[^\]]*id="(\d+)"\]$'
+                      % re.escape(caminho), p.text, re.M)
+        return int(m.group(1)) if m else None
+
+    # REUSAR o id quando o recurso JA esta declarado. Sem isto, rodar a
+    # ferramenta uma segunda vez alocava ids novos (421-423), pulava a
+    # declaracao — porque o `if` abaixo ve que o script ja existe — e escrevia
+    # nos apontando pra ExtResource que nao existe. O Godot recusa a cena
+    # inteira com um "Parse error" que so aponta a linha do no.
+    ja = {k: id_declarado(c) for k, c in (
+        ("life", "res://scripts/CityLife.gd"),
+        ("hazards", "res://scripts/CityHazards.gd"),
+        ("pothole", "res://scenes/world/Pothole.tscn"))}
+    if all(v is not None for v in ja.values()):
+        ids = ja
+        print("  ok  scripts novos ja declarados (ids %d/%d/%d, reusados)"
+              % (ids["life"], ids["hazards"], ids["pothole"]))
+    else:
+        ids = {"life": livre, "hazards": livre + 1, "pothole": livre + 2}
     if 'path="res://scripts/CityLife.gd"' not in p.text:
         p.sub('[ext_resource type="Script" path="res://scripts/MountainRange.gd" id="401"]',
               '[ext_resource type="Script" path="res://scripts/MountainRange.gd" id="401"]\n'

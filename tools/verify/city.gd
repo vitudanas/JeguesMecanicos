@@ -37,7 +37,12 @@ func _run() -> void:
 	var half_road: float = streets_node.road_half_width
 	var sidewalk: float = streets_node.sidewalk_width
 	var clearance: float = blocks_node.road_clearance
-	var spacing: float = float(streets_x[1]) - float(streets_x[0])
+	# Grade NAO uniforme: o relatorio mostra a faixa, e nao um numero so.
+	var gaps: Array[float] = []
+	for i in range(streets_x.size() - 1):
+		gaps.append(float(streets_x[i + 1]) - float(streets_x[i]))
+	gaps.sort()
+	var spacing: float = gaps[gaps.size() / 2]
 
 	print("=== PARAMETROS ===")
 	print("ruas: %d x %d | espacamento %.2f (= %.2f tiles de %.2f) | extent %.2f" % [
@@ -178,14 +183,32 @@ func _census(streets_x: Array) -> void:
 	# ZERO com a taxa ligada e falha dura, e nao um numero curioso no relatorio:
 	# ja aconteceu de um gerador inteiro nao rodar (id de recurso colidindo, em
 	# 2026-08-09) e o verificador seguir dizendo "nenhum problema".
+	var blocos := town.get_node("CityBlocks")
 	var gerados := get_tree().get_nodes_in_group("predio_gerado").size()
-	var taxa: float = town.get_node("CityBlocks").get("generated_ratio")
-	print("gerados: %d de %d (%.0f%%) | taxa pedida %.0f%%" % [
-		gerados, buildings.size(), 100.0 * gerados / maxf(buildings.size(), 1), taxa * 100.0])
-	if taxa > 0.0 and gerados == 0:
-		fail("taxa de geracao e %.2f mas nenhum predio gerado existe na cidade" % taxa)
-	if taxa < 1.0 and gerados == buildings.size() and buildings.size() > 0:
-		fail("taxa de geracao e %.2f mas TODO predio saiu do gerador" % taxa)
+	var realistas := 0
+	for b in buildings:
+		if b.has_method("get") and str(b.get("visual_scene")).contains("realistas_prontos"):
+			realistas += 1
+	var taxa: float = blocos.get("generated_ratio")
+	var so_realista: bool = bool(blocos.get("usar_realistas"))
+	print("gerados: %d | realistas: %d | do kit: %d | de %d" % [
+		gerados, realistas, buildings.size() - gerados - realistas, buildings.size()])
+
+	# Contagem ZERO no gerador ligado e falha dura, e nao um numero curioso no
+	# relatorio: ja aconteceu de um gerador inteiro nao rodar (id de recurso
+	# colidindo, 2026-08-09) e o verificador seguir dizendo "nenhum problema".
+	if so_realista:
+		# Cidade realista: o gerador de geometria fica desligado de proposito, e
+		# quem tem que existir sao os modelos fatiados.
+		if realistas == 0:
+			fail("a cidade e realista mas nenhum predio veio de realistas_prontos")
+		if gerados > 0:
+			fail("%d predio(s) gerados numa cidade que devia ser so realista" % gerados)
+	else:
+		if taxa > 0.0 and gerados == 0:
+			fail("taxa de geracao e %.2f mas nenhum predio gerado existe na cidade" % taxa)
+		if taxa < 1.0 and gerados == buildings.size() and buildings.size() > 0:
+			fail("taxa de geracao e %.2f mas TODO predio saiu do gerador" % taxa)
 
 	var span: float = float(streets_x[streets_x.size() - 1]) - float(streets_x[0])
 	print("ocupacao: %.0f m2 em %.0f m2 = %.0f%%" % [area, span * span, 100.0 * area / (span * span)])
@@ -399,14 +422,29 @@ func _event_spawns() -> void:
 
 # ------------------------------------------------------ 8b. censo por quadra
 
-func _blocks(streets_x: Array, streets_z: Array, spacing: float) -> void:
+## Em qual intervalo da lista de ruas cai uma coordenada, ou -1 se estiver fora.
+##
+## Por BUSCA, e nao dividindo por um espacamento unico. A grade deixou de ser
+## uniforme (quadras de 45, 67.5 e 90 m), e a divisao mapeava o predio pro
+## quarteirao errado: quadras cheias apareciam vazias e outras contavam em
+## dobro. O verificador reprovou a cidade 3 vezes por um defeito que era DELE.
+func _faixa(v: float, ruas: Array) -> int:
+	for i in range(ruas.size() - 1):
+		if v >= float(ruas[i]) and v < float(ruas[i + 1]):
+			return i
+	return -1
+
+func _blocks(streets_x: Array, streets_z: Array, _spacing: float) -> void:
 	var contents := {}
 	for group in ["city_building", "city_prop", "lote_praca", "lote_posto",
 			"lote_estacionamento", "lote_feira"]:
 		for n: Node3D in get_tree().get_nodes_in_group(group):
 			var p := n.global_position
-			var key := "%d|%d" % [floori((p.x - float(streets_z[0])) / spacing),
-				floori((p.z - float(streets_x[0])) / spacing)]
+			var i := _faixa(p.x, streets_z)
+			var j := _faixa(p.z, streets_x)
+			if i < 0 or j < 0:
+				continue
+			var key := "%d|%d" % [i, j]
 			contents[key] = int(contents.get(key, 0)) + 1
 	var empty := 0
 	for j in range(streets_x.size() - 1):

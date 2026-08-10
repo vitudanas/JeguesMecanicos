@@ -204,10 +204,10 @@ adjustment_saturation = 0.92
 ; largura 900) — a montanha ficava com o pe no vazio. Meia largura 1100 devolve
 ; a folga.
 [sub_resource type="BoxShape3D" id="GroundShape"]
-size = Vector3(2700, 1, 2700)
+size = Vector3(3100, 1, 3100)
 
 [sub_resource type="BoxMesh" id="GroundMesh"]
-size = Vector3(2700, 1, 2700)
+size = Vector3(3100, 1, 3100)
 
 [sub_resource type="ShaderMaterial" id="GroundMat"]
 shader = ExtResource("400")
@@ -215,7 +215,7 @@ shader_parameter/grass_color = Color(0.3, 0.38, 0.21, 1)
 shader_parameter/grass_dry_color = Color(0.46, 0.47, 0.28, 1)
 shader_parameter/dirt_color = Color(0.37, 0.31, 0.24, 1)
 shader_parameter/gravel_color = Color(0.44, 0.45, 0.36, 1)
-shader_parameter/city_extent = 285.0
+shader_parameter/city_extent = 360.0
 shader_parameter/city_fade = 115.0
 shader_parameter/macro_scale = 0.007
 shader_parameter/meso_scale = 0.055
@@ -271,21 +271,21 @@ surface_material_override/0 = SubResource("GroundMat")
 shape = SubResource("GroundShape")
 
 [node name="Junkyard" parent="." instance=ExtResource("3")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -325, 0, 40)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -400, 0, 40)
 
 [node name="Workshop" parent="." instance=ExtResource("4")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -325, 0, 0)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -400, 0, 0)
 
 [node name="PlayerSpawn" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -319, 0.4, 6)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -394, 0.4, 6)
 
 [node name="CityBlocks" parent="." instance=ExtResource("100")]
-streets_x = Array[float]([-262.5, -225, -187.5, -150, -112.5, -75, -37.5, 0, 37.5, 75, 112.5, 150, 187.5, 225, 262.5])
-streets_z = Array[float]([-262.5, -225, -187.5, -150, -112.5, -75, -37.5, 0, 37.5, 75, 112.5, 150, 187.5, 225, 262.5])
+streets_x = Array[float]([-337.5, -292.5, -202.5, -135, -90, 0, 90, 135, 202.5, 292.5, 337.5])
+streets_z = Array[float]([-337.5, -292.5, -202.5, -135, -90, 0, 90, 135, 202.5, 292.5, 337.5])
 road_clearance = 4.6
 building_scale = 7.5
-downtown_extent = 30.0
-midtown_extent = 75.0
+downtown_extent = 130.0
+midtown_extent = 260.0
 lot_gap = 0.3
 skyscraper_scenes = Array[PackedScene]([ExtResource("34"), ExtResource("35"), ExtResource("36"), ExtResource("37")])
 commercial_scenes = Array[PackedScene]([ExtResource("22"), ExtResource("23"), ExtResource("24"), ExtResource("25"), ExtResource("26"), ExtResource("27"), ExtResource("28"), ExtResource("29"), ExtResource("30"), ExtResource("31"), ExtResource("32"), ExtResource("33"), ExtResource("149"), ExtResource("150"), ExtResource("151"), ExtResource("152"), ExtResource("153"), ExtResource("154"), ExtResource("155"), ExtResource("156"), ExtResource("157"), ExtResource("158"), ExtResource("159")])
@@ -301,11 +301,14 @@ gas_station_weight = 0.07
 parking_weight = 0.06
 market_weight = 0.05
 rng_seed = 20260803
+usar_realistas = true
+industrial_centers = Array[Vector3]([Vector3(247.5, 0, -247.5), Vector3(-247.5, 0, 247.5)])
+industrial_radius = 95.0
 
 [node name="CityStreets" type="Node3D" parent="."]
 script = ExtResource("41")
-streets_x = Array[float]([-262.5, -225, -187.5, -150, -112.5, -75, -37.5, 0, 37.5, 75, 112.5, 150, 187.5, 225, 262.5])
-streets_z = Array[float]([-262.5, -225, -187.5, -150, -112.5, -75, -37.5, 0, 37.5, 75, 112.5, 150, 187.5, 225, 262.5])
+streets_x = Array[float]([-337.5, -292.5, -202.5, -135, -90, 0, 90, 135, 202.5, 292.5, 337.5])
+streets_z = Array[float]([-337.5, -292.5, -202.5, -135, -90, 0, 90, 135, 202.5, 292.5, 337.5])
 extent = 22.5
 tile_size = 7.5
 road_half_width = 3.0
@@ -321,7 +324,7 @@ light_offset = 3.3
 bus_stop_every_n_tiles = 5
 
 [node name="Farm1" parent="." instance=ExtResource("43")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 438.7, 0, 128.3)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 520, 0, 180)
 main_building = ExtResource("48")
 main_building_rotation_degrees = 0.0
 coop_scene = ExtResource("50")
@@ -340,7 +343,7 @@ tree_max_radius = 21.0
 rng_seed = 101
 
 [node name="Farm2" parent="." instance=ExtResource("43")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -128.3, 0, 443.3)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -200, 0, 540)
 main_building = ExtResource("51")
 main_building_rotation_degrees = 90.0
 coop_scene = ExtResource("55")
@@ -359,7 +362,7 @@ tree_max_radius = 22.0
 rng_seed = 202
 
 [node name="Farm3" parent="." instance=ExtResource("43")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 443.3, 0, -140)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 560, 0, -330)
 main_building = ExtResource("52")
 main_building_rotation_degrees = 180.0
 include_coop = false
@@ -376,7 +379,7 @@ tree_max_radius = 19.0
 rng_seed = 303
 
 [node name="Farm4" parent="." instance=ExtResource("43")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -443.3, 0, -140)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -560, 0, -260)
 main_building = ExtResource("54")
 main_building_rotation_degrees = 270.0
 coop_scene = ExtResource("48")
@@ -395,7 +398,7 @@ tree_max_radius = 23.0
 rng_seed = 404
 
 [node name="Farm5" parent="." instance=ExtResource("43")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 116.7, 0, 448)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 150, 0, 600)
 main_building = ExtResource("53")
 main_building_rotation_degrees = 45.0
 coop_scene = ExtResource("50")
@@ -414,21 +417,21 @@ tree_max_radius = 20.0
 rng_seed = 505
 
 [node name="Scrapyard1" parent="." instance=ExtResource("44")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 245, 0, 408.3)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -520, 0, 240)
 wreck_count = 3
 decor_scenes = Array[PackedScene]([ExtResource("60"), ExtResource("62"), ExtResource("66")])
 decor_count = 6
 rng_seed = 601
 
 [node name="Scrapyard2" parent="." instance=ExtResource("44")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 128.3, 0, -443.3)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 300, 0, -560)
 wreck_count = 4
 decor_scenes = Array[PackedScene]([ExtResource("60"), ExtResource("62"), ExtResource("66")])
 decor_count = 7
 rng_seed = 602
 
 [node name="Scrapyard3" parent="." instance=ExtResource("44")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -233.3, 0, -401.3)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -300, 0, -560)
 wreck_count = 3
 decor_scenes = Array[PackedScene]([ExtResource("60"), ExtResource("62"), ExtResource("66")])
 decor_count = 6
@@ -436,16 +439,16 @@ rng_seed = 603
 
 [node name="NatureScatter" parent="." instance=ExtResource("45")]
 decor_scenes = Array[PackedScene]([ExtResource("64"), ExtResource("65"), ExtResource("66"), ExtResource("67"), ExtResource("68"), ExtResource("69"), ExtResource("70"), ExtResource("71"), ExtResource("75"), ExtResource("76")])
-decor_count = 900
+decor_count = 2800
 decor_height_min = Array[float]([0.30, 0.25, 0.45, 0.14, 0.35, 0.30, 0.14, 0.55, 0.10, 0.12])
 decor_height_max = Array[float]([0.55, 0.45, 0.85, 0.26, 0.60, 0.55, 0.28, 0.95, 0.22, 0.25])
 solid_scenes = Array[PackedScene]([ExtResource("56"), ExtResource("57"), ExtResource("58"), ExtResource("59"), ExtResource("60"), ExtResource("61"), ExtResource("62"), ExtResource("63"), ExtResource("72"), ExtResource("73"), ExtResource("74")])
-solid_count = 230
+solid_count = 780
 solid_height_min = Array[float]([7.0, 7.0, 8.0, 9.0, 8.0, 12.0, 1.0, 0.9, 1.2, 1.4, 1.4])
 solid_height_max = Array[float]([13.0, 13.0, 16.0, 18.0, 14.0, 20.0, 2.0, 1.8, 3.2, 3.6, 3.8])
-inner_extent = 290.0
-outer_radius = 532.9
-exclude_points = Array[Vector3]([Vector3(438.7, 0, 128.3), Vector3(-128.3, 0, 443.3), Vector3(443.3, 0, -140), Vector3(-443.3, 0, -140), Vector3(116.7, 0, 448), Vector3(245, 0, 408.3), Vector3(128.3, 0, -443.3), Vector3(-233.3, 0, -401.3), Vector3(-325, 0, 0), Vector3(-325, 0, 40)])
+inner_extent = 365.0
+outer_radius = 685.1
+exclude_points = Array[Vector3]([Vector3(520, 0, 180), Vector3(-200, 0, 540), Vector3(560, 0, -330), Vector3(-560, 0, -260), Vector3(150, 0, 600), Vector3(-520, 0, 240), Vector3(300, 0, -560), Vector3(-300, 0, -560), Vector3(-400, 0, 0), Vector3(-400, 0, 40)])
 exclude_radius = 44.0
 rng_seed = 20260803
 
@@ -480,13 +483,13 @@ layer_radius = Array[float]([26.0, 34.0, 30.0])
 
 [node name="DirtRoadWorkshop" type="Node3D" parent="." groups=["dirt_road"]]
 script = ExtResource("402")
-points = Array[Vector2]([Vector2(-287, 2.6), Vector2(-294, 2), Vector2(-301, -0.5), Vector2(-308, -1), Vector2(-315, 0), Vector2(-322, 1)])
+points = Array[Vector2]([Vector2(-362, 2.6), Vector2(-369, 2), Vector2(-376, -0.5), Vector2(-383, -1), Vector2(-390, 0), Vector2(-397, 1)])
 
 [node name="MountainRange" type="Node3D" parent="."]
 script = ExtResource("401")
-foot_radius = 700.9
+foot_radius = 901.1
 foot_spread = 90.0
-count = 103
+count = 132
 radius_min = 90.0
 radius_max = 190.0
 height_min = 130.0
@@ -496,26 +499,26 @@ rng_seed = 20260888
 [node name="CityOutskirts" type="Node3D" parent="."]
 script = ExtResource("310")
 scenes = Array[PackedScene]([ExtResource("108"), ExtResource("109"), ExtResource("110"), ExtResource("111"), ExtResource("112"), ExtResource("113"), ExtResource("114"), ExtResource("115"), ExtResource("116"), ExtResource("117"), ExtResource("118"), ExtResource("119"), ExtResource("120"), ExtResource("121"), ExtResource("122"), ExtResource("123"), ExtResource("124"), ExtResource("125"), ExtResource("126"), ExtResource("127"), ExtResource("128"), ExtResource("129"), ExtResource("130"), ExtResource("131"), ExtResource("132"), ExtResource("133"), ExtResource("134"), ExtResource("135"), ExtResource("136")])
-inner_extent = 270.0
-outer_extent = 304.0
+inner_extent = 345.0
+outer_extent = 379.0
 attempts = 620
 scale_near = 6.5
 scale_far = 3.6
 keep_chance_far = 0.22
 spacing = 3.0
-street_axes_x = Array[float]([-262.5, -225, -187.5, -150, -112.5, -75, -37.5, 0, 37.5, 75, 112.5, 150, 187.5, 225, 262.5])
-street_axes_z = Array[float]([-262.5, -225, -187.5, -150, -112.5, -75, -37.5, 0, 37.5, 75, 112.5, 150, 187.5, 225, 262.5])
+street_axes_x = Array[float]([-337.5, -292.5, -202.5, -135, -90, 0, 90, 135, 202.5, 292.5, 337.5])
+street_axes_z = Array[float]([-337.5, -292.5, -202.5, -135, -90, 0, 90, 135, 202.5, 292.5, 337.5])
 street_corridor = 6.0
-street_reach = 285.0
+street_reach = 360.0
 facade_colors = Array[Color]([Color(1, 0.97, 0.92, 1), Color(0.93, 0.88, 0.8, 1), Color(0.87, 0.8, 0.74, 1), Color(0.8, 0.66, 0.58, 1), Color(0.82, 0.84, 0.86, 1), Color(0.74, 0.79, 0.74, 1), Color(0.86, 0.83, 0.7, 1)])
-exclude_points = Array[Vector3]([Vector3(438.7, 0, 128.3), Vector3(-128.3, 0, 443.3), Vector3(443.3, 0, -140), Vector3(-443.3, 0, -140), Vector3(116.7, 0, 448), Vector3(245, 0, 408.3), Vector3(128.3, 0, -443.3), Vector3(-233.3, 0, -401.3), Vector3(-325, 0, 0), Vector3(-325, 0, 40)])
+exclude_points = Array[Vector3]([Vector3(520, 0, 180), Vector3(-200, 0, 540), Vector3(560, 0, -330), Vector3(-560, 0, -260), Vector3(150, 0, 600), Vector3(-520, 0, 240), Vector3(300, 0, -560), Vector3(-300, 0, -560), Vector3(-400, 0, 0), Vector3(-400, 0, 40)])
 exclude_radius = 44.0
 rng_seed = 20260803
 
 [node name="CityLife" type="Node3D" parent="."]
 script = ExtResource("418")
-streets_x = Array[float]([-262.5, -225, -187.5, -150, -112.5, -75, -37.5, 0, 37.5, 75, 112.5, 150, 187.5, 225, 262.5])
-streets_z = Array[float]([-262.5, -225, -187.5, -150, -112.5, -75, -37.5, 0, 37.5, 75, 112.5, 150, 187.5, 225, 262.5])
+streets_x = Array[float]([-337.5, -292.5, -202.5, -135, -90, 0, 90, 135, 202.5, 292.5, 337.5])
+streets_z = Array[float]([-337.5, -292.5, -202.5, -135, -90, 0, 90, 135, 202.5, 292.5, 337.5])
 traffic_scene = ExtResource("6")
 traffic_routes = 24
 cars_per_route = 3
@@ -528,56 +531,57 @@ anim_scene = ExtResource("207")
 
 [node name="CityHazards" type="Node3D" parent="."]
 script = ExtResource("419")
-streets_x = Array[float]([-262.5, -225, -187.5, -150, -112.5, -75, -37.5, 0, 37.5, 75, 112.5, 150, 187.5, 225, 262.5])
-streets_z = Array[float]([-262.5, -225, -187.5, -150, -112.5, -75, -37.5, 0, 37.5, 75, 112.5, 150, 187.5, 225, 262.5])
+streets_x = Array[float]([-337.5, -292.5, -202.5, -135, -90, 0, 90, 135, 202.5, 292.5, 337.5])
+streets_z = Array[float]([-337.5, -292.5, -202.5, -135, -90, 0, 90, 135, 202.5, 292.5, 337.5])
 pothole_scene = ExtResource("420")
 mud_scene = ExtResource("7")
 count = 63
 
+[node name="CityLife" type="Node3D" parent="."]
+script = ExtResource("418")
+streets_x = Array[float]([-337.5, -292.5, -202.5, -135, -90, 0, 90, 135, 202.5, 292.5, 337.5])
+streets_z = Array[float]([-337.5, -292.5, -202.5, -135, -90, 0, 90, 135, 202.5, 292.5, 337.5])
+traffic_scene = ExtResource("6")
+traffic_routes = 12
+cars_per_route = 3
+car_models = Array[PackedScene]([ExtResource("101"), ExtResource("102"), ExtResource("103"), ExtResource("104"), ExtResource("105"), ExtResource("106")])
+pedestrian_scene = ExtResource("15")
+pedestrian_routes = 11
+peds_per_route = 4
+character_models = Array[PackedScene]([ExtResource("200"), ExtResource("201")])
+anim_scene = ExtResource("207")
+
+[node name="CityHazards" type="Node3D" parent="."]
+script = ExtResource("419")
+streets_x = Array[float]([-337.5, -292.5, -202.5, -135, -90, 0, 90, 135, 202.5, 292.5, 337.5])
+streets_z = Array[float]([-337.5, -292.5, -202.5, -135, -90, 0, 90, 135, 202.5, 292.5, 337.5])
+pothole_scene = ExtResource("420")
+mud_scene = ExtResource("7")
+count = 33
+
 [node name="EventSpawnPoint1" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -225, 0.5, -225)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -292.5, 0.5, -292.5)
 
 [node name="EventSpawnPoint2" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -225, 0.5, -75)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -292.5, 0.5, -90)
 
 [node name="EventSpawnPoint3" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -225, 0.5, 75)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -292.5, 0.5, 135)
 
 [node name="EventSpawnPoint4" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -225, 0.5, 225)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -90, 0.5, -292.5)
 
 [node name="EventSpawnPoint5" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -75, 0.5, -225)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -90, 0.5, -90)
 
 [node name="EventSpawnPoint6" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -75, 0.5, -75)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -90, 0.5, 135)
 
 [node name="EventSpawnPoint7" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -75, 0.5, 75)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 135, 0.5, -292.5)
 
 [node name="EventSpawnPoint8" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -75, 0.5, 225)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 135, 0.5, -90)
 
 [node name="EventSpawnPoint9" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 75, 0.5, -225)
-
-[node name="EventSpawnPoint10" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 75, 0.5, -75)
-
-[node name="EventSpawnPoint11" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 75, 0.5, 75)
-
-[node name="EventSpawnPoint12" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 75, 0.5, 225)
-
-[node name="EventSpawnPoint13" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 225, 0.5, -225)
-
-[node name="EventSpawnPoint14" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 225, 0.5, -75)
-
-[node name="EventSpawnPoint15" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 225, 0.5, 75)
-
-[node name="EventSpawnPoint16" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 225, 0.5, 225)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 135, 0.5, 135)
