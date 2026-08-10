@@ -41,6 +41,17 @@ static func build(parent: Node3D) -> Node3D:
 	visual.name = "Visual"
 	parent.add_child(visual)
 	visual.rotation_degrees.y = FACING_DEGREES
+	# Modelo exportado com Z pra cima entra DE BRUCOS. Medido nos recebidos: 4
+	# dos 18 vem assim (o `preparar_personagens` marca quem, comparando a caixa
+	# em Y com a em Z). Deitar o no de volta e o unico jeito, porque o arquivo
+	# nao traz essa informacao.
+	var entrada := Appearance.model()
+	if bool(entrada.get("deitado", false)):
+		# +90, e nao -90: com o sinal invertido o modelo continuava deitado, so
+		# que de bruços em vez de costas (visto na folha de contato). O Godot ja
+		# converte Z-up na importacao do glTF; quem chega deitado e quem foi
+		# exportado errado na origem, e ai o giro tem que ser pro outro lado.
+		visual.rotation_degrees.x = 90.0
 	# A altura pedida vira escala do visual. O `Player` escala junto a capsula e
 	# a cabeca — visual e colisao com alturas diferentes poe o boneco flutuando
 	# ou enterrado.

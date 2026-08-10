@@ -58,6 +58,14 @@ TERMOS = {
         "pedestrian woman game ready",
         "elderly woman character rigged",
         "casual girl character rigged low poly",
+        "beautiful female character rigged",
+        "stylized female character game ready",
+        "realistic woman character rigged animated",
+        "female character animated walk cycle",
+        "girl character rigged animated",
+        "young woman character game ready",
+        "fashion woman character rigged",
+        "stylized girl character animated",
     ],
 }
 
@@ -70,7 +78,7 @@ VETO = ("medieval", "fantasy", "orc", "goblin", "demon", "zombie", "skeleton",
         # misturar estilo e o problema que este projeto ja corrigiu tres vezes.
         # Sem esta lista entraram Sonic, Squidward e "Balerina Capuchino".
         "sonic", "squidward", "spongebob", "mario", "roblox", "fan art",
-        "fanart", "anime", "chibi", "psx", "capuchino", "sahur", "meme",
+        "fanart", "psx", "capuchino", "sahur", "meme",
         "soldier", "soldat", "military", "tactical", "armor", "survivor",
         # Nao-humanos e franquias que passaram na primeira leva: a busca do
         # Sketchfab e ruidosa, e como a lista vai ser baixada INTEIRA cada item

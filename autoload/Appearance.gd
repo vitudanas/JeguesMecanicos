@@ -169,6 +169,13 @@ func shape_applies(entry: Dictionary) -> bool:
 		return false
 	if bool(entry.get("so_masculino", false)) and model_id != "masculino":
 		return false
+	# Modelo BAIXADO so oferece as formas que ele de fato tem (o catalogo mede
+	# isso). Os dois nativos nao declaram `formas` e seguem pela regra de genero
+	# acima. Sem este filtro, escolher um personagem de terceiro mostrava sete
+	# sliders que nao faziam nada.
+	var atual := model()
+	if atual.has("formas"):
+		return (atual["formas"] as Array).has(entry["id"])
 	return true
 
 func set_shape(shape_id: String, value: float) -> void:

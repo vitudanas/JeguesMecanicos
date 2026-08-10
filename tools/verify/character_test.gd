@@ -77,14 +77,17 @@ func _secao_modelos() -> void:
 		var visual := scene.instantiate() as Node3D
 		add_child(visual)
 		var box := _world_aabb(visual)
+		# Modelo exportado com Z pra cima tem a altura util no Z (o catalogo
+		# marca quem). Medindo sempre em Y, o teste reprovava modelo correto.
+		var medida: float = box.size.z if bool(entry.get("deitado", false)) else box.size.y
 		var declared := float(entry["altura_modelo"])
 		# A altura declarada na tabela e o que converte "quero 1,80 m" em escala.
 		# Se ela estiver errada, o personagem sai do tamanho errado e NADA mais
 		# no jogo acusa — por isso ela e conferida contra o arquivo.
-		if absf(box.size.y - declared) > 0.01:
-			fail("%s: altura declarada %.3f m, medida %.3f m" % [entry["id"], declared, box.size.y])
+		if absf(medida - declared) > 0.01:
+			fail("%s: altura declarada %.3f m, medida %.3f m" % [entry["id"], declared, medida])
 		else:
-			ok("%s: %.3f m no arquivo, bate com a tabela" % [entry["id"], box.size.y])
+			ok("%s: %.3f m no arquivo, bate com a tabela" % [entry["id"], medida])
 		visual.queue_free()
 
 # -------------------------------------------------------------------- formas
@@ -101,7 +104,9 @@ func _secao_formas() -> void:
 			Appearance.shapes[str(shape["id"])] = 0.0
 		var applicable := Appearance.active_shapes()
 		if applicable.is_empty():
-			fail("%s: nenhuma forma aplicavel" % model_id)
+			# Modelo de terceiro sem shape key nenhuma e o caso NORMAL: so os
+			# dois nativos tem as formas gravadas pelo build_characters.py.
+			ok("%s: sem formas de corpo (modelo de terceiro)" % model_id)
 			continue
 		for shape_id: String in applicable:
 			Appearance.shapes[shape_id] = 0.85
@@ -111,7 +116,7 @@ func _secao_formas() -> void:
 			await get_tree().process_frame
 			var got := _read_shape(visual, shape_id)
 			if got < 0.0:
-				fail("%s: forma '%s' nao existe em malha nenhuma do modelo" % [model_id, shape_id])
+				fail("%s: a tela oferece a forma '%s' mas ela nao existe na malha" % [model_id, shape_id])
 			elif absf(got - 0.85) > 0.001:
 				fail("%s: pedi %.2f em '%s', a malha ficou com %.2f" % [model_id, 0.85, shape_id, got])
 			Appearance.shapes[shape_id] = 0.0
@@ -156,6 +161,16 @@ func _secao_cabeca() -> void:
 		add_child(host)
 		var visual := PlayerVisual.build(host)
 		await get_tree().process_frame
+		var tem_osso_head := false
+		var esqueleto := CharacterVisual.find_skeleton(visual)
+		if esqueleto:
+			tem_osso_head = esqueleto.find_bone("Head") >= 0
+		if not tem_osso_head:
+			# Sem osso `Head` a cabeca de jegue nao tem onde ser presa. Nao e
+			# defeito: e um modelo de terceiro com outra nomenclatura de osso.
+			ok("%s: sem osso 'Head' — entra sem cabeca de jegue" % model_id)
+			host.queue_free()
+			continue
 		var leftovers: Array[String] = []
 		for mi in _all_meshes(visual):
 			if DonkeyHead.is_head_part(mi.name) and mi.is_visible_in_tree():

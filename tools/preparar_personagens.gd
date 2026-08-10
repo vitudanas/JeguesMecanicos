@@ -119,10 +119,18 @@ func _medir(caminho: String) -> Dictionary:
 		for lib_name in ap.get_animation_library_list():
 			animacoes += ap.get_animation_library(lib_name).get_animation_list().size()
 	var faces := 0
+	var formas: Array[String] = []
 	for mi in _malhas(inst):
 		if mi.mesh:
 			for s in range(mi.mesh.get_surface_count()):
 				faces += mi.mesh.surface_get_arrays(s)[Mesh.ARRAY_VERTEX].size() / 3
+			# Shape keys DO MODELO. Os dois personagens nativos tem as sete do
+			# `tools/build_characters.py`; modelo de terceiro em geral nao tem
+			# nenhuma, e a tela precisa saber disso pra nao mostrar slider morto.
+			for b in range(mi.mesh.get_blend_shape_count()):
+				var nome_forma := str(mi.mesh.get_blend_shape_name(b))
+				if not formas.has(nome_forma):
+					formas.append(nome_forma)
 
 	# Deitado: exportador com Z pra cima. A altura util passa a ser o Z.
 	var deitado: bool = caixa.size.z > caixa.size.y * 1.4
@@ -138,6 +146,7 @@ func _medir(caminho: String) -> Dictionary:
 		"animacoes": animacoes,
 		"faces": faces,
 		"deitado": deitado,
+		"formas": formas,
 		"serve": ("jogador + NPC" if faces <= FACES_PARA_NPC else "jogador") \
 			if ossos > 0 else "estatua",
 	}
@@ -162,8 +171,13 @@ const PERSONAGENS: Array[Dictionary] = [
 			e["id"], _rotulo(str(e["id"])), e["caminho"]]
 		texto += '\t\t"altura_modelo": %.4f, "ossos": %d, "animacoes": %d,\n' % [
 			e["altura"], e["ossos"], e["animacoes"]]
-		texto += '\t\t"faces": %d, "deitado": %s},\n' % [
+		var lista_formas: Array = e.get("formas", [])
+		var aspas: Array[String] = []
+		for f: String in lista_formas:
+			aspas.append('"%s"' % f)
+		texto += '\t\t"faces": %d, "deitado": %s,\n' % [
 			e["faces"], "true" if e["deitado"] else "false"]
+		texto += '\t\t"formas": [%s]},\n' % ", ".join(PackedStringArray(aspas))
 	texto += "]\n"
 	var f := FileAccess.open(SAIDA, FileAccess.WRITE)
 	if f == null:
