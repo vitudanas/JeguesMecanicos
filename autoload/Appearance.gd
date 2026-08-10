@@ -55,9 +55,11 @@ const CATALOGO := "res://assets/personagens/catalogo.gd"
 static var _todos: Array[Dictionary] = []
 static var _todos_prontos := false
 
-## Todos os personagens jogaveis: os dois nativos mais os baixados que TENHAM
-## ESQUELETO. Modelo sem osso e estatua — entra no catalogo pra ser usado como
-## cenario, mas nao como jogador (ver preparar_personagens.gd).
+## Todos os personagens jogaveis: os dois nativos mais os baixados que o
+## catalogo marcou como `jogavel`. Fica de fora quem nao e UMA pessoa de pe —
+## estatua sem osso, arquivo com varios personagens dentro, modelo que vem
+## sentado ou com cenario junto (ver preparar_personagens.gd). Todos continuam
+## no catalogo, porque servem de cenario.
 static func models() -> Array[Dictionary]:
 	if _todos_prontos:
 		return _todos
@@ -72,7 +74,9 @@ static func models() -> Array[Dictionary]:
 	if not mapa.has("PERSONAGENS"):
 		return _todos
 	for e: Dictionary in mapa["PERSONAGENS"]:
-		if int(e.get("ossos", 0)) <= 0:
+		# `jogavel` e o veredito do catalogo; o `ossos > 0` cobre catalogo antigo,
+		# gerado antes de o campo existir.
+		if not bool(e.get("jogavel", int(e.get("ossos", 0)) > 0)):
 			continue
 		if not ResourceLoader.exists(str(e.get("caminho", ""))):
 			continue

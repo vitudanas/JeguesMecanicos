@@ -10,15 +10,25 @@ extends Node
 ## O que ele mede em cada arquivo, e por que cada medida importa:
 ##
 ##   * ALTURA — converte "quero 1,80 m" em escala. Cada pacote vem numa escala
-##     propria (medido nos 7 primeiros: de 1,0 a 145 unidades de caixa).
+##     propria (medido: de 0,7 a 208 unidades).
 ##   * ESQUELETO — sem ossos o modelo e ESTATUA: nao anda. Dos 7 baixados em
 ##     2026-08-09, 6 estavam assim.
 ##   * ANIMACOES PROPRIAS — quem tem anda com as suas; quem so tem esqueleto
 ##     precisa da UAL1 por cima, e ai o esqueleto tem que bater.
-##   * DEITADO — modelo exportado com Z pra cima entra de bruco no jogo. Se a
-##     caixa e mais comprida em Z que em Y, e isso.
+##   * DEITADO — modelo exportado com Z pra cima entra de bruco no jogo.
 ##   * FACES — NPC aparece 72 vezes na tela e o jogador uma. E o numero que diz
 ##     onde cada modelo serve.
+##
+## MEDIR A ALTURA PELA CAIXA DA MALHA NAO FUNCIONA, e essa foi a causa de quase
+## todo defeito da folha de contato de 2026-08-10 (personagem microscopico,
+## gigante e deitado, com o catalogo jurando 1,80 m pra todos). Numa malha
+## SKINADA os vertices ficam no espaco em que a malha foi autorada, e quem leva
+## eles pro espaco do esqueleto e a bind pose — entao `mesh.get_aabb()` pode
+## estar em outra unidade e ate em outro eixo que o resultado na tela. Medido
+## nos recebidos: `casual_woman_in_brown_dress` da 0,019 na caixa da malha e
+## 1,899 depois do skin (98x), e `animated_man` da 1471 contra 114 (13x). Por
+## isso a altura sai do vertice JA LEVADO pelo skin — que e o que o
+## renderizador desenha.
 ##
 ## Roda com:
 ##   godot --headless --path . tools/preparar_personagens.tscn
@@ -30,13 +40,35 @@ const SAIDA := "res://assets/personagens/catalogo.gd"
 ## pedestre (72 na tela).
 const FACES_PARA_NPC := 18000
 
-## Altura humana plausivel. Fora disso e quase certo que o arquivo esta em outra
-## unidade (centimetro, polegada) — o que nao impede de usar, porque a escala
-## sai da altura medida, mas vale sair no relatorio.
-const ALTURA_MIN := 1.20
-const ALTURA_MAX := 2.30
+## Modelos exportados olhando pro -Z. O jogo assume +Z (por isso o `PlayerVisual`
+## gira 180); sem o giro extra estes andam DE COSTAS — o mesmo defeito que os
+## carros de IA e os pedestres ja tiveram.
+##
+## Lista escrita a mao, e nao medida, porque nao ha sinal geometrico confiavel
+## pra isso (ver o cabecalho de `MedirPersonagem.gd`: o teste pelo pe erra nos
+## dois sentidos). Cada id aqui foi conferido na FOLHA DE CONTATO, onde o
+## personagem aparece de costas pra camera. Ao acrescentar personagem novo, olhe
+## a folha: quem sair mostrando a nuca entra aqui.
+const DE_COSTAS: Array[String] = [
+	"low_poly_female_lia",
+	"old_man_spice_animated",
+]
 
-var _linhas: Array[String] = []
+## Reprovados na FOLHA DE CONTATO, por defeito que nenhuma medida pega.
+##
+## As regras automaticas de `MedirPersonagem` cobrem o que da pra medir (sem
+## osso, varios esqueletos, sentado, cenario junto). Isto aqui e o resto: cada
+## um foi visto na foto, e o motivo fica escrito porque daqui a duas sessoes
+## ninguem lembra por que este modelo especifico esta de fora.
+const NAO_SERVE: Dictionary = {
+	"kindred_league_of_legends_rigged":
+		"na foto sai minusculo em cima de um pedestal, com uma malha de contorno solta",
+	"danmachi_hestia":
+		"vem com um disco de grama nos pes — pequeno demais pra regra de cenario pegar",
+	"tomoko_kuroki_watamote":
+		"nao aparece na foto: renderiza como uma sombra escura, sem material visivel",
+}
+
 var _problemas: Array[String] = []
 
 func _ready() -> void:
@@ -56,18 +88,21 @@ func _ready() -> void:
 		if d.is_empty():
 			continue
 		entradas.append(d)
-		print("%-38s %5.2f m | %3d ossos | %2d anim | %6d faces | %s%s"
-			% [d["id"], d["altura"], d["ossos"], d["animacoes"], d["faces"],
-				d["serve"], "  DEITADO" if d["deitado"] else ""])
-		if d["ossos"] == 0:
-			_problemas.append("%s: sem esqueleto — so serve de estatua" % d["id"])
-		elif d["altura"] < ALTURA_MIN or d["altura"] > ALTURA_MAX:
-			_problemas.append("%s: %.2f m no arquivo (fora do humano; a escala corrige, mas confira)"
-				% [d["id"], d["altura"]])
+		print("%-44s %8.2f (desenho %5.1fx) | %4d ossos | %2d anim | %6d faces | %s%s"
+			% [d["id"], d["altura"], d["desenho"], d["ossos"], d["animacoes"],
+				d["faces"], d["serve"], "  DEITADO" if d["deitado"] else ""])
+		if not bool(d["jogavel"]):
+			_problemas.append("%s: %s" % [d["id"], d["motivo"]])
+		if str(d["suspeita"]) != "":
+			_problemas.append("%s: medida duvidosa — %s (usei a dos ossos)"
+				% [d["id"], d["suspeita"]])
 
 	_gerar_catalogo(entradas)
-	print("\n%d de %d entram como JOGAVEL" % [
-		entradas.filter(func(e): return e["ossos"] > 0).size(), entradas.size()])
+	var jogaveis := 0
+	for e: Dictionary in entradas:
+		if bool(e["jogavel"]):
+			jogaveis += 1
+	print("\n%d de %d entram como JOGAVEL" % [jogaveis, entradas.size()])
 	if not _problemas.is_empty():
 		print("\navisos:")
 		for p in _problemas:
@@ -108,11 +143,8 @@ func _medir(caminho: String) -> Dictionary:
 		return {}
 	add_child(inst)
 
-	var caixa := _aabb(inst)
-	var ossos := 0
-	var skel := CharacterVisual.find_skeleton(inst)
-	if skel:
-		ossos = skel.get_bone_count()
+	var medida := MedirPersonagem.medir(inst)
+	var ossos: int = medida["ossos"]
 	var animacoes := 0
 	var ap := _achar_player(inst)
 	if ap:
@@ -132,23 +164,27 @@ func _medir(caminho: String) -> Dictionary:
 				if not formas.has(nome_forma):
 					formas.append(nome_forma)
 
-	# Deitado: exportador com Z pra cima. A altura util passa a ser o Z.
-	var deitado: bool = caixa.size.z > caixa.size.y * 1.4
-	var altura: float = caixa.size.z if deitado else caixa.size.y
-
 	var pasta := caminho.get_base_dir().get_file()
 	inst.queue_free()
+	var motivo := str(medida["motivo"])
+	if motivo == "" and NAO_SERVE.has(pasta):
+		motivo = str(NAO_SERVE[pasta])
 	return {
 		"id": pasta,
 		"caminho": caminho,
-		"altura": altura,
+		"altura": medida["altura"],
+		"desenho": float(medida["maior_desenho"]) / maxf(float(medida["altura"]), 0.001),
 		"ossos": ossos,
 		"animacoes": animacoes,
 		"faces": faces,
-		"deitado": deitado,
+		"deitado": medida["deitado"],
+		"de_costas": DE_COSTAS.has(pasta),
 		"formas": formas,
+		"jogavel": motivo == "",
+		"motivo": motivo,
+		"suspeita": medida["suspeita"],
 		"serve": ("jogador + NPC" if faces <= FACES_PARA_NPC else "jogador") \
-			if ossos > 0 else "estatua",
+			if motivo == "" else "cenario",
 	}
 
 ## O catalogo sai com caminhos LITERAIS de proposito: e assim que o auditor do
@@ -161,8 +197,11 @@ extends RefCounted
 ## GERADO por tools/preparar_personagens.gd — nao editar na mao.
 ##
 ## Cada entrada traz a altura MEDIDA do arquivo (e ela que converte "quero
-## 1,80 m" em escala), quantos ossos e quantas animacoes proprias. Modelo com
-## `ossos == 0` e estatua: nao anda, e por isso nao entra como jogavel.
+## 1,80 m" em escala), quantos ossos e quantas animacoes proprias.
+##
+## `jogavel` e falso pra quem nao e UMA pessoa de pe: estatua sem osso, cena com
+## varios personagens dentro, ou modelo que vem sentado/com cenario junto. Esses
+## continuam catalogados (servem de cenario), mas fora da lista do menu.
 
 const PERSONAGENS: Array[Dictionary] = [
 """
@@ -175,8 +214,12 @@ const PERSONAGENS: Array[Dictionary] = [
 		var aspas: Array[String] = []
 		for f: String in lista_formas:
 			aspas.append('"%s"' % f)
-		texto += '\t\t"faces": %d, "deitado": %s,\n' % [
-			e["faces"], "true" if e["deitado"] else "false"]
+		texto += '\t\t"faces": %d, "deitado": %s, "de_costas": %s, "jogavel": %s,\n' % [
+			e["faces"], "true" if e["deitado"] else "false",
+			"true" if e["de_costas"] else "false",
+			"true" if e["jogavel"] else "false"]
+		if str(e["motivo"]) != "":
+			texto += '\t\t"motivo": "%s",\n' % e["motivo"]
 		texto += '\t\t"formas": [%s]},\n' % ", ".join(PackedStringArray(aspas))
 	texto += "]\n"
 	var f := FileAccess.open(SAIDA, FileAccess.WRITE)
@@ -196,28 +239,13 @@ func _rotulo(id: String) -> String:
 	return " ".join(PackedStringArray(out))
 
 # ------------------------------------------------------------------ utilidade
-
-func _aabb(root: Node) -> AABB:
-	var box := AABB()
-	var first := true
-	for mi in _malhas(root):
-		if mi.mesh == null:
-			continue
-		var world := mi.global_transform * mi.mesh.get_aabb()
-		if first:
-			box = world
-			first = false
-		else:
-			box = box.merge(world)
-	return box
+##
+## A medida de verdade (altura, orientacao, se e uma pessoa de pe) mora em
+## `tools/MedirPersonagem.gd`, com dono unico: a folha de contato le a MESMA
+## medida, senao as duas contam historias diferentes sobre o mesmo arquivo.
 
 func _malhas(node: Node) -> Array[MeshInstance3D]:
-	var out: Array[MeshInstance3D] = []
-	if node is MeshInstance3D:
-		out.append(node as MeshInstance3D)
-	for c in node.get_children():
-		out.append_array(_malhas(c))
-	return out
+	return MedirPersonagem.malhas_de(node)
 
 func _achar_player(node: Node) -> AnimationPlayer:
 	if node is AnimationPlayer:

@@ -109,6 +109,42 @@ def check_pbr_sets() -> list:
     return sorted(set(faltando))
 
 
+## Os personagens jogaveis nao aparecem na varredura acima: o catalogo mora em
+## `assets/personagens/`, que nao esta em SOURCE_DIRS, e `.gltf` cai em
+## IMPORTED_EXT (o pacote guarda o `.scn` convertido, de nome opaco). Ou seja,
+## excluir um modelo por engano do `exclude_filter` passaria 100% calado aqui e
+## o jogo so quebraria ao escolher aquele personagem no menu.
+##
+## A conferencia e nos DOIS sentidos, de proposito: quem o catalogo diz que e
+## jogavel TEM que estar no pacote, e quem ele reprovou NAO pode estar (senao a
+## exclusao nao esta valendo e o build carrega peso morto — foi assim que ele
+## chegou a 1,4 GB).
+def check_personagens(data: bytes) -> list:
+    catalogo = ROOT / "assets" / "personagens" / "catalogo.gd"
+    if not catalogo.exists():
+        return []
+    texto = catalogo.read_text(encoding="utf-8", errors="ignore")
+    problemas = []
+    for m in re.finditer(r'"caminho": "res://([^"]+)".*?"jogavel": (true|false)',
+                         texto, re.S):
+        rel, jogavel = m.group(1), m.group(2) == "true"
+        imp = ROOT / (rel + ".import")
+        if not imp.exists():
+            problemas.append((rel, "sem .import (rode o editor pra importar)"))
+            continue
+        destinos = re.findall(r'res://\.godot/imported/([^"]+)',
+                              imp.read_text(encoding="utf-8", errors="ignore"))
+        if not destinos:
+            problemas.append((rel, "o .import nao aponta pra nenhum arquivo"))
+            continue
+        dentro = any(d.encode("utf-8") in data for d in destinos)
+        if jogavel and not dentro:
+            problemas.append((rel, "JOGAVEL mas FORA DO PACOTE"))
+        elif not jogavel and dentro:
+            problemas.append((rel, "reprovado no catalogo mas DENTRO do pacote"))
+    return problemas
+
+
 def collect_refs() -> set:
     refs = set()
     files = [ROOT / f for f in SOURCE_FILES]
@@ -190,6 +226,10 @@ def main() -> int:
         print("caminhos montados em runtime: %d arquivos casados" % expanded)
     for alvo in check_pbr_sets():
         missing.append((alvo, "CONJUNTO PBR INCOMPLETO (falta no disco)"))
+    personagens = check_personagens(data)
+    if not personagens:
+        print("personagens do catalogo: dentro/fora do pacote conforme o catalogo")
+    missing += personagens
     if stale:
         for f in stale[:5]:
             missing.append((f, "MAIS NOVO QUE O BUILD (reexporte)"))

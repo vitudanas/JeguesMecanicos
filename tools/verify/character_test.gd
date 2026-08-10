@@ -17,8 +17,9 @@ extends Node
 
 const CHARACTER_MENU := preload("res://scenes/ui/CharacterMenu.gd")
 
-## Altura pedida x altura medida do boneco montado. 2 cm de folga: a malha e
-## medida pela AABB em pose de bind, que nao e exatamente a pose de skin.
+## Altura pedida x altura medida do boneco montado. 2 cm de folga: a medida
+## amostra os vertices (3000 por superficie), entao pode nao pegar exatamente o
+## fio de cabelo mais alto.
 const HEIGHT_TOLERANCE := 0.02
 
 ## Cobertura do cranio. Mesmos numeros e mesma ressalva do `player_shots`: a
@@ -76,10 +77,11 @@ func _secao_modelos() -> void:
 			continue
 		var visual := scene.instantiate() as Node3D
 		add_child(visual)
-		var box := _world_aabb(visual)
-		# Modelo exportado com Z pra cima tem a altura util no Z (o catalogo
-		# marca quem). Medindo sempre em Y, o teste reprovava modelo correto.
-		var medida: float = box.size.z if bool(entry.get("deitado", false)) else box.size.y
+		# Pelo MESMO medidor que gerou o catalogo — que e o ponto: se aqui a conta
+		# fosse outra, o teste nao provaria a tabela, provaria a si mesmo. E a
+		# caixa da malha crua nao serve pra malha skinada (ver MedirPersonagem):
+		# medindo assim, este teste reprovava 17 modelos que estao certos.
+		var medida: float = float(MedirPersonagem.medir(visual)["altura"])
 		var declared := float(entry["altura_modelo"])
 		# A altura declarada na tabela e o que converte "quero 1,80 m" em escala.
 		# Se ela estiver errada, o personagem sai do tamanho errado e NADA mais
@@ -347,9 +349,9 @@ func _secao_altura() -> void:
 			add_child(host)
 			var visual := PlayerVisual.build(host)
 			await get_tree().process_frame
-			var box := _world_aabb(visual)
-			if absf(box.size.y - wanted) > HEIGHT_TOLERANCE:
-				fail("%s a %.2f m: o boneco ficou com %.2f m" % [entry["id"], wanted, box.size.y])
+			var medida: float = float(MedirPersonagem.medir(visual)["altura"])
+			if absf(medida - wanted) > HEIGHT_TOLERANCE:
+				fail("%s a %.2f m: o boneco ficou com %.2f m" % [entry["id"], wanted, medida])
 			host.queue_free()
 		ok("%s: %.2f m a %.2f m, medido na malha" % [entry["id"],
 			Appearance.HEIGHT_MIN, Appearance.HEIGHT_MAX])

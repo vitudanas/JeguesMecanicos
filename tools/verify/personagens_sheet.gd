@@ -2,10 +2,10 @@ extends Node
 ## FOLHA DE CONTATO de todos os personagens jogaveis, lado a lado, com regua.
 ##
 ## Numero nenhum diz se o personagem esta DE PE, virado pra frente e no tamanho
-## certo. Os arquivos recebidos provam isso: as escalas vao de 0,01 m a 1013 m
-## no arquivo e quatro deles vem DEITADOS (exportador com Z pra cima). O
-## `preparar_personagens` detecta e o `PlayerVisual` corrige — mas quem confirma
-## e a foto.
+## certo, e os arquivos recebidos provam isso: as escalas vao de 0,7 a 208
+## unidades e a orientacao nao se mede de forma confiavel (ver o cabecalho de
+## `MedirPersonagem.gd`). Quem sai DE COSTAS aqui entra na lista `DE_COSTAS` de
+## `tools/preparar_personagens.gd` — esta folha e a fonte daquela lista.
 ##
 ## Cada personagem sai ao lado de uma regua de 2 m listrada a cada 10 cm, com a
 ## faixa de 1,80 destacada: sem referencia de tamanho no quadro nao da pra
@@ -106,14 +106,26 @@ func _folha() -> void:
 			if corpo == null:
 				problems.append("%s: nao montou" % m["id"])
 				continue
-			corpo.rotation_degrees.y = 0.0   # encarando a camera, que fica no +Z
+			# Encarando a camera, que fica no +Z. Sai da MESMA conta de orientacao
+			# que o jogo usa (`facing_degrees`), e nao de um zero fixo: assim a
+			# foto prova a correcao de quem foi exportado olhando pro -Z, em vez
+			# de esconder o defeito virando todo mundo na marra.
+			corpo.rotation_degrees.y = 180.0 - PlayerVisual.facing_degrees()
 			montados.append(holder)
 			# A medida vai junto da foto: ler "2,4 m" ao lado do boneco e o que
 			# transforma "parece estranho" em defeito acionavel.
-			var caixa := _aabb(corpo)
-			print("  %-42s %.2f m de altura na cena" % [m["id"], caixa.size.y])
-			if caixa.size.y < 1.2 or caixa.size.y > 2.6:
-				problems.append("%s: %.2f m na cena (pedi 1,80)" % [m["id"], caixa.size.y])
+			#
+			# Pelo MESMO medidor do catalogo, de proposito. Enquanto isto aqui lia
+			# `mesh.get_aabb()` por conta propria, a folha acusava 17 personagens
+			# fora de escala que a FOTO mostrava certinhos ao lado da regua —
+			# medida com dono duplicado conta duas historias sobre o mesmo arquivo.
+			# A medida e em pose de REPOUSO, entao nao depende da animacao que o
+			# modelo estiver tocando na foto — ela cobra a ESCALA, e a escala tem
+			# que dar o que foi pedido em todos.
+			var alto: float = float(MedirPersonagem.medir(corpo)["altura"])
+			print("  %-42s %.2f m de altura na cena" % [m["id"], alto])
+			if alto < 1.70 or alto > 1.90:
+				problems.append("%s: %.2f m na cena (pedi 1,80)" % [m["id"], alto])
 		_regua(Vector3(float(fim - inicio) * PASSO, 0.0, 0.0))
 
 		var largura: float = float(fim - inicio + 1) * PASSO
@@ -138,25 +150,3 @@ func _shot(nome: String) -> void:
 	var img := get_viewport().get_texture().get_image()
 	img.save_png("%s/%s.png" % [OUT_DIR, nome])
 	print("  foto: %s" % nome)
-
-func _aabb(root: Node) -> AABB:
-	var box := AABB()
-	var first := true
-	for mi in _malhas(root):
-		if mi.mesh == null or not mi.is_visible_in_tree():
-			continue
-		var world := mi.global_transform * mi.mesh.get_aabb()
-		if first:
-			box = world
-			first = false
-		else:
-			box = box.merge(world)
-	return box
-
-func _malhas(node: Node) -> Array[MeshInstance3D]:
-	var out: Array[MeshInstance3D] = []
-	if node is MeshInstance3D:
-		out.append(node as MeshInstance3D)
-	for c in node.get_children():
-		out.append_array(_malhas(c))
-	return out

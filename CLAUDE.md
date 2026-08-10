@@ -3241,6 +3241,111 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     `tools/verify/personagens_sheet.tscn` (novo, janela) renderiza todos lado a
     lado com régua de 2 m: foi ele que pegou a rotação errada.
 
+- **2026-08-10 (2ª rodada)** — Usuário pediu pra seguir com o que falta e
+  **olhar os personagens baixados, corrigindo os bugados**. Era o item 1 do
+  handoff anterior ("OLHAR a folha de contato dos 40"), que estava escrito
+  justamente porque a folha tinha sido renderizada e **não conferida**. Olhando,
+  ela estava cheia de defeito: personagem microscópico, gigante ocupando a tela
+  inteira, quatro deitados no chão e dois de costas — com o catálogo jurando
+  1,80 m para todos.
+  - **UMA causa explicava quase tudo: a altura era medida pela caixa da malha
+    crua.** Numa malha SKINADA os vértices ficam no espaço em que a malha foi
+    autorada, e quem os leva pro espaço do esqueleto é a **bind pose** — então
+    `mesh.get_aabb()` pode estar em outra unidade e até em outro eixo que o
+    resultado na tela. Medido nos 46 arquivos: `casual_woman_in_brown_dress` dá
+    **0,019** na caixa crua e **1,899** depois do skin (98x de erro), e
+    `animated_man` dá **1471 contra 114** (13x). Como a escala sai da altura
+    medida, o primeiro nascia 94x grande e o segundo 10x pequeno.
+  - **Os "deitados" NUNCA existiram.** A mesma caixa crua era usada pra decidir
+    "veio com Z pra cima" (z > y), e como ela mede num espaço trocado, **11 dos
+    46 davam falso positivo** — e o `PlayerVisual` obedientemente DEITAVA no
+    chão quem estava de pé no arquivo. A sessão anterior tinha visto isso na
+    foto, achado que era sinal de giro invertido e trocado −90 por +90, o que só
+    mudou de bruços pra costas. Com a medida certa, **zero** modelos são
+    deitados. O mecanismo ficou, defensivo, mas agora a pergunta é "isto
+    RENDERIZA deitado?" em vez de "a malha crua é comprida em Z?".
+  - **A medida virou `tools/MedirPersonagem.gd`, com dono único**, e isso não é
+    organização: enquanto a folha de contato media por conta própria, ela acusou
+    **17 personagens fora de escala que a foto mostrava certinhos ao lado da
+    régua**, e o `character_test` reprovou os mesmos. Hoje o gerador do
+    catálogo, a folha e o teste leem a mesma conta — medida com dono duplicado
+    conta duas histórias sobre o mesmo arquivo.
+  - **Orientação: tentei medir e DESISTI com número na mão.** O sinal que
+    parecia óbvio (o dedo do pé avança além do quadril, então o centro da nuvem
+    lá embaixo aponta pra frente) erra nos **dois** sentidos: acusou de costas o
+    `frank_army_man`, o `fuse_civilian_1`, o `nathan` e o `nilda`, que a foto
+    mostra de frente, e **deixou passar** o `old_man_spice`, que está mesmo de
+    costas. Testado também na pose animada, e continuou errando. Aplicado,
+    giraria 18 personagens certos pra consertar 2. Virou lista escrita à mão
+    (`DE_COSTAS`), cada id conferido na foto. **Sinal que erra nos dois sentidos
+    é pior que sinal nenhum.**
+  - **22 personagens estavam largados na RAIZ do projeto**, já descompactados —
+    o macOS abre o zip sozinho, e `receber_modelos.sh` só olhava `*.zip`. A
+    sessão anterior tinha descoberto isso e documentado, mas **não consertou o
+    script**, então voltou a acontecer. Pior: raiz é pasta do projeto, então eles
+    entravam no build sem estar no jogo. O script passou a recolher pasta
+    também, testando o CONTEÚDO (tem `scene.gltf` dentro?) e não o nome — assim
+    as pastas do próprio Godot que moram ali nunca são tocadas. Deu **63
+    arquivos, 44 jogáveis**.
+    - Efeito colateral bom: elas também estavam **versionadas no git** (o
+      `.gitignore` cobre `assets/personagens/`, não a raiz), então o repositório
+      carregava ~700 mil linhas de binário cru. Ao mudarem de lugar, entraram na
+      regra que já existia e saíram do controle de versão — que é a política
+      escrita desde `assets/realistas/`: download cru fica no disco, o que entra
+      no repo é o catálogo gerado.
+  - **Três reprovações novas, e todas automáticas** (`MedirPersonagem`): mais de
+    um esqueleto = é uma CENA com vários personagens (`background_people`,
+    `construction_workers`, `game_character_skins_pack`, `topology_practice`);
+    profundidade > 0,75 da altura = não está de pé (`old_fat_man` vem com a
+    poltrona, `bloody_scarlet`, `bunny_set_pubg`, `shang_hai_lady`); e o desenho
+    inteiro > 2,2x a pessoa = **vem com CENÁRIO junto**. Essa última é o defeito
+    mais chamativo dos modelos novos: `chibi_rem_confession` traz um diorama com
+    céu, montanha e árvore, e outro traz um painel gigante com a ilustração da
+    personagem — na tela vira um outdoor seguindo o jogador.
+  - **E uma lista manual `NAO_SERVE`, com o motivo escrito**, pro que só o olho
+    pega: `kindred` (sai minúsculo num pedestal, com uma malha de contorno
+    solta), `danmachi_hestia` (disco de grama nos pés, pequeno demais pra regra
+    de cenário pegar) e `tomoko_kuroki` (não aparece na foto — renderiza como
+    sombra escura).
+  - **Build: 1,4 GB → 670 MB.** Os 1,9 GB de `assets/personagens/` entravam
+    inteiros no `.pck` (`export_filter="all_resources"` leva tudo que está na
+    pasta), e o handoff anterior já avisava. Três cortes, todos no IMPORT pra não
+    tocar no original:
+    1. **Morph target que o jogo nunca usa** era o maior peso e não era óbvio:
+       vários modelos vêm de gerador de personagem com a biblioteca facial
+       inteira (148 a 176 shape keys), e cada morph guarda uma cópia das
+       posições de TODOS os vértices — `old_man_spice` tem 138 MB de `scene.bin`
+       pra 78 mil faces. `tools/pos_import_personagem.gd` (novo, roda como
+       `import_script`) remonta a malha sem eles; num arquivo saíram 1931.
+    2. Textura capada em **1024** (a mesma resolução que os dois personagens
+       nativos usam), 686 arquivos.
+    3. `exclude_filter` **gerado a partir do catálogo** pelos 21 reprovados —
+       lista escrita à mão aqui envelheceria a cada personagem novo.
+  - **Erro meu, e grave, na remoção de morphs**: quando o remonte falhava
+    (superfície com canal `ARRAY_CUSTOM`, que não faz o caminho de volta —
+    `surface_get_arrays` devolve decodificado e `add_surface_from_arrays` exige
+    bytes crus), eu atribuía a malha nova mesmo assim, **com ZERO superfícies** —
+    ou seja o personagem sumiria da tela em vez de só manter os morphs. Agora só
+    troca se a malha nova ficou inteira, e quem não dá pra remontar fica como
+    está, listado no log.
+  - **`pack_audit` ganhou o catálogo de personagem**, que era ponto cego: o
+    catálogo mora fora de `SOURCE_DIRS` e `.gltf` cai na lista de "importados,
+    pulados", então excluir um jogável por engano passaria 100% calado e o jogo
+    só quebraria ao escolher aquele personagem. A conferência é nos DOIS
+    sentidos — jogável tem que estar no pacote, reprovado não pode estar (senão
+    a exclusão não está valendo). Conferido que ele reprova de propósito antes de
+    confiar nele.
+  - **Animação por estado**: quem tem mais de um clipe agora mapeia
+    idle/walk/run separados. O código parava no primeiro nome que casasse com
+    walk/run/idle, então o `stickman` (que traz "Idle" e "Run") ficava parado
+    também correndo.
+  - **Verificação**: folha de contato renderizada e **olhada** três vezes ao
+    longo da rodada (é ela que pegou o cenário junto, os dois de costas e o
+    invisível). Suíte inteira passa — city, drive, loop, attach, scale,
+    obstacles, save, loading, economy, shop, staff, street, gaps, audio,
+    character, settings, ui. `pack_audit` limpo, builds reexportadas (macOS 670
+    MB, Windows 757 MB), `.app` reextraído e o binário exportado sobe limpo.
+
 ### ONDE PAREI (2026-08-10, fim da sessão)
 
 Estado: tudo commitado, suíte inteira passando e **builds reexportadas nesta
@@ -3252,41 +3357,55 @@ escolha com preview 3D, a personalização do corpo por slider (mais altura e
 cores) e o personagem masculino jogável — tudo em 2026-08-10, ver changelog. As
 **três câmeras no V** já estavam prontas da sessão anterior.
 
-**Estado dos personagens:** 40 jogáveis no menu (2 nativos + 38 baixados). Os
-arquivos crus estão em `assets/personagens/` (fora do git). Para acrescentar
-mais: baixe em glTF, largue na raiz (zipado ou não — o macOS descompacta
-sozinho), rode `tools/receber_modelos.sh personagens`, depois
-`godot --headless --path . --editor --quit` (importa) e
-`godot --headless --path . tools/preparar_personagens.tscn` (mede e cataloga).
+**Estado dos personagens:** **44 jogáveis** no menu (2 nativos + 42 baixados),
+de 63 arquivos recebidos; os outros 21 estão catalogados como cenário e ficam
+FORA do build. Os arquivos crus estão em `assets/personagens/` (fora do git).
 
-**O QUE FALTA desta frente (próxima sessão começa por aqui):**
+O pipeline pra acrescentar mais, na ordem (cada passo depende do anterior):
 
-1. **OLHAR a folha de contato dos 40.** Renderizada em
-   `tools/verify/personagens_sheet.tscn` (8 linhas de 5), mas **não conferida**
-   depois da correção da rotação e da animação. É onde vão aparecer os que
-   ficaram tortos, de costas ou com a animação errada — e este projeto já perdeu
-   rodadas por não olhar.
-2. **Rodar a suíte inteira** com os 40 no catálogo (só o `character_test` rodou).
-3. **Reexportar as builds** — não foram exportadas depois da integração. Cuidado:
-   os 1,9 GB de `assets/personagens/` VÃO ENTRAR no `.pck` se ninguém filtrar
-   (`export_filter="all_resources"` leva tudo que está na pasta — foi assim que o
-   build foi de 188 MB para 689 MB em 2026-08-09). Decidir quais modelos ficam e
-   pôr o resto no `exclude_filter`.
-4. **Usar os novos como NPC também**: hoje o catálogo alimenta só o JOGADOR. Os
-   24 marcados "jogador + NPC" na tabela do garimpo poderiam entrar no pool de
-   pedestres, que é o que resolveria de vez o "todo pedestre tem a mesma cara".
+```bash
+tools/receber_modelos.sh personagens     # recolhe .zip E pasta ja aberta da raiz
+godot --headless --path . --editor --quit          # importa
+python3 tools/preparar_import_personagens.py       # capa textura, tira morph, filtra o build
+godot --headless --path . --editor --quit          # reimporta com os ajustes
+godot --headless --path . tools/preparar_personagens.tscn   # mede e cataloga
+godot --path . tools/verify/personagens_sheet.tscn          # e OLHE as fotos
+```
+
+A folha não é opcional: **a orientação e o material não se medem** (ver o
+cabeçalho de `MedirPersonagem.gd`). Quem sair de costas na foto entra em
+`DE_COSTAS`, quem sair quebrado entra em `NAO_SERVE`, os dois em
+`tools/preparar_personagens.gd`.
+
+**O QUE FALTA desta frente:**
+
+1. **Usar os novos como NPC também**: hoje o catálogo alimenta só o JOGADOR, e
+   é o que resolveria de vez o "todo pedestre tem a mesma cara". Não é só
+   apontar a lista: `CharacterVisual` anima pela UAL1 (que procura osso por
+   NOME e não casa com esqueleto de terceiro — o `PlayerVisual` já tem o
+   caminho alternativo pronto, usar a animação que veio no arquivo) e tinge por
+   nome de material, que também não casa. E vale medir com os 72 pedestres na
+   tela antes de confiar: os modelos bons têm 20-40 mil faces contra ~5 mil dos
+   atuais, e a coluna "serve como" do garimpo existe justamente pra isso.
+2. **Build de 670 MB** (era 188 MB antes dos personagens). Já caiu de 1,4 GB
+   nesta rodada; o que sobra é honestamente o custo de 44 personagens com
+   textura de verdade, ~11 MB cada. Se precisar encolher, o botão é a resolução
+   em `tools/preparar_import_personagens.py` — 512 em vez de 1024 corta perto da
+   metade, ao custo de nitidez em 3ª pessoa.
+3. **Pose de portfólio em alguns modelos**: `ada_wong` e `old_man_in_coat`
+   ficam inclinados/apoiados porque é a ÚNICA animação que veio no arquivo, e
+   `rem_rezero` só traz T-pose/A-pose. Não tem conserto por script — precisaria
+   de retarget no Blender.
 
 Pedidos anteriores ainda **não** feitos:
 
-1. **Baixar os personagens da lista nova.** É o passo que depende de você:
-   [docs/garimpo-personagens.md](docs/garimpo-personagens.md) tem **30 homens e
-   18 mulheres, todos com animação própria** (o filtro que faltou da primeira
-   vez), CC-BY, com link direto. Baixe em glTF, largue o `.zip` na raiz e rode
-   `tools/receber_modelos.sh`. Integrar depois é uma linha em
-   `Appearance.MODELS` com o id, o rótulo, o caminho e a **altura medida** —
-   o menu, o preview, o save e o verificador cobrem o modelo novo sozinhos.
-2. **Os 7 modelos baixados em 2026-08-09 continuam fora**, e por um motivo
-   medido, não por preguiça: 6 dos 7 **não têm esqueleto** e nenhum tem
+1. **Baixar mais personagens da lista**, se quiser:
+   [docs/garimpo-personagens.md](docs/garimpo-personagens.md) tem 30 homens e 18
+   mulheres com animação própria, CC-BY, com link direto. É o passo que depende
+   de você (o download não sai pelo navegador embutido); o resto é o pipeline de
+   comandos acima, que já não pede edição de código nenhuma.
+2. **Os modelos sem esqueleto continuam fora**, e por um motivo medido, não por
+   preguiça: 8 dos 63 **não têm esqueleto** e nenhum deles tem
    animação. Como jogáveis, só passando pelo Blender (que ESTÁ instalado em
    `/Applications/Blender.app`, e o projeto já roda ele headless em
    `tools/build_characters.py`): rig por peso automático + retarget da UAL1. O

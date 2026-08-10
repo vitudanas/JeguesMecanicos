@@ -25,6 +25,17 @@ const ANIM_LIB := preload("res://assets/quaternius/universal-animation-library-1
 ## jogador anda de costas — mesma correcao dos pedestres e dos carros de IA.
 const FACING_DEGREES := 180.0
 
+## Quanto girar o visual pra frente do modelo cair no -Z do no (a frente do
+## corpo). Quem foi exportado olhando pro -Z ja esta certo e nao leva giro
+## nenhum — a lista de quem e quem esta em `tools/preparar_personagens.gd`,
+## conferida na folha de contato.
+##
+## Publico porque a folha de contato precisa da MESMA conta pra virar cada
+## personagem de frente pra camera: com o giro escrito nos dois lugares, a foto
+## deixaria de provar o que o jogador ve.
+static func facing_degrees() -> float:
+	return 0.0 if bool(Appearance.model().get("de_costas", false)) else FACING_DEGREES
+
 ## Nome das animacoes dentro da UAL1 (a UAL2 gratuita nao tem caminhada normal,
 ## ver changelog 2026-08-03).
 const IDLE_ANIM := "Idle"
@@ -40,17 +51,18 @@ static func build(parent: Node3D) -> Node3D:
 	var visual := scene.instantiate() as Node3D
 	visual.name = "Visual"
 	parent.add_child(visual)
-	visual.rotation_degrees.y = FACING_DEGREES
-	# Modelo exportado com Z pra cima entra DE BRUCOS. Medido nos recebidos: 4
-	# dos 18 vem assim (o `preparar_personagens` marca quem, comparando a caixa
-	# em Y com a em Z). Deitar o no de volta e o unico jeito, porque o arquivo
-	# nao traz essa informacao.
+	visual.rotation_degrees.y = facing_degrees()
+	# Modelo exportado com Z pra cima renderiza DE BRUCOS, e ai o unico jeito e
+	# deitar o no de volta — o arquivo nao traz essa informacao.
+	#
+	# Hoje NENHUM dos 46 recebidos cai aqui, e isso e uma correcao de 2026-08-10:
+	# o `preparar_personagens` decidia isso pela caixa da malha crua e marcava 11
+	# falsos positivos, entao o jogo DEITAVA no chao quem estava de pe no
+	# arquivo. Medindo depois do skin (que e o que a tela desenha) a pergunta
+	# passou a ser a certa. O mecanismo fica, defensivo, pro dia em que chegar um
+	# modelo de fato deitado.
 	var entrada := Appearance.model()
 	if bool(entrada.get("deitado", false)):
-		# +90, e nao -90: com o sinal invertido o modelo continuava deitado, so
-		# que de bruços em vez de costas (visto na folha de contato). O Godot ja
-		# converte Z-up na importacao do glTF; quem chega deitado e quem foi
-		# exportado errado na origem, e ai o giro tem que ser pro outro lado.
 		visual.rotation_degrees.x = 90.0
 	# A altura pedida vira escala do visual. O `Player` escala junto a capsula e
 	# a cabeca — visual e colisao com alturas diferentes poe o boneco flutuando
@@ -204,26 +216,35 @@ static func _usar_animacao_propria(visual: Node3D) -> AnimationPlayer:
 			nomes.append(("%s/%s" % [lib_name, a]) if lib_name != "" else str(a))
 	if nomes.is_empty():
 		return null
-	# Prefere uma que pareca caminhada; senao, a primeira que houver.
-	var andar := nomes[0]
-	for n in nomes:
-		var minusculo := n.to_lower()
-		if minusculo.contains("walk") or minusculo.contains("run") \
-				or minusculo.contains("idle"):
-			andar = n
-			break
-	var lib := player.get_animation_library("") 
+	var lib := player.get_animation_library("")
 	if lib == null:
 		lib = AnimationLibrary.new()
 		player.add_animation_library("", lib)
-	var anim := player.get_animation(andar)
-	if anim:
-		anim.loop_mode = Animation.LOOP_LINEAR
-		for apelido: String in ["idle", "walk", "run"]:
-			if not lib.has_animation(apelido):
-				lib.add_animation(apelido, anim)
+	# Um clipe por ESTADO quando o arquivo tem mais de um. Antes, a primeira
+	# animacao que casasse com walk/run/idle virava as tres — e como o teste
+	# parava no primeiro acerto, o `stickman` (que traz "Idle" e "Run") ficava
+	# parado tambem correndo. Quem so tem um clipe continua andando e parando com
+	# o mesmo, que e melhor que T-pose.
+	for pedido: Array in [["idle", ["idle", "stand", "pose"]],
+			["walk", ["walk", "jog"]], ["run", ["run", "sprint", "jog"]]]:
+		var apelido: String = pedido[0]
+		if lib.has_animation(apelido):
+			continue
+		var anim := player.get_animation(_melhor(nomes, pedido[1]))
+		if anim:
+			anim.loop_mode = Animation.LOOP_LINEAR
+			lib.add_animation(apelido, anim)
 	player.play("idle")
 	return player
+
+## O nome que melhor casa com as palavras pedidas; sem casar nenhuma, o
+## primeiro da lista.
+static func _melhor(nomes: PackedStringArray, palavras: Array) -> String:
+	for palavra: String in palavras:
+		for n in nomes:
+			if n.to_lower().contains(palavra):
+				return n
+	return nomes[0]
 
 static func _achar_player(node: Node) -> AnimationPlayer:
 	if node is AnimationPlayer:
