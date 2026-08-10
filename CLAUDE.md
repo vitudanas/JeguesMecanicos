@@ -2810,6 +2810,36 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     modelos (como o `drive_test` já faz), ou um dos modelos tem mesmo o radiador
     difícil — e aí é defeito de jogo, na mecânica central. **Não investigado.**
 
+- **2026-08-09** — Usuário pediu personagem escolhível no menu (com a
+  mulher-jegue entre as opções), personalização de corpo e **três câmeras no V**.
+  Nesta rodada saiu a câmera e o levantamento dos modelos; o menu fica pra
+  próxima.
+  - **Três câmeras** (`Player.Cam`): 1ª pessoa, 3ª atrás e 3ª LIVRE. O que separa
+    as duas de 3ª pessoa não é o enquadramento — é **quem o mouse gira**: em
+    ATRÁS o mouse gira o corpo, em LIVRE gira só a câmera em volta de um boneco
+    que fica como está. Isso não aparece em foto parada (as duas mostram as
+    costas), então o teste MOVE o mouse de verdade
+    (`Input.parse_input_event`) e mede se o corpo girou junto: 0,24 rad nos dois
+    primeiros modos e **0,00 rad** na livre, com a câmera girando os 0,24.
+  - Dois detalhes que não são óbvios: o pivô da câmera livre é `top_level`
+    (fora da hierarquia do corpo, senão o boneco a arrastaria ao virar), e na
+    livre o WASD passa a ser **relativo à câmera** — pelo eixo do corpo, o
+    controle inverteria assim que a câmera girasse pro lado. O boneco vira pra
+    onde ANDA, nunca pelo mouse.
+  - **Os modelos**: 7 pedidos pelo usuário, todos conferidos como **CC-BY** pela
+    API (uso comercial, crédito obrigatório) e listados em
+    [docs/personagens.md](docs/personagens.md). **O download não sai pelo
+    navegador embutido** — reconfirmado nesta sessão clicando no botão de
+    verdade, não só por JavaScript; o arquivo nunca chega. É o usuário quem
+    baixa.
+  - **A "Just a girl" (a sentada) não serve como jogável, e é bom saber antes de
+    baixar**: 0 animações, nenhum esqueleto, e modelada **sentada de mãos no
+    rosto**. Rigar por código é possível (o Blender headless já roda neste
+    projeto), mas o problema não é o esqueleto e sim a POSE DE REPOUSO: peso
+    automático sobre malha sentada dá um rig cuja pose de descanso é sentada, e
+    um ciclo de caminhada em cima disso dobra a perna a partir de onde ela já
+    está dobrada. Recomendado usá-la como estátua de praça — que é a pose dela.
+
 ### Pendências pedidas e ainda NÃO feitas
 
 Nenhuma das três pendências anteriores continua aberta. O que sobrou de

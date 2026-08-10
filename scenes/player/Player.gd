@@ -10,6 +10,8 @@ const WALK_SPEED := 4.0
 const SPRINT_SPEED := 7.5
 const JUMP_VELOCITY := 4.5
 const MOUSE_SENSITIVITY := 0.0025
+## Quao rapido o boneco se alinha ao rumo do andar na camera LIVRE (rad/s).
+const TURN_SPEED := 9.0
 
 ## Acima disso o corpo troca de parado pra andando; acima do segundo, pra
 ## correndo. Saem da velocidade real do corpo, nao da tecla: assim empurrado ou
@@ -34,7 +36,28 @@ var current_interactable: Node = null
 var driving_vehicle: Node = null
 var hud: Node = null
 var visual: Node3D = null
+
+## As tres visoes que o V cicla, nesta ordem.
+##
+## A diferenca entre as duas de 3a pessoa nao e o enquadramento, e QUEM O MOUSE
+## GIRA: em ATRAS o mouse gira o corpo (a camera fica sempre nas costas, que e o
+## bom pra dirigir e pra andar), e em LIVRE o mouse gira so a camera em volta do
+## boneco, que fica parado olhando pra onde estava — e o modo de olhar o proprio
+## personagem e o cenario.
+enum Cam {PRIMEIRA, TERCEIRA_ATRAS, TERCEIRA_LIVRE}
+var camera_mode: Cam = Cam.PRIMEIRA
+## Mantido por compatibilidade: varios lugares (e os testes) perguntam so se o
+## corpo aparece na tela.
 var third_person := false
+
+## Angulos da camera LIVRE, acumulados a parte do corpo. Precisam ser proprios:
+## se o mouse escrevesse na rotacao do jogador, o boneco viraria junto — que e
+## exatamente o que este modo existe pra nao fazer.
+var _free_yaw := 0.0
+var _free_pitch := -0.15
+var _free_pivot: Node3D = null
+var _free_arm: SpringArm3D = null
+var _free_camera: Camera3D = null
 var _e_prev := false
 var _v_prev := false
 var _q_prev := false
@@ -57,10 +80,41 @@ func _ready() -> void:
 	# A mola da 3a pessoa nao pode se apoiar no proprio jogador, senao a camera
 	# gruda nas costas dele e nunca recua.
 	third_person_arm.add_excluded_object(get_rid())
+	_build_free_camera()
 	_apply_camera_mode()
+
+## Monta o braco da camera LIVRE em codigo.
+##
+## Fora da `$Head` de proposito: a cabeca carrega a inclinacao do olhar e o corpo
+## carrega o giro, e esta camera nao pode herdar nenhum dos dois — ela e apontada
+## por angulo proprio. Pendurada na cabeca, o boneco arrastaria a camera junto ao
+## virar, que e o oposto do que o modo faz.
+func _build_free_camera() -> void:
+	_free_pivot = Node3D.new()
+	_free_pivot.name = "FreePivot"
+	_free_pivot.top_level = true   # ignora a transformada do pai
+	add_child(_free_pivot)
+	_free_arm = SpringArm3D.new()
+	_free_arm.name = "FreeArm"
+	_free_arm.spring_length = third_person_arm.spring_length
+	_free_arm.collision_mask = third_person_arm.collision_mask
+	_free_arm.add_excluded_object(get_rid())
+	_free_pivot.add_child(_free_arm)
+	_free_camera = Camera3D.new()
+	_free_camera.name = "FreeCamera"
+	_free_camera.fov = third_person_camera.fov
+	_free_camera.far = third_person_camera.far
+	_free_arm.add_child(_free_camera)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+		if camera_mode == Cam.TERCEIRA_LIVRE and not driving_vehicle:
+			# So a camera orbita. O corpo fica como esta — e o unico modo em que
+			# mexer o mouse NAO vira o boneco.
+			_free_yaw -= event.relative.x * MOUSE_SENSITIVITY
+			_free_pitch = clampf(_free_pitch - event.relative.y * MOUSE_SENSITIVITY,
+				deg_to_rad(-70.0), deg_to_rad(70.0))
+			return
 		rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
 		# A inclinacao vai na CABECA, nao na camera de 1a pessoa: a mola da 3a
 		# pessoa e irma dela debaixo do mesmo no, entao assim as duas cameras
@@ -108,6 +162,16 @@ func _physics_process(delta: float) -> void:
 	input_dir = input_dir.normalized()
 
 	var direction := (transform.basis * Vector3(input_dir.x, 0, input_dir.y)).normalized()
+	if camera_mode == Cam.TERCEIRA_LIVRE:
+		# Na camera livre o corpo nao acompanha o mouse, entao andar pelo eixo do
+		# CORPO daria a sensacao de controle invertido assim que a camera girasse
+		# pro lado. O W anda pra onde a camera olha.
+		direction = (Basis(Vector3.UP, _free_yaw) * Vector3(input_dir.x, 0.0, input_dir.y)).normalized()
+		# E o boneco vira pra onde ANDA — nunca pelo mouse. Parado, ele fica
+		# exatamente como estava, que e o que este modo promete.
+		if direction.length() > 0.01:
+			var alvo := atan2(-direction.x, -direction.z)
+			rotation.y = rotate_toward(rotation.y, alvo, TURN_SPEED * delta)
 	var speed := SPRINT_SPEED if Input.is_key_pressed(KEY_SHIFT) else WALK_SPEED
 	if direction.length() > 0.01:
 		velocity.x = direction.x * speed
@@ -123,6 +187,8 @@ func _physics_process(delta: float) -> void:
 	if not was_on_floor and is_on_floor() and fall_speed > 3.0:
 		AudioManager.play_at(_surface_sound(), global_position,
 			lerpf(-14.0, -5.0, clampf(fall_speed / 12.0, 0.0, 1.0)), 0.85, 22.0)
+	if camera_mode == Cam.TERCEIRA_LIVRE:
+		_update_free_camera()
 	_update_animation()
 	_update_interaction()
 	if e_just:
@@ -191,14 +257,25 @@ func _try_interact() -> void:
 ## V. Guardado como estado proprio (e nao lido da camera) pra sobreviver a
 ## entrar e sair do carro: quem estava em 3a pessoa a pe volta em 3a pessoa.
 func toggle_camera_mode() -> void:
-	third_person = not third_person
+	camera_mode = ((camera_mode + 1) % Cam.size()) as Cam
+	# Entrando na LIVRE, a camera comeca ONDE A DE TRAS ESTAVA. Sem isso ela
+	# saltava pro ultimo angulo livre usado (ou pro zero, no primeiro uso) e a
+	# troca virava um corte seco pra outra direcao.
+	if camera_mode == Cam.TERCEIRA_LIVRE:
+		_free_yaw = rotation.y
+		_free_pitch = head.rotation.x
 	_apply_camera_mode()
 
 func _apply_camera_mode() -> void:
 	if driving_vehicle:
 		return
-	camera.current = not third_person
-	third_person_camera.current = third_person
+	third_person = camera_mode != Cam.PRIMEIRA
+	camera.current = camera_mode == Cam.PRIMEIRA
+	third_person_camera.current = camera_mode == Cam.TERCEIRA_ATRAS
+	if _free_camera:
+		_free_camera.current = camera_mode == Cam.TERCEIRA_LIVRE
+	if camera_mode == Cam.TERCEIRA_LIVRE:
+		_update_free_camera()
 	if visual == null:
 		return
 	# Em 1a pessoa o corpo nao some: ele passa a SO PROJETAR SOMBRA. Escondido
@@ -208,6 +285,15 @@ func _apply_camera_mode() -> void:
 	var mode := GeometryInstance3D.SHADOW_CASTING_SETTING_ON if third_person \
 		else GeometryInstance3D.SHADOW_CASTING_SETTING_SHADOWS_ONLY
 	_set_shadow_mode(visual, mode)
+
+## Poe o pivo da camera livre na altura da cabeca do jogador e aponta pelos
+## angulos proprios. Como o pivo e `top_level`, escrever a transformada GLOBAL
+## aqui e o que mantem ele imune ao giro do corpo.
+func _update_free_camera() -> void:
+	if _free_pivot == null:
+		return
+	_free_pivot.global_position = head.global_position
+	_free_pivot.global_rotation = Vector3(_free_pitch, _free_yaw, 0.0)
 
 func _set_shadow_mode(node: Node, mode: int) -> void:
 	if node is GeometryInstance3D:
