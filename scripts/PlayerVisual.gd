@@ -148,20 +148,15 @@ static func _hide_recursive(node: Node) -> void:
 	for c in node.get_children():
 		_hide_recursive(c)
 
+## Quem sabe achar o osso, medir a cabeca do modelo e encaixar a de jegue do
+## tamanho certo e o proprio `DonkeyHead` — aqui era `find_bone("Head")`, que só
+## funcionava nos dois personagens nativos: dos 44 modelos, só eles chamam o
+## osso de `Head` (os outros usam `mixamorig_Head`, `CC_Base_Head`, `Bip01_Head`,
+## `head_Armature`...).
 static func _attach_donkey_head(visual: Node3D) -> void:
-	var skeleton := CharacterVisual.find_skeleton(visual)
-	if skeleton == null:
-		push_warning("PlayerVisual: personagem sem Skeleton3D, cabeca nao foi presa")
-		return
-	var bone := skeleton.find_bone("Head")
-	if bone < 0:
-		push_warning("PlayerVisual: esqueleto sem osso 'Head'")
-		return
-	var attach := BoneAttachment3D.new()
-	attach.name = "CabecaAttach"
-	skeleton.add_child(attach)
-	attach.bone_idx = bone
-	attach.add_child(DonkeyHead.build())
+	if DonkeyHead.attach_to(visual, Appearance.height) == null:
+		push_warning("PlayerVisual: '%s' nao tem osso de cabeca reconhecivel"
+			% Appearance.model_id)
 
 ## Anima o personagem.
 ##
