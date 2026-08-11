@@ -57,6 +57,14 @@ func _ready() -> void:
 
 # ------------------------------------------------------------ parede invisivel
 
+## O corpo tem malha visivel presa a um esqueleto? Ai a caixa dela nao vale como
+## medida de "tem desenho".
+func _tem_malha_skinada(body: Node) -> bool:
+	for mi in MedirPersonagem.malhas_de(body):
+		if mi.mesh != null and mi.skin != null and mi.is_visible_in_tree():
+			return true
+	return false
+
 func _check_walls() -> void:
 	print("[1] parede invisivel (colisao sem desenho por baixo)")
 	var bodies: Array[CollisionObject3D] = []
@@ -78,7 +86,21 @@ func _check_walls() -> void:
 			continue
 		var vis := _visual_aabb(body)
 		if vis.size.length() < NO_VISUAL_SIZE:
+			# Malha SKINADA nao tem caixa util: `mesh.get_aabb()` mede no espaco
+			# em que a malha foi autorada, e ha modelo cuja caixa crua da 0,019
+			# pra um boneco de 1,80 m (ver MedirPersonagem). Por isso o que decide
+			# aqui e EXISTIR malha visivel, e nao o tamanho dela — senao seis
+			# pedestres de verdade, andando na calcada, entram como parede
+			# invisivel.
+			if _tem_malha_skinada(body):
+				continue
 			orphans.append([body, col])
+			continue
+		# Pelo mesmo motivo, corpo com malha skinada nao entra na conta de
+		# "colisao passando do desenho": a caixa da malha pode estar em outra
+		# escala e ate em outro lugar, e tres pedestres apareciam com 7 m de
+		# sobra estando exatamente dentro da propria capsula.
+		if _tem_malha_skinada(body):
 			continue
 		var over := _overhang(col, vis)
 		if over > WALL_MARGIN:

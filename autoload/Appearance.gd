@@ -83,6 +83,31 @@ static func models() -> Array[Dictionary]:
 		_todos.append(e)
 	return _todos
 
+## Acima disso o modelo so serve de JOGADOR. Pedestre aparece 84 vezes na tela
+## ao mesmo tempo e o jogador uma — e o mesmo corte que `preparar_personagens`
+## usa pra escrever a coluna "serve como" do catalogo.
+const FACES_PARA_NPC := 18000
+
+## Os personagens que servem de PEDESTRE. Sao os jogaveis que cabem no orcamento
+## de faces; os dois nativos entram sempre (sao os que a cidade ja usava).
+##
+## Devolve a ENTRADA inteira, e nao so a cena, porque quem monta um NPC precisa
+## da altura medida do arquivo pra converter "quero 1,75 m" em escala — as
+## alturas nativas vao de 0,7 a 208 unidades, entao uma escala unica pra todos
+## poe metade da cidade de anao e a outra metade de gigante.
+static func npc_models() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	for entry: Dictionary in models():
+		if int(entry.get("faces", 0)) > FACES_PARA_NPC:
+			continue
+		# Sem animacao propria e sem o esqueleto da UAL1, o modelo fica em
+		# T-POSE andando pela rua. Os dois nativos nao declaram `animacoes` (usam
+		# a UAL1, que casa com o esqueleto deles) e por isso passam.
+		if entry.has("animacoes") and int(entry["animacoes"]) <= 0:
+			continue
+		out.append(entry)
+	return out
+
 ## As formas do corpo, na escala 0..1 das shape keys gravadas no modelo (ver
 ## `tools/build_characters.py`). `so_feminino` marca as que o modelo masculino
 ## nao tem: elas continuam no estado (trocar de personagem e voltar nao perde o

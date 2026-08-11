@@ -46,6 +46,13 @@ const CLOTH_TINTS: Array[Color] = [
 	Color(0.82, 0.94, 0.80), Color(0.70, 0.70, 0.74), Color(0.94, 0.88, 0.66),
 	Color(0.62, 0.66, 0.78), Color(0.88, 0.72, 0.58),
 ]
+## Desvio leve pra modelo de terceiro (ver `_apply_tints`). Fraco de proposito:
+## e pra dois pedestres do mesmo arquivo nao serem a mesma pessoa, nao pra
+## repintar ninguem.
+const GERAL_TINTS: Array[Color] = [
+	Color(1.0, 1.0, 1.0), Color(1.07, 1.04, 1.0), Color(0.93, 0.95, 1.0),
+	Color(1.0, 0.96, 0.93), Color(0.95, 0.97, 0.94), Color(0.90, 0.90, 0.92),
+]
 const HAIR_TINTS: Array[Color] = [
 	Color(1.0, 1.0, 1.0), Color(0.38, 0.29, 0.24), Color(0.20, 0.17, 0.16),
 	Color(1.45, 1.25, 0.80), Color(0.86, 0.86, 0.90), Color(0.90, 0.52, 0.30),
@@ -98,6 +105,8 @@ static func randomize_colors(visual: Node3D) -> void:
 		"skin": SKIN_TINTS[randi() % SKIN_TINTS.size()],
 		"cloth": CLOTH_TINTS[randi() % CLOTH_TINTS.size()],
 		"hair": HAIR_TINTS[randi() % HAIR_TINTS.size()],
+		# Pros modelos baixados, que nao tem material reconhecivel por nome.
+		"geral": GERAL_TINTS[randi() % GERAL_TINTS.size()],
 	}
 	_apply_tints(visual, tints)
 
@@ -125,6 +134,16 @@ static func _apply_tints(node: Node, tints: Dictionary) -> void:
 					continue
 				var kind := _material_kind(source.resource_name)
 				if kind == "":
+					# Material de modelo BAIXADO: o nome nao casa com nenhuma das
+					# tres categorias (elas sao dos dois personagens nativos). Sem
+					# tratamento, todos os pedestres daquele modelo saem
+					# IDENTICOS — o `street_test` pegou 10 iguais em 72. Aqui vai
+					# so um leve desvio de brilho/tom por NPC: o suficiente pra
+					# dois nao serem a mesma pessoa, e fraco o bastante pra nao
+					# pintar ninguem de roxo.
+					var leve := source.duplicate() as StandardMaterial3D
+					leve.albedo_color = source.albedo_color * (tints["geral"] as Color)
+					mesh_instance.set_surface_override_material(surface, leve)
 					continue
 				var copy := source.duplicate() as StandardMaterial3D
 				# Multiplica a cor que a superficie ja tinha: a roupa de baixo
@@ -145,6 +164,63 @@ static func _material_kind(material_name: String) -> String:
 	if material_name.contains("Hair"):
 		return "hair"
 	return ""
+
+## O esqueleto tem os ossos que a UAL1 (Quaternius) anima? `spine_01` e o
+## marcador: e o nome que aquele pacote usa e que nenhum dos modelos de terceiro
+## recebidos usa (medido nos 44). Sem esta checagem, as trilhas procuram osso por
+## NOME, nenhuma casa, o Godot enche o log de `_update_caches` e o boneco fica em
+## T-pose andando pela cidade.
+static func esqueleto_compativel(visual: Node3D) -> bool:
+	var skeleton := find_skeleton(visual)
+	return skeleton != null and skeleton.find_bone("spine_01") >= 0
+
+## Usa o AnimationPlayer que veio DENTRO do arquivo, apelidando as animacoes de
+## "idle"/"walk"/"run". Um clipe por estado quando ha mais de um; com um so, o
+## personagem anda e para com o mesmo, que e melhor que T-pose.
+##
+## Publico e aqui (e nao no `PlayerVisual`) porque pedestre e jogador precisam
+## exatamente da mesma coisa: os dois montam modelo de terceiro e os dois
+## precisam que ele se mexa.
+static func animar_com_o_proprio(visual: Node3D) -> AnimationPlayer:
+	var player := _achar_player(visual)
+	if player == null:
+		return null
+	var nomes := PackedStringArray()
+	for lib_name in player.get_animation_library_list():
+		for a in player.get_animation_library(lib_name).get_animation_list():
+			nomes.append(("%s/%s" % [lib_name, a]) if lib_name != "" else str(a))
+	if nomes.is_empty():
+		return null
+	var lib := player.get_animation_library("")
+	if lib == null:
+		lib = AnimationLibrary.new()
+		player.add_animation_library("", lib)
+	for pedido: Array in [["idle", ["idle", "stand", "pose"]],
+			["walk", ["walk", "jog"]], ["run", ["run", "sprint", "jog"]]]:
+		var apelido: String = pedido[0]
+		if lib.has_animation(apelido):
+			continue
+		var anim := player.get_animation(_melhor_animacao(nomes, pedido[1]))
+		if anim:
+			anim.loop_mode = Animation.LOOP_LINEAR
+			lib.add_animation(apelido, anim)
+	return player
+
+static func _melhor_animacao(nomes: PackedStringArray, palavras: Array) -> String:
+	for palavra: String in palavras:
+		for n in nomes:
+			if n.to_lower().contains(palavra):
+				return n
+	return nomes[0]
+
+static func _achar_player(node: Node) -> AnimationPlayer:
+	if node is AnimationPlayer:
+		return node as AnimationPlayer
+	for c in node.get_children():
+		var f := _achar_player(c)
+		if f:
+			return f
+	return null
 
 static func find_skeleton(node: Node) -> Skeleton3D:
 	if node is Skeleton3D:

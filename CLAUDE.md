@@ -3346,6 +3346,87 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     character, settings, ui. `pack_audit` limpo, builds reexportadas (macOS 670
     MB, Windows 757 MB), `.app` reextraído e o binário exportado sobe limpo.
 
+- **2026-08-11** — Usuário pediu **cabeça de jegue para todos os personagens
+  novos, aparecendo de verdade na cabeça**, e que os 44 fossem testados como
+  jogáveis E como NPCs, separadamente. Também perguntou se a release do GitHub
+  estava sendo atualizada — **não estava**: havia 11 commits sem push e a última
+  release era a v0.2.0, de 05/08.
+  - **O push estava travado por um arquivo de 195 MB no histórico.** Uma sessão
+    anterior commitou as pastas de personagem que estavam na raiz, e o
+    `chibi_rem/scene.bin` passa do limite de 100 MB do GitHub. Como os 11
+    commits nunca tinham sido enviados, dava pra reescrevê-los sem risco —
+    e essas pastas nunca deveriam ter entrado no git (é a política escrita
+    desde `assets/realistas/`). Publicada a
+    [v0.3.0](https://github.com/vitudanas/joguinho2/releases/tag/v0.3.0) com os
+    dois builds.
+  - **A cabeça de jegue só servia nos dois nativos**, e por dois motivos: o
+    código procurava o osso `Head` (dos 44 modelos, só eles usam esse nome) e as
+    medidas do crânio eram metros fixos, calibrados naquela cabeça. Agora o osso
+    sai de uma regra de nome com desempate (cobre os seis padrões medidos:
+    `Head`, `mixamorig_Head`, `CC_Base_Head`, `Bip01_Head`, `girlBone_Head`,
+    `head_Armature`) e, quando nenhum osso tem "head" no nome, por **geometria**
+    — o osso cujos vértices ficam mais no alto. O tamanho sai da cabeça humana
+    MEDIDA no arquivo; quando essa medida não é confiável, de uma **fração da
+    altura que o personagem tem na cena**.
+  - **43 dos 44 recebem a cabeça.** O único de fora é o `rem_rezero`, cujo rig
+    não tem osso de cabeça e onde o palpite geométrico cai no peito — cabeça
+    nenhuma é melhor que cabeça no lugar errado, e a exceção está listada no
+    teste pra um modelo novo nessa situação reprovar em vez de passar no meio de
+    uma falha permanente.
+  - **Quatro erros meus nessa parte, todos de ESPAÇO**, e cada um só apareceu
+    porque a folha de contato foi olhada:
+    1. Comparei a caixa da cabeça (espaço da malha) com a altura pelos **ossos**
+       (espaço do osso). Em vários rigs os dois não coincidem — há um em que os
+       ossos ocupam 0,3 enquanto a malha ocupa 1,8, porque a escala mora na bind
+       pose. A "cabeça" media 110% do corpo, era reprovada como implausível e
+       caía numa estimativa de 3 cm, invisível dentro da cabeça humana.
+    2. Li o **rest** do osso quando o que aparece na tela é a **pose**: nem todo
+       rig guarda a orientação no rest.
+    3. Subi a árvore até o topo pra achar as malhas do personagem — e na folha
+       de contato, onde os 5 são irmãos, medi a cabeça de um com o corpo do
+       vizinho: saiu uma cabeça de jegue de 184 m.
+    4. O índice guardado em `ARRAY_BONES` **não é o índice do osso**, é a posição
+       na lista de binds do skin. Comparar um com o outro acerta por acaso e erra
+       na maioria.
+  - **Os baixados agora são PEDESTRES também** (`Appearance.npc_models`), que era
+    o item que resolvia "todo pedestre tem a mesma cara": 31 modelos cabem no
+    orçamento de faces (média de 5.100, a mesma ordem dos dois nativos). A regra
+    de "usa a UAL1 ou a animação que veio no arquivo" saiu do `PlayerVisual` e
+    virou dono único no `CharacterVisual` — o pedestre precisava exatamente da
+    mesma coisa, senão anda em T-pose.
+  - **A escala do pedestre passou a sair da altura MEDIDA de cada modelo**
+    (`model_heights`, array paralelo). Com um `visual_scale` único, metade da
+    cidade sairia de anão e a outra de gigante — as alturas de arquivo vão de 0,7
+    a 208 unidades. Mesma lição da grama gigante: configurar em metros e derivar
+    a escala.
+  - **Três defeitos que o teste novo pegou, e um que ele deixou passar:**
+    1. *Rodízio em vez de sorteio*: com `i % tamanho` e 4 pedestres por rota, as
+       18 rotas usavam os mesmos 4 primeiros modelos — a cidade tinha 31
+       disponíveis e mostrava **6**. Sorteando, foram a **29**.
+    2. *Modelo sem animação nenhuma* (`anime_girl_rigged`) andava de **T-pose**
+       pela rua. Saiu do pool de NPC (como jogador continua, que é escolha de
+       quem joga).
+    3. *Todos do mesmo modelo saíam idênticos*: o tinturador casa material por
+       NOME, e nome de modelo baixado não casa. O `street_test` pegou 10 iguais
+       em 72. Agora há um desvio leve de tom por NPC também pra esses — 60
+       aparências distintas em 72.
+    4. E o que ele deixou passar: minha checagem de altura mediu **zero**
+       pedestres e mesmo assim disse "ok", porque eu procurava o visual como "o
+       primeiro filho Node3D" e pegava a `CollisionShape3D`. Passou a procurar
+       pelo filho que TEM esqueleto, e a falhar quando não mede nada.
+  - **Dois verificadores estavam medindo desenho pela caixa da malha**, e com
+    pedestre de modelo de terceiro isso vira alarme falso: o `obstacles_test`
+    acusou 6 pedestres como "parede invisível" e 3 com "7 m de sobra" estando
+    exatamente dentro da própria cápsula. Corpo com malha skinada passou a ser
+    julgado por EXISTIR malha visível, não pelo tamanho da caixa.
+  - **Verificação**: `tools/verify/jegue_sheet.tscn` (novo) fotografa os 44 de
+    frente e de perfil com a cabeça de jegue e cobra que ela exista e não saia
+    pequena demais; `tools/verify/npc_test.tscn` (novo) carrega a cidade e cobra
+    variedade, animação, altura e visibilidade dos 72 pedestres. Suíte inteira
+    passa (16 testes). As fotos foram olhadas linha a linha — é o que pegou a
+    cabeça deitada feito chapéu, a que sumia dentro da humana e a do Rem no
+    peito.
+
 ### ONDE PAREI (2026-08-10, fim da sessão)
 
 Estado: tudo commitado, suíte inteira passando e **builds reexportadas nesta

@@ -38,6 +38,9 @@ extends Node3D
 @export var pedestrian_scene: PackedScene
 @export var pedestrian_routes := 12
 @export var peds_per_route := 4
+## Reserva: usado só se o catálogo de personagens não trouxer nada. O pool de
+## verdade sai de `Appearance.npc_models()` (ver `_pool_modelos`), que já inclui
+## os dois nativos.
 @export var character_models: Array[PackedScene] = []
 @export var anim_scene: PackedScene
 ## A calçada fica entre o meio-fio (3.0) e a fachada (3.8+): 3.75 é o meio dela.
@@ -54,6 +57,41 @@ extends Node3D
 @export var rng_seed := 20260809
 
 var _rng := RandomNumberGenerator.new()
+
+## Cache do pool de pedestres: `Appearance.npc_models()` le o catalogo do disco,
+## e sao 18 rotas pedindo a mesma lista.
+static var _pool: Array[Dictionary] = []
+
+## Os modelos que os pedestres usam: os dois nativos configurados na cena MAIS os
+## personagens baixados que cabem no orcamento de faces (ver
+## `Appearance.npc_models`). Sem isso a cidade inteira anda com dois bonecos, que
+## era a limitacao "todo pedestre tem a mesma cara".
+##
+## O catalogo entra por CODIGO e nao pela cena porque a lista cresce a cada
+## personagem baixado — escrever os 31 a mao no `Town.tscn` seriam 31 chances de
+## errar a altura, que e o erro que nao acusa em lugar nenhum.
+func _pool_modelos() -> Array[PackedScene]:
+	var out: Array[PackedScene] = []
+	for e: Dictionary in _entradas():
+		var cena := load(str(e["caminho"])) as PackedScene
+		if cena:
+			out.append(cena)
+	return out
+
+func _pool_alturas() -> Array[float]:
+	var out: Array[float] = []
+	for e: Dictionary in _entradas():
+		if load(str(e["caminho"])) != null:
+			out.append(float(e["altura_modelo"]))
+	return out
+
+func _entradas() -> Array[Dictionary]:
+	if _pool.is_empty():
+		_pool = Appearance.npc_models()
+	if _pool.is_empty():
+		for cena: PackedScene in character_models:
+			_pool.append({"caminho": cena.resource_path, "altura_modelo": 1.79})
+	return _pool
 
 func _ready() -> void:
 	_rng.seed = rng_seed
@@ -111,7 +149,8 @@ func _build(count: int, is_traffic: bool) -> void:
 			rota.car_speed_max = car_speed_max
 		else:
 			rota.pedestrian_count = peds_per_route
-			rota.character_models = character_models
+			rota.character_models = _pool_modelos()
+			rota.model_heights = _pool_alturas()
 			rota.idle_anim_scene = anim_scene
 			rota.walk_anim_scene = anim_scene
 			rota.idle_anim_name = "Idle"

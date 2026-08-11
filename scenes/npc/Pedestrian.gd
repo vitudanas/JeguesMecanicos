@@ -114,6 +114,20 @@ func _load_visual() -> void:
 	_setup_animation(visual)
 
 func _setup_animation(visual: Node) -> void:
+	# Modelo de terceiro tem esqueleto proprio: as trilhas da UAL1 procuram osso
+	# por NOME e nenhuma casa, entao o pedestre andaria pela cidade em T-pose. A
+	# regra de "usa a UAL1 ou a animacao que veio no arquivo" mora no
+	# `CharacterVisual`, compartilhada com o jogador.
+	if not CharacterVisual.esqueleto_compativel(visual as Node3D):
+		_anim_player = CharacterVisual.animar_com_o_proprio(visual as Node3D)
+		if _anim_player:
+			# O pedestre esta sempre andando; "run" e o apelido que o resto deste
+			# script toca.
+			if not _anim_player.has_animation("run") and _anim_player.has_animation("walk"):
+				_anim_player.get_animation_library("").add_animation(
+					"run", _anim_player.get_animation("walk"))
+			_anim_player.play("run" if _anim_player.has_animation("run") else "idle")
+		return
 	var idle_anim := _get_cached_animation(idle_anim_scene, idle_anim_name)
 	var walk_anim := _get_cached_animation(walk_anim_scene, walk_anim_name)
 	if idle_anim == null and walk_anim == null:

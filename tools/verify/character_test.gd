@@ -212,7 +212,9 @@ func _check_skull_coverage(model_id: String, visual: Node3D) -> void:
 	if attach == null:
 		fail("%s: cabeca de jegue nao foi presa (sem CabecaAttach)" % model_id)
 		return
-	var head_root := attach.get_node_or_null("CabecaDeJegue") as Node3D
+	# `find_child` e nao filho direto: a cabeca passou a ficar dentro de um
+	# "berco" que cancela a rotacao do osso (ver DonkeyHead.attach_to).
+	var head_root := attach.find_child("CabecaDeJegue", true, false) as Node3D
 	if head_root == null:
 		fail("%s: CabecaAttach sem a cabeca montada" % model_id)
 		return

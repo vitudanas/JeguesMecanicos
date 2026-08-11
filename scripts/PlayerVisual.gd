@@ -170,8 +170,14 @@ static func _attach_donkey_head(visual: Node3D) -> void:
 ## arquivo — quase todos trazem pelo menos um ciclo de caminhada, que foi
 ## justamente o filtro do garimpo.
 static func _setup_animation(visual: Node3D) -> AnimationPlayer:
-	if not _esqueleto_compativel(visual):
-		return _usar_animacao_propria(visual)
+	# Esqueleto de terceiro nao casa com a UAL1; quem sabe disso e o
+	# `CharacterVisual`, compartilhado com os pedestres — a regra e a mesma pros
+	# dois e valor repetido em dois lugares vira dois valores.
+	if not CharacterVisual.esqueleto_compativel(visual):
+		var proprio := CharacterVisual.animar_com_o_proprio(visual)
+		if proprio:
+			proprio.play("idle")
+		return proprio
 	var lib := AnimationLibrary.new()
 	var any := false
 	for pair: Array in [["idle", IDLE_ANIM], ["walk", WALK_ANIM], ["run", RUN_ANIM]]:
@@ -189,63 +195,3 @@ static func _setup_animation(visual: Node3D) -> AnimationPlayer:
 	player.play("idle")
 	return player
 
-## O esqueleto tem os ossos que a UAL1 anima? `spine_01` e o marcador: e o nome
-## que o pacote Quaternius usa e que nenhum dos modelos de terceiro recebidos
-## usa (medido).
-static func _esqueleto_compativel(visual: Node3D) -> bool:
-	var skeleton := CharacterVisual.find_skeleton(visual)
-	if skeleton == null:
-		return false
-	return skeleton.find_bone("spine_01") >= 0
-
-## Usa o AnimationPlayer que veio dentro do `.glb`, apelidando a primeira
-## animacao de "idle"/"walk"/"run" — que sao os nomes que o `Player` pede.
-## Modelo com um ciclo so anda e para com o mesmo, que e melhor que T-pose.
-static func _usar_animacao_propria(visual: Node3D) -> AnimationPlayer:
-	var player := _achar_player(visual)
-	if player == null:
-		return null
-	var nomes := PackedStringArray()
-	for lib_name in player.get_animation_library_list():
-		for a in player.get_animation_library(lib_name).get_animation_list():
-			nomes.append(("%s/%s" % [lib_name, a]) if lib_name != "" else str(a))
-	if nomes.is_empty():
-		return null
-	var lib := player.get_animation_library("")
-	if lib == null:
-		lib = AnimationLibrary.new()
-		player.add_animation_library("", lib)
-	# Um clipe por ESTADO quando o arquivo tem mais de um. Antes, a primeira
-	# animacao que casasse com walk/run/idle virava as tres — e como o teste
-	# parava no primeiro acerto, o `stickman` (que traz "Idle" e "Run") ficava
-	# parado tambem correndo. Quem so tem um clipe continua andando e parando com
-	# o mesmo, que e melhor que T-pose.
-	for pedido: Array in [["idle", ["idle", "stand", "pose"]],
-			["walk", ["walk", "jog"]], ["run", ["run", "sprint", "jog"]]]:
-		var apelido: String = pedido[0]
-		if lib.has_animation(apelido):
-			continue
-		var anim := player.get_animation(_melhor(nomes, pedido[1]))
-		if anim:
-			anim.loop_mode = Animation.LOOP_LINEAR
-			lib.add_animation(apelido, anim)
-	player.play("idle")
-	return player
-
-## O nome que melhor casa com as palavras pedidas; sem casar nenhuma, o
-## primeiro da lista.
-static func _melhor(nomes: PackedStringArray, palavras: Array) -> String:
-	for palavra: String in palavras:
-		for n in nomes:
-			if n.to_lower().contains(palavra):
-				return n
-	return nomes[0]
-
-static func _achar_player(node: Node) -> AnimationPlayer:
-	if node is AnimationPlayer:
-		return node as AnimationPlayer
-	for c in node.get_children():
-		var f := _achar_player(c)
-		if f:
-			return f
-	return null

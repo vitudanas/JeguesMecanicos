@@ -21,6 +21,13 @@ extends Path3D
 @export var outfit_scenes: Array[PackedScene] = []
 ## Cabelo pra cada character_models[i] (mesmo indice). Ver Pedestrian.gd:hair_scene.
 @export var hair_scenes: Array[PackedScene] = []
+## Altura MEDIDA de cada `character_models[i]`, no arquivo (arrays paralelos,
+## mesmo padrao de `diagonal_starts`/`_ends`). E ela que converte "quero 1,75 m"
+## em escala — sem isso, um `visual_scale` unico serve pra um modelo so, e os 44
+## do catalogo vao de 0,7 a 208 unidades de altura no arquivo.
+@export var model_heights: Array[float] = []
+## Altura ALVO do pedestre, em metros. Usada quando ha `model_heights`.
+@export var target_height := 1.75
 @export var visual_scale := 1.0
 ## Variacao de altura por pedestre (fracao de visual_scale). Os dois modelos
 ## tem 1.77m/1.81m, entao 0.07 da gente de ~1.65m a ~1.94m na rua.
@@ -43,6 +50,7 @@ func _ready() -> void:
 
 func _spawn_pedestrians() -> void:
 	for i in range(pedestrian_count):
+		var idx := -1
 		var path_follow := PathFollow3D.new()
 		path_follow.rotation_mode = PathFollow3D.ROTATION_Y
 		path_follow.loop = true
@@ -52,7 +60,11 @@ func _spawn_pedestrians() -> void:
 		var pedestrian := PEDESTRIAN_SCENE.instantiate()
 		pedestrian.speed = randf_range(speed_min, speed_max)
 		if character_models.size() > 0:
-			pedestrian.character_model = character_models[i % character_models.size()]
+			# SORTEADO, e nao rodizio: com `i % tamanho` e 4 pedestres por rota,
+			# todas as 18 rotas usavam os mesmos 4 primeiros modelos do pool — a
+			# cidade tinha 31 modelos disponiveis e mostrava 6.
+			idx = randi() % character_models.size()
+			pedestrian.character_model = character_models[idx]
 			if outfit_scenes.size() > 0:
 				pedestrian.outfit_scene = outfit_scenes[i % outfit_scenes.size()]
 			if hair_scenes.size() > 0:
@@ -61,7 +73,15 @@ func _spawn_pedestrians() -> void:
 			pedestrian.character_model = character_model
 			if skin_textures.size() > 0:
 				pedestrian.skin_texture = skin_textures[i % skin_textures.size()]
-		pedestrian.visual_scale = visual_scale * randf_range(
+		# A escala sai da altura MEDIDA do modelo, e nao de um fator unico: e a
+		# mesma licao da grama gigante de 2026-08-04 — configurar em metros e
+		# derivar a escala, em vez de escrever escala crua.
+		var base_scale := visual_scale
+		if idx >= 0 and model_heights.size() == character_models.size():
+			var alto: float = model_heights[idx]
+			if alto > 0.0:
+				base_scale = target_height / alto
+		pedestrian.visual_scale = base_scale * randf_range(
 				1.0 - height_variation, 1.0 + height_variation)
 		if idle_anim_scene:
 			pedestrian.idle_anim_scene = idle_anim_scene
