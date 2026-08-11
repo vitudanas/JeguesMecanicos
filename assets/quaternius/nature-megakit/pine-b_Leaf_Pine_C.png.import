@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://sigym1ma7wpo"
-path="res://.godot/imported/pine-b_Leaf_Pine_C.png-5bec74f37d950f747d6e4fbfa29b7acc.ctex"
+path.s3tc="res://.godot/imported/pine-b_Leaf_Pine_C.png-5bec74f37d950f747d6e4fbfa29b7acc.s3tc.ctex"
+path.etc2="res://.godot/imported/pine-b_Leaf_Pine_C.png-5bec74f37d950f747d6e4fbfa29b7acc.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "2dc84516713931d3885b21d987929d52"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/quaternius/nature-megakit/pine-b_Leaf_Pine_C.png"
-dest_files=["res://.godot/imported/pine-b_Leaf_Pine_C.png-5bec74f37d950f747d6e4fbfa29b7acc.ctex"]
+dest_files=["res://.godot/imported/pine-b_Leaf_Pine_C.png-5bec74f37d950f747d6e4fbfa29b7acc.s3tc.ctex", "res://.godot/imported/pine-b_Leaf_Pine_C.png-5bec74f37d950f747d6e4fbfa29b7acc.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

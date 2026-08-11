@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cqwseaeycpvcn"
-path="res://.godot/imported/rock-medium-a_Rocks_Diffuse.png-06641a59b878ca20f5cd28f2db6c689f.ctex"
+path.s3tc="res://.godot/imported/rock-medium-a_Rocks_Diffuse.png-06641a59b878ca20f5cd28f2db6c689f.s3tc.ctex"
+path.etc2="res://.godot/imported/rock-medium-a_Rocks_Diffuse.png-06641a59b878ca20f5cd28f2db6c689f.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "5342e43254ede66c6c34970a15439c1a"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/quaternius/nature-megakit/rock-medium-a_Rocks_Diffuse.png"
-dest_files=["res://.godot/imported/rock-medium-a_Rocks_Diffuse.png-06641a59b878ca20f5cd28f2db6c689f.ctex"]
+dest_files=["res://.godot/imported/rock-medium-a_Rocks_Diffuse.png-06641a59b878ca20f5cd28f2db6c689f.s3tc.ctex", "res://.godot/imported/rock-medium-a_Rocks_Diffuse.png-06641a59b878ca20f5cd28f2db6c689f.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

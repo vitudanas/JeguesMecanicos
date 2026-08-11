@@ -3,19 +3,21 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://byd0pp0cvubjk"
-path="res://.godot/imported/Asphalt033_1K-JPG_Roughness.jpg-0a05075e7b01d05df0a42c6247a3448d.ctex"
+path.s3tc="res://.godot/imported/Asphalt033_1K-JPG_Roughness.jpg-0a05075e7b01d05df0a42c6247a3448d.s3tc.ctex"
+path.etc2="res://.godot/imported/Asphalt033_1K-JPG_Roughness.jpg-0a05075e7b01d05df0a42c6247a3448d.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/ambientcg/Asphalt033/Asphalt033_1K-JPG_Roughness.jpg"
-dest_files=["res://.godot/imported/Asphalt033_1K-JPG_Roughness.jpg-0a05075e7b01d05df0a42c6247a3448d.ctex"]
+dest_files=["res://.godot/imported/Asphalt033_1K-JPG_Roughness.jpg-0a05075e7b01d05df0a42c6247a3448d.s3tc.ctex", "res://.godot/imported/Asphalt033_1K-JPG_Roughness.jpg-0a05075e7b01d05df0a42c6247a3448d.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -23,7 +25,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""

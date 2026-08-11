@@ -34,12 +34,23 @@ RAIZ = pathlib.Path(__file__).resolve().parent.parent / "assets" / "personagens"
 
 
 def capar_textura(imp: pathlib.Path, texto: str) -> str | None:
-    if "process/size_limit=%d" % LIMITE in texto:
-        return None
-    if "process/size_limit=" not in texto:
+    """Resolucao capada, compressao de VRAM ligada e mipmap."""
+    novo = texto
+    if "process/size_limit=" in novo:
+        novo = novo.replace("process/size_limit=0", "process/size_limit=%d" % LIMITE)
+    else:
         print("  ! %s: sem o campo process/size_limit — pulei" % imp.name)
-        return None
-    novo = texto.replace("process/size_limit=0", "process/size_limit=%d" % LIMITE)
+    # COMPRESSAO DE VRAM. Sem ela a textura fica RGBA8 crua na placa de video:
+    # medido, os 28 modelos de pedestre custavam +577 MB de VRAM, e a cidade
+    # inteira chegava a 2,5 GB. O modo 2 (VRAM Compressed) e ~4x menor.
+    #
+    # O Godot tem `detect_3d/compress_to=1`, que faria isso sozinho — mas so
+    # dispara quando o EDITOR abre uma cena 3D que usa a textura, e aqui tudo e
+    # importado headless. Por isso vai explicito.
+    novo = novo.replace("compress/mode=0", "compress/mode=2")
+    # Mipmap: pedestre a 100 m sem mipmap cintila, e ainda custa mais banda de
+    # textura que a versao com.
+    novo = novo.replace("mipmaps/generate=false", "mipmaps/generate=true")
     return novo if novo != texto else None
 
 

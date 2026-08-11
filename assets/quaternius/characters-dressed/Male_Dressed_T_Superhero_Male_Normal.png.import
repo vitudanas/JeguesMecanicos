@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://clrmq2ypj0wxj"
-path="res://.godot/imported/Male_Dressed_T_Superhero_Male_Normal.png-ba2156147a2b11fcabe6159203e85839.ctex"
+path.s3tc="res://.godot/imported/Male_Dressed_T_Superhero_Male_Normal.png-ba2156147a2b11fcabe6159203e85839.s3tc.ctex"
+path.etc2="res://.godot/imported/Male_Dressed_T_Superhero_Male_Normal.png-ba2156147a2b11fcabe6159203e85839.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "2ba96b0a92f0719905727e94259b0f1f"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/quaternius/characters-dressed/Male_Dressed_T_Superhero_Male_Normal.png"
-dest_files=["res://.godot/imported/Male_Dressed_T_Superhero_Male_Normal.png-ba2156147a2b11fcabe6159203e85839.ctex"]
+dest_files=["res://.godot/imported/Male_Dressed_T_Superhero_Male_Normal.png-ba2156147a2b11fcabe6159203e85839.s3tc.ctex", "res://.godot/imported/Male_Dressed_T_Superhero_Male_Normal.png-ba2156147a2b11fcabe6159203e85839.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

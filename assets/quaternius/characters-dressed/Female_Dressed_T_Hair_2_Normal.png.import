@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://chufv25x6o8br"
-path="res://.godot/imported/Female_Dressed_T_Hair_2_Normal.png-7b5c90a4cd6f8f429a83f0407fa211d1.ctex"
+path.s3tc="res://.godot/imported/Female_Dressed_T_Hair_2_Normal.png-7b5c90a4cd6f8f429a83f0407fa211d1.s3tc.ctex"
+path.etc2="res://.godot/imported/Female_Dressed_T_Hair_2_Normal.png-7b5c90a4cd6f8f429a83f0407fa211d1.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "4ca9f07f506e72486be184775294504e"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/quaternius/characters-dressed/Female_Dressed_T_Hair_2_Normal.png"
-dest_files=["res://.godot/imported/Female_Dressed_T_Hair_2_Normal.png-7b5c90a4cd6f8f429a83f0407fa211d1.ctex"]
+dest_files=["res://.godot/imported/Female_Dressed_T_Hair_2_Normal.png-7b5c90a4cd6f8f429a83f0407fa211d1.s3tc.ctex", "res://.godot/imported/Female_Dressed_T_Hair_2_Normal.png-7b5c90a4cd6f8f429a83f0407fa211d1.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

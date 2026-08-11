@@ -3427,6 +3427,45 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     cabeça deitada feito chapéu, a que sumia dentro da humana e a do Rem no
     peito.
 
+- **2026-08-11 (2ª rodada)** — "Continue com testes e tudo o resto". Fechado o
+  ciclo: os testes que faltavam, o custo da cidade medido, e as builds
+  reexportadas e publicadas.
+  - **A cidade usava 2,5 GB de MEMÓRIA DE TEXTURA**, e isso não era dos
+    personagens: medido com o `perf_probe` novo, só a cidade já dava **1960 MB**,
+    e os 28 modelos de pedestre somavam +577 MB. A causa é uma só e valia pro
+    projeto inteiro: **todas as texturas estavam em `compress/mode=0`**
+    (Lossless), que comprime no disco mas na placa de vídeo fica RGBA8 cru —
+    1024×1024 vira 4 MB, e são mais de mil.
+    - O Godot tem `detect_3d/compress_to=1`, que faria a conversão sozinho, mas
+      ele **só dispara quando o EDITOR abre uma cena 3D** que usa a textura.
+      Neste projeto tudo é importado headless, então nunca disparou em nada.
+    - Com compressão de VRAM ligada (`tools/comprimir_texturas.py`, novo): **2537
+      → 916 MB**, uma queda de 64%. Conferido na foto que a rua não mudou.
+  - **Cuidado com o número que se olha**: o `.pck` **cresceu** com isso (684 →
+    889 MB), porque BPTC tem tamanho fixo em disco enquanto PNG lossless
+    comprime. A troca é boa mesmo assim — 1,6 GB a menos de VRAM importa pra
+    rodar, e disco é só download. O que resolveu o download foi **empacotar o
+    Windows num zip** também (o `.exe` embute o `.pck` sem compressão): os dois
+    downloads caíram de 670/756 MB para **464/439 MB**.
+  - **O `settings_test` pegou um efeito colateral real dos NPCs novos**: com 29
+    modelos de tamanhos diferentes sorteados com `randi()` global, a geometria da
+    cidade mudava a cada carga, e o teste — que carrega a cidade uma vez por
+    preset — reprovou por 2,7% de diferença que era só o sorteio. O sorteio de
+    pedestre passou a ser **semeado** (semente por rota, tirada do RNG semeado da
+    cidade). Além de consertar o teste, isso restaura uma propriedade que o save
+    depende: a cidade é gerada com semente fixa e tem que voltar idêntica.
+  - **Release publicada de verdade**: [v0.3.0](https://github.com/vitudanas/joguinho2/releases/tag/v0.3.0)
+    com os dois zips, já com a cabeça de jegue em todos e os pedestres novos.
+    `pack_audit` limpo, `.app` reextraído e o binário exportado sobe sem erro.
+  - **Teste instável anotado**: o `audio_test` reprovou uma vez com "clique de
+    menu nao tocou nada" no meio de uma bateria de 16 testes, e passou 3 de 3 ao
+    rodar sozinho. É dependente de tempo (a voz pode estar ocupada). Não
+    investigado — se reprovar de novo isolado, aí é defeito.
+  - **`tools/verify/perf_probe.tscn`** (novo): chamadas de desenho, primitivas e
+    memória de textura/buffer com a cidade carregada. Mede CONTAGEM do
+    renderizador, e não tempo de quadro, pelo motivo já documentado em
+    2026-08-04 (o macOS estrangula a janela fora de foco e o tempo mente).
+
 ### ONDE PAREI (2026-08-10, fim da sessão)
 
 Estado: tudo commitado, suíte inteira passando e **builds reexportadas nesta

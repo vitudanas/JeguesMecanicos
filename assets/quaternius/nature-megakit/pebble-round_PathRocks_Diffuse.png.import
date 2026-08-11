@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://d08j56ewg18ve"
-path="res://.godot/imported/pebble-round_PathRocks_Diffuse.png-9814b6cbe070f24ab563af283d4670fa.ctex"
+path.s3tc="res://.godot/imported/pebble-round_PathRocks_Diffuse.png-9814b6cbe070f24ab563af283d4670fa.s3tc.ctex"
+path.etc2="res://.godot/imported/pebble-round_PathRocks_Diffuse.png-9814b6cbe070f24ab563af283d4670fa.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "caf9f6ef2a902c6a1a20803d7f67d1f1"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/quaternius/nature-megakit/pebble-round_PathRocks_Diffuse.png"
-dest_files=["res://.godot/imported/pebble-round_PathRocks_Diffuse.png-9814b6cbe070f24ab563af283d4670fa.ctex"]
+dest_files=["res://.godot/imported/pebble-round_PathRocks_Diffuse.png-9814b6cbe070f24ab563af283d4670fa.s3tc.ctex", "res://.godot/imported/pebble-round_PathRocks_Diffuse.png-9814b6cbe070f24ab563af283d4670fa.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://c5jcqjmrs3m1l"
-path="res://.godot/imported/flower-group_Leaves.png-d8da5fd93a3c22c6bba918b5233a5506.ctex"
+path.s3tc="res://.godot/imported/flower-group_Leaves.png-d8da5fd93a3c22c6bba918b5233a5506.s3tc.ctex"
+path.etc2="res://.godot/imported/flower-group_Leaves.png-d8da5fd93a3c22c6bba918b5233a5506.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "11857c379298fad10da2810250c8c371"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/quaternius/nature-megakit/flower-group_Leaves.png"
-dest_files=["res://.godot/imported/flower-group_Leaves.png-d8da5fd93a3c22c6bba918b5233a5506.ctex"]
+dest_files=["res://.godot/imported/flower-group_Leaves.png-d8da5fd93a3c22c6bba918b5233a5506.s3tc.ctex", "res://.godot/imported/flower-group_Leaves.png-d8da5fd93a3c22c6bba918b5233a5506.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

@@ -38,6 +38,15 @@ extends Path3D
 @export var idle_anim_name := ""
 @export var walk_anim_name := ""
 
+## Semente do sorteio de modelo/velocidade. Fixa de proposito: a cidade inteira
+## e gerada com semente fixa e tem que voltar IDENTICA (e disso que o save
+## depende — ele guarda progresso, nao o estado do mundo). Com `randi()` global,
+## cada carga da cidade sorteava outros modelos de pedestre, e como eles tem de
+## 971 a 17 mil faces a geometria da cena mudava entre execucoes: o
+## `settings_test`, que compara presets carregando a cidade uma vez por preset,
+## passou a reprovar por diferenca de 2,7% que era so o sorteio.
+@export var rng_seed := 20260811
+
 const PEDESTRIAN_SCENE := preload("res://scenes/npc/Pedestrian.tscn")
 const PEDESTRIAN_SCRIPT := preload("res://scenes/npc/Pedestrian.gd")
 
@@ -49,6 +58,8 @@ func _ready() -> void:
 	_spawn_pedestrians()
 
 func _spawn_pedestrians() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = rng_seed
 	for i in range(pedestrian_count):
 		var idx := -1
 		var path_follow := PathFollow3D.new()
@@ -58,12 +69,12 @@ func _spawn_pedestrians() -> void:
 		path_follow.progress_ratio = float(i) / float(pedestrian_count)
 
 		var pedestrian := PEDESTRIAN_SCENE.instantiate()
-		pedestrian.speed = randf_range(speed_min, speed_max)
+		pedestrian.speed = rng.randf_range(speed_min, speed_max)
 		if character_models.size() > 0:
 			# SORTEADO, e nao rodizio: com `i % tamanho` e 4 pedestres por rota,
 			# todas as 18 rotas usavam os mesmos 4 primeiros modelos do pool — a
 			# cidade tinha 31 modelos disponiveis e mostrava 6.
-			idx = randi() % character_models.size()
+			idx = rng.randi() % character_models.size()
 			pedestrian.character_model = character_models[idx]
 			if outfit_scenes.size() > 0:
 				pedestrian.outfit_scene = outfit_scenes[i % outfit_scenes.size()]
@@ -81,7 +92,7 @@ func _spawn_pedestrians() -> void:
 			var alto: float = model_heights[idx]
 			if alto > 0.0:
 				base_scale = target_height / alto
-		pedestrian.visual_scale = base_scale * randf_range(
+		pedestrian.visual_scale = base_scale * rng.randf_range(
 				1.0 - height_variation, 1.0 + height_variation)
 		if idle_anim_scene:
 			pedestrian.idle_anim_scene = idle_anim_scene
@@ -99,8 +110,8 @@ func _spawn_pedestrians() -> void:
 		# O jeito de andar traz animacao E velocidade JUNTAS (ver
 		# Pedestrian.ANDARES): e o par que mantem o pe no lugar.
 		if variar_andar:
-			var andar: Dictionary = PEDESTRIAN_SCRIPT.sortear_andar()
+			var andar: Dictionary = PEDESTRIAN_SCRIPT.sortear_andar(rng)
 			pedestrian.walk_anim_name = str(andar["anim"])
 			var faixa: Vector2 = andar["vel"]
-			pedestrian.speed = randf_range(faixa.x, faixa.y)
+			pedestrian.speed = rng.randf_range(faixa.x, faixa.y)
 		path_follow.add_child(pedestrian)

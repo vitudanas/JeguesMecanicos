@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://6ef513cjuv6n"
-path="res://.godot/imported/dead-tree_Bark_DeadTree_Normal.png-cf23503a7f192f2c38bcf9e0a3dc72d8.ctex"
+path.s3tc="res://.godot/imported/dead-tree_Bark_DeadTree_Normal.png-cf23503a7f192f2c38bcf9e0a3dc72d8.s3tc.ctex"
+path.etc2="res://.godot/imported/dead-tree_Bark_DeadTree_Normal.png-cf23503a7f192f2c38bcf9e0a3dc72d8.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "5bb183e01b703f02381ff0204ff5dea9"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/quaternius/nature-megakit/dead-tree_Bark_DeadTree_Normal.png"
-dest_files=["res://.godot/imported/dead-tree_Bark_DeadTree_Normal.png-cf23503a7f192f2c38bcf9e0a3dc72d8.ctex"]
+dest_files=["res://.godot/imported/dead-tree_Bark_DeadTree_Normal.png-cf23503a7f192f2c38bcf9e0a3dc72d8.s3tc.ctex", "res://.godot/imported/dead-tree_Bark_DeadTree_Normal.png-cf23503a7f192f2c38bcf9e0a3dc72d8.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

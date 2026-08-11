@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cgl0kaq37fw24"
-path="res://.godot/imported/fern_Leaves.png-e0ccde6ca67d9ee7754f7d876c1c2bc8.ctex"
+path.s3tc="res://.godot/imported/fern_Leaves.png-e0ccde6ca67d9ee7754f7d876c1c2bc8.s3tc.ctex"
+path.etc2="res://.godot/imported/fern_Leaves.png-e0ccde6ca67d9ee7754f7d876c1c2bc8.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "11857c379298fad10da2810250c8c371"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/quaternius/nature-megakit/fern_Leaves.png"
-dest_files=["res://.godot/imported/fern_Leaves.png-e0ccde6ca67d9ee7754f7d876c1c2bc8.ctex"]
+dest_files=["res://.godot/imported/fern_Leaves.png-e0ccde6ca67d9ee7754f7d876c1c2bc8.s3tc.ctex", "res://.godot/imported/fern_Leaves.png-e0ccde6ca67d9ee7754f7d876c1c2bc8.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

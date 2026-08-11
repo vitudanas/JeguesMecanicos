@@ -151,6 +151,10 @@ func _build(count: int, is_traffic: bool) -> void:
 			rota.pedestrian_count = peds_per_route
 			rota.character_models = _pool_modelos()
 			rota.model_heights = _pool_alturas()
+			# Semente propria por rota, tirada do RNG semeado da cidade: assim
+			# cada rota sorteia gente diferente e a cidade inteira continua
+			# reproduzivel.
+			rota.rng_seed = _rng.randi()
 			rota.idle_anim_scene = anim_scene
 			rota.walk_anim_scene = anim_scene
 			rota.idle_anim_name = "Idle"

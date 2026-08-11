@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://cqri82jt3tunp"
-path="res://.godot/imported/twisted-tree_Bark_TwistedTree_Normal.png-396cf627241fceff4f4b76209dc0d2ad.ctex"
+path.s3tc="res://.godot/imported/twisted-tree_Bark_TwistedTree_Normal.png-396cf627241fceff4f4b76209dc0d2ad.s3tc.ctex"
+path.etc2="res://.godot/imported/twisted-tree_Bark_TwistedTree_Normal.png-396cf627241fceff4f4b76209dc0d2ad.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "5bb183e01b703f02381ff0204ff5dea9"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/quaternius/nature-megakit/twisted-tree_Bark_TwistedTree_Normal.png"
-dest_files=["res://.godot/imported/twisted-tree_Bark_TwistedTree_Normal.png-396cf627241fceff4f4b76209dc0d2ad.ctex"]
+dest_files=["res://.godot/imported/twisted-tree_Bark_TwistedTree_Normal.png-396cf627241fceff4f4b76209dc0d2ad.s3tc.ctex", "res://.godot/imported/twisted-tree_Bark_TwistedTree_Normal.png-396cf627241fceff4f4b76209dc0d2ad.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

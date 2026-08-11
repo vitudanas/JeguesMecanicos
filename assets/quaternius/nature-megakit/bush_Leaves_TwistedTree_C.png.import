@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b2gfpcbc6vo4s"
-path="res://.godot/imported/bush_Leaves_TwistedTree_C.png-bfaeb18d2cff396a2d6d296faa31dc82.ctex"
+path.s3tc="res://.godot/imported/bush_Leaves_TwistedTree_C.png-bfaeb18d2cff396a2d6d296faa31dc82.s3tc.ctex"
+path.etc2="res://.godot/imported/bush_Leaves_TwistedTree_C.png-bfaeb18d2cff396a2d6d296faa31dc82.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "56e7eae60b621b7def876fe012ae9b9b"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/quaternius/nature-megakit/bush_Leaves_TwistedTree_C.png"
-dest_files=["res://.godot/imported/bush_Leaves_TwistedTree_C.png-bfaeb18d2cff396a2d6d296faa31dc82.ctex"]
+dest_files=["res://.godot/imported/bush_Leaves_TwistedTree_C.png-bfaeb18d2cff396a2d6d296faa31dc82.s3tc.ctex", "res://.godot/imported/bush_Leaves_TwistedTree_C.png-bfaeb18d2cff396a2d6d296faa31dc82.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

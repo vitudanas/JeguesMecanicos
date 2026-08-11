@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://5unssgkn0eay"
-path="res://.godot/imported/tall-grass_Grass.png-f128a2715aff4931eb8bc34b5307fdec.ctex"
+path.s3tc="res://.godot/imported/tall-grass_Grass.png-f128a2715aff4931eb8bc34b5307fdec.s3tc.ctex"
+path.etc2="res://.godot/imported/tall-grass_Grass.png-f128a2715aff4931eb8bc34b5307fdec.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "c140038d5dd43b86d212442f70ad5d7f"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/quaternius/nature-megakit/tall-grass_Grass.png"
-dest_files=["res://.godot/imported/tall-grass_Grass.png-f128a2715aff4931eb8bc34b5307fdec.ctex"]
+dest_files=["res://.godot/imported/tall-grass_Grass.png-f128a2715aff4931eb8bc34b5307fdec.s3tc.ctex", "res://.godot/imported/tall-grass_Grass.png-f128a2715aff4931eb8bc34b5307fdec.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

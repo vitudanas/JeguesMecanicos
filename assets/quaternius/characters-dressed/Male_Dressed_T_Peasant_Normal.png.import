@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ds7akkdb7tsbi"
-path="res://.godot/imported/Male_Dressed_T_Peasant_Normal.png-62bd8762471387e16d84839b17aadcaa.ctex"
+path.s3tc="res://.godot/imported/Male_Dressed_T_Peasant_Normal.png-62bd8762471387e16d84839b17aadcaa.s3tc.ctex"
+path.etc2="res://.godot/imported/Male_Dressed_T_Peasant_Normal.png-62bd8762471387e16d84839b17aadcaa.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "7927a91317d5bd01581a9bb8525eb94b"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/quaternius/characters-dressed/Male_Dressed_T_Peasant_Normal.png"
-dest_files=["res://.godot/imported/Male_Dressed_T_Peasant_Normal.png-62bd8762471387e16d84839b17aadcaa.ctex"]
+dest_files=["res://.godot/imported/Male_Dressed_T_Peasant_Normal.png-62bd8762471387e16d84839b17aadcaa.s3tc.ctex", "res://.godot/imported/Male_Dressed_T_Peasant_Normal.png-62bd8762471387e16d84839b17aadcaa.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0

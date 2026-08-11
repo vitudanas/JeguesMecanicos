@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bp3h6i32j7b8l"
-path="res://.godot/imported/pine-b_Bark_NormalTree.png-90a866f09f71cf6f671a255655165a4e.ctex"
+path.s3tc="res://.godot/imported/pine-b_Bark_NormalTree.png-90a866f09f71cf6f671a255655165a4e.s3tc.ctex"
+path.etc2="res://.godot/imported/pine-b_Bark_NormalTree.png-90a866f09f71cf6f671a255655165a4e.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "949bc03b138bfd71cc8da40076381612"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/quaternius/nature-megakit/pine-b_Bark_NormalTree.png"
-dest_files=["res://.godot/imported/pine-b_Bark_NormalTree.png-90a866f09f71cf6f671a255655165a4e.ctex"]
+dest_files=["res://.godot/imported/pine-b_Bark_NormalTree.png-90a866f09f71cf6f671a255655165a4e.s3tc.ctex", "res://.godot/imported/pine-b_Bark_NormalTree.png-90a866f09f71cf6f671a255655165a4e.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
