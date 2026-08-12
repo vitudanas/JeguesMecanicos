@@ -10,9 +10,11 @@ extends Control
 const SETTINGS_SCRIPT := preload("res://scenes/ui/SettingsMenu.gd")
 const LOADING_SCRIPT := preload("res://scenes/ui/LoadingScreen.gd")
 const CHARACTER_SCRIPT := preload("res://scenes/ui/CharacterMenu.gd")
+const CREDITS_SCRIPT := preload("res://scenes/ui/CreditsMenu.gd")
 
 var _settings: Control = null
 var _character: Control = null
+var _credits: Control = null
 var _loading: Control = null
 
 func _ready() -> void:
@@ -21,6 +23,7 @@ func _ready() -> void:
 	$VBox/SettingsButton.pressed.connect(_on_settings)
 	$VBox/QuitButton.pressed.connect(_on_quit)
 	_add_character_button()
+	_add_credits_button()
 	if SaveGame.has_save:
 		_add_continue_button()
 		$VBox/PlayButton.text = "Novo jogo"
@@ -56,6 +59,33 @@ func _add_character_button() -> void:
 	button.pressed.connect(_on_character)
 	$VBox.add_child(button)
 	$VBox.move_child(button, $VBox/SettingsButton.get_index())
+
+## Botao "Creditos". Nao e opcional: os modelos de terceiro do jogo sao CC-BY, e
+## essa licenca exige credito visivel — sem esta tela o jogo esta fora dela.
+func _add_credits_button() -> void:
+	var button := Button.new()
+	button.text = "Créditos"
+	button.custom_minimum_size = $VBox/SettingsButton.custom_minimum_size
+	var font_size: int = $VBox/SettingsButton.get_theme_font_size("font_size")
+	if font_size > 0:
+		button.add_theme_font_size_override("font_size", font_size)
+	button.pressed.connect(_on_credits)
+	$VBox.add_child(button)
+	$VBox.move_child(button, $VBox/QuitButton.get_index())
+
+func _on_credits() -> void:
+	if _credits != null:
+		return
+	_credits = Control.new()
+	_credits.set_script(CREDITS_SCRIPT)
+	_credits.back_pressed.connect(_on_credits_closed)
+	add_child(_credits)
+
+func _on_credits_closed() -> void:
+	if _credits == null:
+		return
+	_credits.queue_free()
+	_credits = null
 
 ## Mesma regra da tela de graficos: criada na hora e destruida ao voltar. Viva
 ## por tras do menu, ela continuaria recebendo clique atraves do painel — e

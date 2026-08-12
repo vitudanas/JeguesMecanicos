@@ -1,0 +1,68 @@
+class_name CreditosDados
+extends RefCounted
+## GERADO por tools/creditos.py — nao editar na mao.
+##
+## Os modelos de terceiro sao CC-BY: credito e OBRIGATORIO, e sem esta
+## lista na tela o jogo esta fora da licenca. So entra o que viaja no
+## build (pacote no `exclude_filter` nao e distribuido).
+
+const CC_BY: Array[Dictionary] = [
+	{"titulo": "Brownstone Building Set - Low poly model", "autor": "Daniel Zhabotinsky", "grupo": "Construções", "licenca": "CC-BY-4.0"},
+	{"titulo": "Downtown Buildings Set - Low Poly model", "autor": "Daniel Zhabotinsky", "grupo": "Construções", "licenca": "CC-BY-4.0"},
+	{"titulo": "Industrial Buildings Set - Low poly models", "autor": "Daniel Zhabotinsky", "grupo": "Construções", "licenca": "CC-BY-4.0"},
+	{"titulo": "European Buildings Asset Pack 3", "autor": "EddyNL", "grupo": "Construções", "licenca": "CC-BY-4.0"},
+	{"titulo": "Old Building Pack | Lowpoly", "autor": "Fridqeir", "grupo": "Construções", "licenca": "CC-BY-4.0"},
+	{"titulo": "Bordeaux Flat 1 corner [France]", "autor": "Lost Gecko", "grupo": "Construções", "licenca": "CC-BY-4.0"},
+	{"titulo": "Bordeaux Flat 2 corner [France]", "autor": "Lost Gecko", "grupo": "Construções", "licenca": "CC-BY-4.0"},
+	{"titulo": "Low-poly Modular Building Tenement House", "autor": "Orzechu", "grupo": "Construções", "licenca": "CC-BY-4.0"},
+	{"titulo": "New York Buildings", "autor": "sumitmangela", "grupo": "Construções", "licenca": "CC-BY-4.0"},
+	{"titulo": "Ada Wong Rigged", "autor": "AaronNg", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Mortal Kombat Mileena", "autor": "Anatolii Rogoznikov", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Reze – Stylized Anime Girl", "autor": "bolbi601", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Male Character Base - Rigged", "autor": "Braingapps", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Girl with clothes. Worker set", "autor": "cattleya", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Girl with clothes. Worker set", "autor": "cattleya", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Virtual model linen tunic Svend", "autor": "ChamberSu1996", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Rem - Re:Zero", "autor": "DarienToad", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Anime Girl Rigged Anime model", "autor": "dequeijospizza", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Low Poly Female", "autor": "Donte_Loves_Art", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Miss Galaxy", "autor": "Donte_Loves_Art", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Beka - Low-poly character", "autor": "Elder Barreto", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Low-poly female - Lia", "autor": "Elder Barreto", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Casual Woman in Brown Dress Rigged Idle", "autor": "florah", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Rigged Standing Asian Female Character Idle Pose", "autor": "florah", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Game character, Girl. Rigged, textured, animated", "autor": "gbarzu", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Anime Lowpoly Character", "autor": "happybohra709", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Nilda Female Character Walk Animation", "autor": "ijiklvn", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Mr Man Walking", "autor": "Instinto Ideal Studio", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Animated Man-Run and Jump Character", "autor": "Jason Lawson", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Alina Ip, realistic Asian woman (Animated)", "autor": "Jungle Jim", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Balthazar (rigged & animated)", "autor": "Jungle Jim", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Old man Spice (animated)", "autor": "Jungle Jim", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Realistic Old Russian Guy (animated)", "autor": "Jungle Jim", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Stickman", "autor": "KOMIRA.studio", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": ".Fuse Civilian 1", "autor": "Leonardo Carvalho", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": ".Fuse Woman 1", "autor": "Leonardo Carvalho", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Low Poly Male", "autor": "Loves_Art", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "old man in coat - human riged model", "autor": "mohsenmousavi2313", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Spider-Man (2017; Homecoming - Tech Suit)", "autor": "Mr. P", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Security Guard – Rigged 3D Model", "autor": "Q.SARDOR", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Nathan Animated 003 - Walking 3D Man", "autor": "Renderpeople", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Man In Coat - Human Rigged Model", "autor": "Saitam", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Ghost Girl Animated", "autor": "Shaban Hafizsalim", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Low-poly Girl", "autor": "SingleWayArt", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "SWIPE", "autor": "SomeDude", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Casual NPC Woman | Free Low-Poly 3D Model", "autor": "Stan", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "teen-boy", "autor": "theskipper", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Frank - Army man", "autor": "TrevAllCaps", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Kim. low poly character", "autor": "ukrwebprom", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "character girl animated walk", "autor": "Unity  (shehab house)", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+	{"titulo": "Everyday Jane, Casual modern woman, rigged", "autor": "XRProfXR", "grupo": "Personagens", "licenca": "CC-BY-4.0"},
+]
+
+const CC0: Array[Dictionary] = [
+	{"autor": "Kenney", "site": "https://kenney.nl", "o_que": "kits de rua, cidade, sons de impacto e interface"},
+	{"autor": "Quaternius", "site": "https://quaternius.com", "o_que": "personagens, animacoes, carros, fazenda e natureza"},
+	{"autor": "ambientCG", "site": "https://ambientcg.com", "o_que": "texturas PBR de asfalto, tijolo, concreto, grama e rocha"},
+	{"autor": "Poly Haven", "site": "https://polyhaven.com", "o_que": "ceu HDRI"},
+]

@@ -3466,30 +3466,57 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     renderizador, e não tempo de quadro, pelo motivo já documentado em
     2026-08-04 (o macOS estrangula a janela fora de foco e o tempo mente).
 
-### ONDE PAREI (2026-08-10, fim da sessão)
+- **2026-08-11 (3ª rodada)** — Fechada a pendência mais antiga em aberto do
+  projeto: **a tela de créditos**. Não era enfeite — os 51 modelos de terceiro
+  que o build distribui são **CC-BY**, licença que libera uso comercial mas
+  **exige crédito**. Sem a tela, o jogo estava fora da licença desde que os
+  primeiros pacotes entraram (2026-08-09).
+  - `tools/creditos.py` passou a cobrir também os **personagens** (63 licenças
+    que estavam de fora — ele só olhava `assets/realistas`) e a gerar, além do
+    `docs/creditos.md`, um `assets/creditos.gd` que o JOGO carrega. Em código, e
+    não num `.tres`/`.json`, porque recurso escrito à mão já ficou de fora do
+    `.pck` neste projeto e o defeito só aparece no binário.
+  - **Só é creditado o que de fato VIAJA no build**: o gerador lê o
+    `exclude_filter` do `export_presets.cfg` e pula os 33 pacotes cortados. Pacote
+    que não é distribuído não precisa (nem deveria) aparecer como se estivesse no
+    jogo.
+  - `scenes/ui/CreditsMenu.gd` é montada 100% em código, como as telas de
+    gráficos e de personagem, e o botão "Créditos" entra no menu principal também
+    por código — mexer à mão no `.tscn` já custou o menu inteiro uma vez
+    (2026-08-02).
+  - O botão de voltar fica no **rodapé fixo**, fora da lista que rola: dentro
+    dela cairia abaixo da dobra, que foi exatamente o defeito da tela de
+    personagem em 2026-08-10.
+  - **Verificação**: o `ui_shot` passou a abrir a tela **pelo botão** (não
+    instanciando a classe na mão), fotografar, cobrar que ela tenha tamanho
+    (já tivemos tela montada e INVISÍVEL, medindo 0x0) e que liste pelo menos 40
+    linhas — crédito que não aparece é o mesmo que crédito nenhum. Hoje são 56.
+    Conferido também que `creditos.gd` está dentro do `.pck` exportado.
 
-Estado: tudo commitado, suíte inteira passando e **builds reexportadas nesta
-rodada** (o `.app` extraído também foi refeito — ele não se atualiza sozinho
-quando o zip é regravado, lição de 2026-08-04).
+### ONDE PAREI (2026-08-11, fim da sessão)
 
-Da frente de personagem, **três dos cinco pedidos estão fechados**: o menu de
-escolha com preview 3D, a personalização do corpo por slider (mais altura e
-cores) e o personagem masculino jogável — tudo em 2026-08-10, ver changelog. As
-**três câmeras no V** já estavam prontas da sessão anterior.
+Estado: tudo commitado e enviado, suíte inteira passando (19 testes), builds
+reexportadas e a release [v0.3.0](https://github.com/vitudanas/joguinho2/releases/tag/v0.3.0)
+atualizada com os dois zips (macOS 464 MB, Windows 439 MB). O `.app` extraído
+foi refeito — ele não se atualiza sozinho quando o zip é regravado.
 
-**Estado dos personagens:** **44 jogáveis** no menu (2 nativos + 42 baixados),
-de 63 arquivos recebidos; os outros 21 estão catalogados como cenário e ficam
-FORA do build. Os arquivos crus estão em `assets/personagens/` (fora do git).
+**Personagens:** **44 jogáveis** no menu (2 nativos + 42 baixados) de 63
+arquivos recebidos; os outros 21 estão catalogados como cenário e ficam FORA do
+build. **43 dos 44 aceitam cabeça de jegue** (o `rem_rezero` não tem osso de
+cabeça no rig). **31 também são pedestres**, e a cidade mostra 29 modelos
+distintos entre os 72 que andam na rua.
 
-O pipeline pra acrescentar mais, na ordem (cada passo depende do anterior):
+Pra acrescentar mais, na ordem (cada passo depende do anterior):
 
 ```bash
 tools/receber_modelos.sh personagens     # recolhe .zip E pasta ja aberta da raiz
 godot --headless --path . --editor --quit          # importa
-python3 tools/preparar_import_personagens.py       # capa textura, tira morph, filtra o build
+python3 tools/preparar_import_personagens.py       # capa textura, VRAM, morph, filtro do build
 godot --headless --path . --editor --quit          # reimporta com os ajustes
 godot --headless --path . tools/preparar_personagens.tscn   # mede e cataloga
+python3 tools/creditos.py                          # CC-BY: credito e obrigatorio
 godot --path . tools/verify/personagens_sheet.tscn          # e OLHE as fotos
+godot --path . tools/verify/jegue_sheet.tscn                # idem, com cabeca de jegue
 ```
 
 A folha não é opcional: **a orientação e o material não se medem** (ver o
@@ -3497,44 +3524,44 @@ cabeçalho de `MedirPersonagem.gd`). Quem sair de costas na foto entra em
 `DE_COSTAS`, quem sair quebrado entra em `NAO_SERVE`, os dois em
 `tools/preparar_personagens.gd`.
 
-**O QUE FALTA desta frente:**
+**O QUE FALTA:**
 
-1. **Usar os novos como NPC também**: hoje o catálogo alimenta só o JOGADOR, e
-   é o que resolveria de vez o "todo pedestre tem a mesma cara". Não é só
-   apontar a lista: `CharacterVisual` anima pela UAL1 (que procura osso por
-   NOME e não casa com esqueleto de terceiro — o `PlayerVisual` já tem o
-   caminho alternativo pronto, usar a animação que veio no arquivo) e tinge por
-   nome de material, que também não casa. E vale medir com os 72 pedestres na
-   tela antes de confiar: os modelos bons têm 20-40 mil faces contra ~5 mil dos
-   atuais, e a coluna "serve como" do garimpo existe justamente pra isso.
-2. **Build de 670 MB** (era 188 MB antes dos personagens). Já caiu de 1,4 GB
-   nesta rodada; o que sobra é honestamente o custo de 44 personagens com
-   textura de verdade, ~11 MB cada. Se precisar encolher, o botão é a resolução
-   em `tools/preparar_import_personagens.py` — 512 em vez de 1024 corta perto da
-   metade, ao custo de nitidez em 3ª pessoa.
-3. **Pose de portfólio em alguns modelos**: `ada_wong` e `old_man_in_coat`
-   ficam inclinados/apoiados porque é a ÚNICA animação que veio no arquivo, e
-   `rem_rezero` só traz T-pose/A-pose. Não tem conserto por script — precisaria
-   de retarget no Blender.
+1. **MÚSICA.** É o maior buraco que sobra: efeitos, ambiente e motor estão
+   cobertos desde 2026-08-08/09, mas o jogo não tem trilha nenhuma. Ficou de
+   fora de propósito — é o item que menos dá pra decidir sem ouvir.
+2. **Jogar com as mãos.** O loop é testado de ponta a ponta com input real, mas
+   ninguém *sentiu* o jogo: se 76 km/h é rápido demais, se a barra de lábia dura
+   o certo, se o reboque é chato. Só se resolve jogando.
+3. **Pose de portfólio em alguns modelos**: `ada_wong` e `old_man_in_coat` ficam
+   inclinados porque é a ÚNICA animação que veio no arquivo, e `rem_rezero` só
+   traz T-pose/A-pose. Não tem conserto por script — precisaria de retarget no
+   Blender.
+4. **Build de 889 MB de `.pck`** (464/439 MB de download). O peso é textura de
+   personagem: o botão é a resolução em `tools/preparar_import_personagens.py`
+   — 512 em vez de 1024 corta perto da metade, ao custo de nitidez em 3ª pessoa.
+5. **`audio_test` instável**: reprovou uma vez com "clique de menu nao tocou
+   nada" no meio de uma bateria, e passou 3 de 3 isolado. Se reprovar sozinho,
+   aí é defeito.
 
 Pedidos anteriores ainda **não** feitos:
 
 1. **Baixar mais personagens da lista**, se quiser:
    [docs/garimpo-personagens.md](docs/garimpo-personagens.md) tem 30 homens e 18
    mulheres com animação própria, CC-BY, com link direto. É o passo que depende
-   de você (o download não sai pelo navegador embutido); o resto é o pipeline de
-   comandos acima, que já não pede edição de código nenhuma.
-2. **Os modelos sem esqueleto continuam fora**, e por um motivo medido, não por
-   preguiça: 8 dos 63 **não têm esqueleto** e nenhum deles tem
-   animação. Como jogáveis, só passando pelo Blender (que ESTÁ instalado em
-   `/Applications/Blender.app`, e o projeto já roda ele headless em
-   `tools/build_characters.py`): rig por peso automático + retarget da UAL1. O
-   caminho mais curto é o `anime_girl_rigged`, que ao menos tem esqueleto — mas
-   é VRM, então precisa de `BoneMap`/renomeação. Como cenário (estátua de
-   praça), qualquer um dos 7 entra hoje.
-3. **Rosto e roupa dos NPCs** continuam iguais entre dois pedestres do mesmo
-   gênero: o que varia hoje é corpo, altura, cor, acessório e jeito de andar.
-   Rosto diferente exige outro pacote de personagem — que é o item 1.
+   de você (o download não sai pelo navegador embutido); o resto é o pipeline
+   acima, que não pede edição de código nenhuma.
+2. **Os 8 modelos sem esqueleto continuam fora**, e por um motivo medido:
+   nenhum deles tem animação e sem rig são estátuas. Como jogáveis, só passando
+   pelo Blender (instalado em `/Applications/Blender.app`, e o projeto já roda
+   ele headless em `tools/build_characters.py`): rig por peso automático +
+   retarget da UAL1. Como cenário (estátua de praça), qualquer um entra hoje.
+3. **Rosto e roupa dos NPCs** agora variam por MODELO (29 na rua), mas dois
+   pedestres do mesmo modelo continuam com a mesma cara — o que varia neles é
+   corpo, altura, cor, acessório e jeito de andar.
+
+**Aviso registrado**: vários personagens são de outras obras (Ada Wong,
+Spider-Man, Rem, Mileena). A licença CC-BY cobre **o modelo**, não o personagem
+— pra publicar, é risco jurídico de terceiros.
 
 ### Pendências pedidas e ainda NÃO feitas
 

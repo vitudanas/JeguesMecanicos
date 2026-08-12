@@ -51,6 +51,45 @@ func _ready() -> void:
 		for i in range(12):
 			await get_tree().process_frame
 		await _shot("03_configuracoes_som")
+		settings.emit_signal("back_pressed")
+		for i in range(6):
+			await get_tree().process_frame
+
+	# CREDITOS. Os modelos de terceiro sao CC-BY: sem esta tela o jogo esta fora
+	# da licenca, entao ela e cobrada como qualquer outra mecanica — que abre
+	# pelo botao, que APARECE (ja tivemos tela montada e invisivel) e que lista
+	# os creditos de verdade, e nao uma lista vazia.
+	var botao_creditos: Button = null
+	for c in menu.get_node("VBox").get_children():
+		if c is Button and (c as Button).text.begins_with("Cr"):
+			botao_creditos = c as Button
+			break
+	if botao_creditos == null:
+		problems.append("o menu principal nao tem botao de Creditos")
+	else:
+		botao_creditos.emit_signal("pressed")
+		for i in range(25):
+			await get_tree().process_frame
+		await _shot("06_creditos")
+		var creditos: Control = null
+		for c in menu.get_children():
+			if c is Control and c.get_script() != null and c.has_signal("back_pressed"):
+				creditos = c
+				break
+		if creditos == null:
+			problems.append("a tela de creditos nao abriu pelo botao")
+		else:
+			_check_size("creditos", creditos)
+			var nomes := 0
+			for label in creditos.find_children("*", "Label", true, false):
+				if (label as Label).text.contains("—"):
+					nomes += 1
+			print("  linhas de credito: %d" % nomes)
+			# 51 modelos CC-BY + os pacotes CC0 + o motor. Bem abaixo disso, a
+			# lista nao foi gerada ou o carregamento falhou — e credito que nao
+			# aparece e o mesmo que credito nenhum.
+			if nomes < 40:
+				problems.append("so %d linha(s) de credito na tela" % nomes)
 
 	menu.queue_free()
 	await get_tree().process_frame
