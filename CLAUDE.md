@@ -3771,7 +3771,7 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
   - **[RESOLVIDO] Build e release.** O `.app` foi reextraído — o `.pck` dele
     tem 888.996.516 bytes, os mesmos do que está dentro do zip publicado
     (conferido byte a byte, não pela data da pasta) — e a
-  [v0.3.1](https://github.com/vitudanas/JeguesMecanicos/releases/tag/v0.3.1) saiu
+    [v0.3.1](https://github.com/vitudanas/JeguesMecanicos/releases/tag/v0.3.1) saiu
     com os dois artefatos. `pack_audit` limpo: 105 referências, 71 caminhos de
     runtime, nada mais novo que o build.
   - **Suíte rodada nesta revisão, toda passando menos a seção nova**: `rematch`
