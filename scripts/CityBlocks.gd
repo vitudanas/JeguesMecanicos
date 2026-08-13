@@ -249,6 +249,12 @@ func _build_block(x_street_a: float, x_street_b: float, z_street_a: float, z_str
 	if pool.is_empty() and kinds.is_empty():
 		return
 
+	# O terreno cru aparecia entre as fileiras como grandes "buracos" marrons
+	# dentro de cada quarteirao. Uma base continua de patio/cascalho fecha o lote
+	# visualmente; predios, quintais e miolo continuam por cima dela.
+	_patch(Vector3(center.x, 0.0, center.y), Vector2(x_max - x_min, z_max - z_min),
+		Color(0.43, 0.42, 0.38), "block_courtyard", 0.025, "lote_urbano", "cascalho")
+
 	# Nenhum predio pode passar da metade do quarteirao: assim as duas bordas
 	# opostas nunca se encontram no meio, por construcao (sem essa trava, um
 	# modelo fundo na borda oeste alcancava o da borda leste num quarteirao

@@ -67,4 +67,4 @@ Só entra o que de fato viaja no build.
 - **Kenney** (https://kenney.nl) — kits de rua, cidade, sons de impacto e interface
 - **Quaternius** (https://quaternius.com) — personagens, animacoes, carros, fazenda e natureza
 - **ambientCG** (https://ambientcg.com) — texturas PBR de asfalto, tijolo, concreto, grama e rocha
-- **Poly Haven** (https://polyhaven.com) — ceu HDRI
+- **Poly Haven** (https://polyhaven.com) — céu HDRI e material PBR Gravel Road, de Amal Kumar

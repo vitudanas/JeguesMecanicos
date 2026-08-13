@@ -181,7 +181,7 @@ static func esqueleto_compativel(visual: Node3D) -> bool:
 ## Publico e aqui (e nao no `PlayerVisual`) porque pedestre e jogador precisam
 ## exatamente da mesma coisa: os dois montam modelo de terceiro e os dois
 ## precisam que ele se mexa.
-static func animar_com_o_proprio(visual: Node3D) -> AnimationPlayer:
+static func animar_com_o_proprio(visual: Node3D, usar_primeiro_como_fallback := true) -> AnimationPlayer:
 	var player := _achar_player(visual)
 	if player == null:
 		return null
@@ -200,18 +200,20 @@ static func animar_com_o_proprio(visual: Node3D) -> AnimationPlayer:
 		var apelido: String = pedido[0]
 		if lib.has_animation(apelido):
 			continue
-		var anim := player.get_animation(_melhor_animacao(nomes, pedido[1]))
+		var escolhido := _melhor_animacao(nomes, pedido[1], usar_primeiro_como_fallback)
+		var anim: Animation = player.get_animation(escolhido) if escolhido != "" else null
 		if anim:
 			anim.loop_mode = Animation.LOOP_LINEAR
 			lib.add_animation(apelido, anim)
 	return player
 
-static func _melhor_animacao(nomes: PackedStringArray, palavras: Array) -> String:
+static func _melhor_animacao(nomes: PackedStringArray, palavras: Array,
+		usar_primeiro_como_fallback := true) -> String:
 	for palavra: String in palavras:
 		for n in nomes:
 			if n.to_lower().contains(palavra):
 				return n
-	return nomes[0]
+	return nomes[0] if usar_primeiro_como_fallback else ""
 
 static func _achar_player(node: Node) -> AnimationPlayer:
 	if node is AnimationPlayer:

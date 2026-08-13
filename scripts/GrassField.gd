@@ -183,9 +183,11 @@ func _process(_delta: float) -> void:
 	for i in range(_fields.size()):
 		_scatter(i, here)
 
-## A estrada de terra nao tem colisao de proposito (ver DirtRoad.gd), entao a
-## sondagem por raio nao a enxerga — a grama nasceria no meio dela. Os trechos
-## sao lidos do proprio no, e nao copiados como numero magico aqui.
+## As pistas sao apenas malhas visuais sobre o Ground (sem colisao propria),
+## portanto o raio enxerga terreno natural por baixo delas. Lemos tanto as
+## estradas de terra quanto a grade asfaltada dos proprios geradores e montamos
+## corredores proibidos. Isso corrige principalmente Alto/Ultra: nessas
+## qualidades o anel de grama alcanca as ruas externas da cidade.
 func _collect_roads() -> void:
 	_road_rects.clear()
 	for node in get_tree().get_nodes_in_group("dirt_road"):
@@ -199,6 +201,23 @@ func _collect_roads() -> void:
 			var b: Vector2 = base + pts[i + 1]
 			var r := Rect2(a, Vector2.ZERO).expand(b).grow(w)
 			_road_rects.append(r)
+	var streets := get_tree().current_scene.find_child("CityStreets", true, false)
+	if streets != null:
+		var xs: Array = streets.get("streets_x")
+		var zs: Array = streets.get("streets_z")
+		var extent: float = float(streets.get("extent"))
+		var half: float = float(streets.get("road_half_width")) + 0.45
+		if not xs.is_empty() and not zs.is_empty():
+			var min_x: float = float(zs[0]) - extent
+			var max_x: float = float(zs[-1]) + extent
+			var min_z: float = float(xs[0]) - extent
+			var max_z: float = float(xs[-1]) + extent
+			for z in xs:
+				_road_rects.append(Rect2(min_x, float(z) - half,
+					max_x - min_x, half * 2.0))
+			for x in zs:
+				_road_rects.append(Rect2(float(x) - half, min_z,
+					half * 2.0, max_z - min_z))
 
 func _on_road(p: Vector2) -> bool:
 	for r in _road_rects:

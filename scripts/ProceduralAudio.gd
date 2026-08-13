@@ -13,7 +13,10 @@ extends RefCounted
 ## vantagem de graca: como e um ciclo sintetico, `pitch_scale` sobe e desce a
 ## rotacao sem soar picotado.
 
-const RATE := 22050
+## 44,1 kHz evita o serrilhado audivel dos harmonicos do motor e das gotas.
+## 22,05 kHz economizava pouca memoria (os loops sao curtos), mas dava ao jogo
+## inteiro o timbre de radio/efeito sintetico que motivou esta revisao.
+const RATE := 44100
 
 # ------------------------------------------------------------------- motor
 
@@ -49,16 +52,18 @@ static func engine() -> AudioStreamWAV:
 		var tone := sin(TAU * ph) * 0.55 + sin(2.0 * TAU * ph) * 0.28 \
 			+ sin(3.0 * TAU * ph) * 0.14
 		var burst := rng.randf() * 2.0 - 1.0
-		var s := env * (tone * 0.72 + burst * 0.38)
+		var s := env * (tone * 0.78 + burst * 0.18)
 
 		# Ronco grave contínuo, na metade da frequencia de explosao.
-		s += 0.30 * sin(TAU * float(i) * (ENGINE_FIRE_HZ * 0.5) / float(RATE))
+		s += 0.34 * sin(TAU * float(i) * (ENGINE_FIRE_HZ * 0.5) / float(RATE))
+		s += 0.09 * sin(TAU * float(i) * (ENGINE_FIRE_HZ * 1.5) / float(RATE))
 		# Chiado de admissao, bem baixo.
-		s += 0.05 * (rng.randf() * 2.0 - 1.0)
+		s += 0.018 * (rng.randf() * 2.0 - 1.0)
 		buf[i] = s
 
-	_lowpass_looped(buf, 0.34)
-	_normalize(buf, 0.85)
+	_lowpass_looped(buf, 0.22)
+	_lowpass_looped(buf, 0.38)
+	_normalize(buf, 0.66)
 	return _to_wav(buf, RATE)
 
 # ------------------------------------------------------------------- chuva
@@ -119,15 +124,15 @@ const AMBIENCE_CROSSFADE := 0.4
 ## ondulacao lenta por cima — o que separa "cidade ao longe" de "chiado" e a
 ## VARIACAO, porque transito real vai e vem.
 static func city_hum() -> AudioStreamWAV:
-	return _bed(AMBIENCE_SECONDS, 20260809, 0.10, 0.55, [
+	return _bed(AMBIENCE_SECONDS, 20260809, 0.055, 0.46, [
 		[0.07, 0.34], [0.13, 0.20],
-	], 0.55)
+	], 0.32)
 
 ## Vento do campo: mais agudo que o zumbido da cidade e com rajada mais lenta.
 static func wind() -> AudioStreamWAV:
-	return _bed(AMBIENCE_SECONDS, 20260810, 0.26, 0.40, [
+	return _bed(AMBIENCE_SECONDS, 20260810, 0.13, 0.34, [
 		[0.05, 0.42], [0.11, 0.22],
-	], 0.45)
+	], 0.28)
 
 ## Cama de ruido em laco: filtra, ondula em algumas frequencias lentas e emenda.
 ## `cut` e o passa-baixa (grave -> agudo), `swell` a profundidade da ondulacao.

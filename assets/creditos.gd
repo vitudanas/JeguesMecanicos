@@ -64,5 +64,5 @@ const CC0: Array[Dictionary] = [
 	{"autor": "Kenney", "site": "https://kenney.nl", "o_que": "kits de rua, cidade, sons de impacto e interface"},
 	{"autor": "Quaternius", "site": "https://quaternius.com", "o_que": "personagens, animacoes, carros, fazenda e natureza"},
 	{"autor": "ambientCG", "site": "https://ambientcg.com", "o_que": "texturas PBR de asfalto, tijolo, concreto, grama e rocha"},
-	{"autor": "Poly Haven", "site": "https://polyhaven.com", "o_que": "ceu HDRI"},
+	{"autor": "Poly Haven / Amal Kumar", "site": "https://polyhaven.com", "o_que": "ceu HDRI e material PBR Gravel Road"},
 ]

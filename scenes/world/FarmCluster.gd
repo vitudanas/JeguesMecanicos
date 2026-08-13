@@ -49,6 +49,7 @@ func _ready() -> void:
 
 	_build_fence(rng)
 	_build_crop_field(rng)
+	_build_rural_details(rng)
 	_scatter_trees(rng)
 
 func _build_fence(rng: RandomNumberGenerator) -> void:
@@ -78,6 +79,15 @@ func _fence_side(a: Vector3, b: Vector3, rng: RandomNumberGenerator) -> void:
 func _build_crop_field(rng: RandomNumberGenerator) -> void:
 	if crop_scene == null or crop_rows <= 0 or crop_cols <= 0:
 		return
+	# Terra arada sob a plantacao: antes as mudas pareciam vasos largados no
+	# gramado. O retangulo e maior que as fileiras e usa o mesmo acabamento PBR
+	# do resto do mundo.
+	var field_size := Vector2(crop_cols * crop_spacing + 3.0,
+		crop_rows * crop_spacing + 3.0)
+	var patch := StreetFurniture.ground_patch(field_size, Color(0.33, 0.25, 0.17), "farm_soil")
+	CitySurface.apply(patch, Color(0.38, 0.29, 0.20), "terra", 2.2, 0.78, 0.75)
+	add_child(patch)
+	patch.position = Vector3(crop_offset.x, 0.025, crop_offset.y)
 	var origin := Vector2(
 		crop_offset.x - (crop_cols - 1) * crop_spacing * 0.5,
 		crop_offset.y - (crop_rows - 1) * crop_spacing * 0.5
@@ -92,6 +102,37 @@ func _build_crop_field(rng: RandomNumberGenerator) -> void:
 				inst.position = Vector3(p.x, 0.0, p.y)
 				inst.rotation_degrees.y = rng.randf_range(0.0, 360.0)
 				inst.scale = Vector3.ONE * rng.randf_range(crop_scale_min, crop_scale_max)
+
+func _build_rural_details(rng: RandomNumberGenerator) -> void:
+	# Fardos, cocho e marcas de uso contam que alguem trabalha aqui; so predio,
+	# cerca e arvore deixavam a fazenda parecendo um diorama abandonado.
+	var straw := StandardMaterial3D.new()
+	straw.albedo_color = Color(0.55, 0.43, 0.22)
+	straw.roughness = 0.96
+	for i in range(7):
+		var bale := MeshInstance3D.new()
+		var mesh := CylinderMesh.new()
+		mesh.top_radius = 0.62
+		mesh.bottom_radius = 0.62
+		mesh.height = 1.15
+		mesh.radial_segments = 14
+		bale.mesh = mesh
+		bale.material_override = straw
+		add_child(bale)
+		bale.position = Vector3(fence_half_size.x + 3.0 + float(i % 3) * 1.45,
+			0.65, -fence_half_size.y + 2.0 + float(i / 3) * 1.5)
+		bale.rotation_degrees = Vector3(0.0, rng.randf_range(0.0, 360.0), 90.0)
+	var trough := MeshInstance3D.new()
+	var trough_mesh := BoxMesh.new()
+	trough_mesh.size = Vector3(2.8, 0.55, 0.9)
+	trough.mesh = trough_mesh
+	var trough_mat := StandardMaterial3D.new()
+	trough_mat.albedo_color = Color(0.27, 0.31, 0.32)
+	trough_mat.metallic = 0.65
+	trough_mat.roughness = 0.48
+	trough.material_override = trough_mat
+	add_child(trough)
+	trough.position = Vector3(-fence_half_size.x + 2.2, 0.3, 1.5)
 
 func _scatter_trees(rng: RandomNumberGenerator) -> void:
 	if tree_scenes.is_empty() or tree_count <= 0:

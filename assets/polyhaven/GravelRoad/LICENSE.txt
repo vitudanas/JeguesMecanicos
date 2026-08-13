@@ -1,0 +1,9 @@
+Gravel Road by Amal Kumar / Poly Haven
+Source: https://polyhaven.com/a/gravel_road
+License: CC0 1.0 Universal (public domain dedication)
+License text: https://creativecommons.org/publicdomain/zero/1.0/
+
+Files included at 1K resolution:
+- gravel_road_diff_1k.jpg
+- gravel_road_nor_gl_1k.jpg
+- gravel_road_rough_1k.jpg

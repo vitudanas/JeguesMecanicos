@@ -475,6 +475,7 @@ ground_path = NodePath("../Ground/Mesh")
 ; milhares de tufos saem numa chamada de desenho so.
 [node name="GrassField" type="Node3D" parent="."]
 script = ExtResource("404")
+city_extent = 360.0
 layer_scenes = Array[PackedScene]([ExtResource("64"), ExtResource("66"), ExtResource("65")])
 layer_counts = Array[int]([17000, 5200, 2600])
 layer_height_min = Array[float]([0.14, 0.34, 0.20])
@@ -497,11 +498,11 @@ width = 5.2
 script = ExtResource("401")
 foot_radius = 901.1
 foot_spread = 90.0
-count = 132
-radius_min = 90.0
-radius_max = 190.0
-height_min = 130.0
-height_max = 320.0
+count = 84
+radius_min = 125.0
+radius_max = 220.0
+height_min = 145.0
+height_max = 340.0
 rng_seed = 20260888
 
 [node name="CityOutskirts" type="Node3D" parent="."]

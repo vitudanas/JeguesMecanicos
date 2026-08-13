@@ -4586,3 +4586,39 @@ de rua, não aumentar a quantidade de prédios.
   `open-world`, `sandbox`, `brazilian-game` e `ai-assisted`. Nenhuma homepage fictícia foi
   cadastrada e a visibilidade permaneceu privada.
 - Esta alteração é somente documental e não exige nova build/release.
+
+## 2026-08-13 — revisão de ruas, NPCs, áudio, campo e montanhas (Codex)
+
+- A grama de geometria agora lê a grade real de `CityStreets` e exclui os corredores
+  asfaltados além das duas estradas rurais. O defeito aparecia sobretudo em Alto/Ultra porque
+  o anel denso alcançava as ruas externas, enquanto `GrassField.city_extent` ainda assumia o
+  tamanho antigo da cidade.
+- Pedestres incompatíveis com a biblioteca UAL1 não tratam mais o primeiro clipe encontrado
+  (frequentemente idle/pose) como caminhada. Quando o modelo não possui locomocão própria, um
+  fallback procedural aplica passada de braços/pernas, balanço e oscilação do corpo; os 72
+  pedestres passaram no `npc_test` com 28 modelos diferentes e locomocão ativa.
+- O asfalto ganhou tom menos chapado, mais variação PBR/desgaste, tinta menos branca e calçada
+  cinza mais próxima da linguagem das fachadas. O miolo de todos os quarteirões construídos
+  ganhou base contínua de cascalho/concreto, eliminando o terreno cru que parecia buraco entre
+  as fileiras; muros com portões já fecham as sobras de fachada. O censo registra 0 bordas
+  completamente vazias, 93% da borda ocupada visualmente e nenhuma falha de escala.
+- As estradas rurais agora usam o material fotográfico PBR **Gravel Road**, de Amal Kumar para
+  Poly Haven, em resolução 1K (cor, normal e rugosidade), sob licença CC0. A atribuição e os
+  links de origem/licença estão em `assets/polyhaven/GravelRoad/LICENSE.txt`. Sulcos de roda
+  continuam em geometria para a estrada não parecer apenas uma textura colada.
+- Fazendas receberam solo arado sob as plantações, fardos de feno e cocho. A natureza rural
+  passou de distribuição uniforme para bosques determinísticos com clareiras, mantendo as
+  exclusões de estrada, fazendas e oficinas.
+- A cordilheira caiu de 132 cones estreitos para 84 maciços maiores e sobrepostos, com perfil
+  mais largo, rocha de maior contraste, estratos mais legíveis e picos de até 340 m. O teste
+  confirmou 84 bases tocando o chão, sem parede invisível nem objeto flutuando.
+- O áudio procedural passou de 22,05 para 44,1 kHz. Motor, vento e cidade ficaram menos
+  ruidosos/agudos; os beds e carros de IA foram reequilibrados. A fronteira sonora urbana foi
+  corrigida de 118 m para os 360 m atuais, impedindo vento rural dentro dos bairros. O teste
+  confirmou 18 eventos/47 arquivos, loops válidos e transição cidade/campo correta.
+- Validações executadas: importação/editor sem erro; `audio_test`, `npc_test`, `gaps_test`,
+  `street_test` e `scale_test`; tour visual completo com 17 capturas. O tour confirmou fazendas
+  mais legíveis, rua sem mato visível, quarteirões contínuos e montanhas com mais massa. A cena
+  ainda merece uma futura rodada exclusiva de iluminação/neblina, que hoje lava o horizonte.
+- Esta rodada altera o jogo e requer revisão e testes adicionais do Claude antes de o Codex
+  gerar/publicar os novos artefatos Windows/macOS na release, conforme `AGENTS.md`.

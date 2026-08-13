@@ -15,9 +15,15 @@ extends Node3D
 @export var width := 7.0
 ## Altura sobre o chao. Rente: alto demais vira degrau, e o carro sobe nele.
 @export var lift := 0.03
-@export var dirt_color := Color(0.36, 0.29, 0.21)
-@export var rut_color := Color(0.28, 0.22, 0.16)
+## A cor multiplica a fotografia PBR; valores muito escuros transformavam o
+## cascalho marrom numa faixa quase preta sob o sol do jogo.
+@export var dirt_color := Color(0.78, 0.72, 0.63)
+@export var rut_color := Color(0.56, 0.50, 0.43)
 @export var rng_seed := 20260804
+
+const GRAVEL_COLOR := preload("res://assets/polyhaven/GravelRoad/gravel_road_diff_1k.jpg")
+const GRAVEL_NORMAL := preload("res://assets/polyhaven/GravelRoad/gravel_road_nor_gl_1k.jpg")
+const GRAVEL_ROUGHNESS := preload("res://assets/polyhaven/GravelRoad/gravel_road_rough_1k.jpg")
 
 var _rng := RandomNumberGenerator.new()
 
@@ -74,7 +80,12 @@ func _build_ribbon(w: float, color: Color, y: float, jitter: float,
 	mi.mesh = st.commit()
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
-	mat.roughness = 1.0
+	mat.albedo_texture = GRAVEL_COLOR
+	mat.normal_enabled = true
+	mat.normal_texture = GRAVEL_NORMAL
+	mat.normal_scale = 0.72
+	mat.roughness_texture = GRAVEL_ROUGHNESS
+	mat.roughness = 0.94
 	mat.metallic = 0.0
 	# Dupla face: a fita foi construida e mesmo assim nao aparecia na foto —
 	# ordem de vertice define pra que lado a face olha, e a montanha ja tinha

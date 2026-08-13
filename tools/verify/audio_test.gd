@@ -151,8 +151,10 @@ func _check_ambience() -> void:
 		problems.append("sem jogador/camera pra medir o ambiente")
 		return
 
-	var campo := await _ambience_at(player, Vector3(-320.0, 2.0, 0.0))
-	print("    campo  (chebyshev 320): vento %.0f dB, cidade %.0f dB" % [campo[1], campo[0]])
+	# A cidade atual chega a 337,5 m e tem transicao ate ~430 m. O ponto antigo
+	# em 320 estava literalmente dentro de um bairro e testava a premissa velha.
+	var campo := await _ambience_at(player, Vector3(-520.0, 2.0, 0.0))
+	print("    campo  (chebyshev 520): vento %.0f dB, cidade %.0f dB" % [campo[1], campo[0]])
 	if campo[1] <= campo[0]:
 		problems.append("no campo a cama de cidade nao cede pro vento (%.0f vs %.0f dB)"
 			% [campo[0], campo[1]])

@@ -51,6 +51,13 @@ extends Node3D
 ## Distancia em que os props pequenos somem (ver _place_decor).
 @export var decor_visible_range := 130.0
 
+## Natureza em manchas: mata real forma bosques, bordas e clareiras. Sorteio
+## uniforme espalhava uma arvore a cada poucos metros pelo mapa inteiro e dava
+## aparencia de editor procedural. Parte dos props se agrupa nestes nucleos.
+@export var cluster_count := 18
+@export var cluster_radius := 58.0
+@export var cluster_chance := 0.68
+
 @export var rng_seed := 1
 
 ## Folga alem da meia-pista da estrada de terra.
@@ -58,6 +65,7 @@ const ROAD_CLEARANCE := 3.0
 
 var _road_rects: Array[Rect2] = []
 var _roads_read := false
+var _cluster_centers: Array[Vector3] = []
 
 const CITY_BUILDING_SCENE := preload("res://scenes/world/CityBuilding.tscn")
 
@@ -96,10 +104,19 @@ static func model_height(scene: PackedScene) -> float:
 func _ready() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = rng_seed
+	_build_clusters(rng)
 	_scatter(rng, decor_scenes, decor_count, decor_height_min, decor_height_max,
 		decor_scale_min, decor_scale_max, false)
 	_scatter(rng, solid_scenes, solid_count, solid_height_min, solid_height_max,
 		solid_scale_min, solid_scale_max, true)
+
+func _build_clusters(rng: RandomNumberGenerator) -> void:
+	var attempts := 0
+	while _cluster_centers.size() < cluster_count and attempts < cluster_count * 30:
+		attempts += 1
+		var p := _random_uniform_point(rng)
+		if _is_valid(p):
+			_cluster_centers.append(p)
 
 func _scatter(rng: RandomNumberGenerator, pool: Array[PackedScene], count: int,
 		hmin: Array[float], hmax: Array[float], smin: float, smax: float,
@@ -128,6 +145,16 @@ func _scatter(rng: RandomNumberGenerator, pool: Array[PackedScene], count: int,
 		placed += 1
 
 func _random_point(rng: RandomNumberGenerator) -> Vector3:
+	if not _cluster_centers.is_empty() and rng.randf() < cluster_chance:
+		var nucleus := _cluster_centers[rng.randi() % _cluster_centers.size()]
+		# Duas multiplicacoes aproximam uma distribuicao concentrada sem todos os
+		# props cairem exatamente no centro do bosque.
+		var ang := rng.randf_range(0.0, TAU)
+		var r := cluster_radius * sqrt(rng.randf()) * rng.randf()
+		return nucleus + Vector3(cos(ang) * r, 0.0, sin(ang) * r)
+	return _random_uniform_point(rng)
+
+func _random_uniform_point(rng: RandomNumberGenerator) -> Vector3:
 	var ang := rng.randf_range(0.0, TAU)
 	var r: float
 	if inner_radius > 0.0:

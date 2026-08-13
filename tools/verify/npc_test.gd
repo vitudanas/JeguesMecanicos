@@ -60,7 +60,8 @@ func _secao_animacao(peds: Array) -> void:
 	var mudos: Array[String] = []
 	for p in peds:
 		var ap := _achar_player(p)
-		if ap == null or not ap.is_playing():
+		var procedural: bool = p.has_locomotion_animation() if p.has_method("has_locomotion_animation") else false
+		if (ap == null or not ap.is_playing()) and not procedural:
 			var cena: PackedScene = p.get("character_model")
 			var nome: String = cena.resource_path.get_base_dir().get_file() if cena else "?"
 			if not mudos.has(nome):

@@ -119,7 +119,7 @@ func _on_ui_pressed() -> void:
 	play_ui("clique", -4.0)
 
 func _on_ui_hover() -> void:
-	play_ui("passar", -14.0)
+	play_ui("passar", -20.0)
 
 func _on_ui_slider(_value: float) -> void:
 	var now := float(Time.get_ticks_msec()) / 1000.0
@@ -139,11 +139,11 @@ func _on_ui_slider(_value: float) -> void:
 ## 42 tocadores era o motivo de o transito ter ficado mudo ate agora.
 
 ## Meia-largura da cidade (a grade vai de -112.5 a 112.5, ver CityStreets).
-const CITY_EXTENT := 118.0
+const CITY_EXTENT := 360.0
 ## Faixa de transicao entre cidade e campo.
 const CITY_FADE := 70.0
-const CITY_DB := -19.0
-const WIND_DB := -25.0
+const CITY_DB := -26.0
+const WIND_DB := -30.0
 const AMBIENCE_FADE := 1.5
 
 ## Carros de IA que ganham som ao mesmo tempo. Sao emprestadas aos mais
@@ -152,7 +152,7 @@ const TRAFFIC_VOICES := 4
 ## Alem disto o carro nao ganha voz: nao adianta gastar tocador com quem esta
 ## longe demais pra ser ouvido.
 const TRAFFIC_RANGE := 42.0
-const TRAFFIC_DB := -21.0
+const TRAFFIC_DB := -25.0
 ## Reapontar toda hora faz a voz "pular" de carro em carro e soar picotado.
 const TRAFFIC_REFRESH := 0.35
 

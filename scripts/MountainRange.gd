@@ -139,7 +139,10 @@ func _height_at(local: Vector2, radius: float, height: float, stretch: Vector2,
 	if d >= 1.0:
 		return 0.0
 	# Perfil concavo: encosta que abre na base e afina no cume.
-	var profile := pow(1.0 - d, 1.7)
+	# Perfil mais largo e com ombros. 1.7 criava uma fileira de cones finos;
+	# 1.22 preserva massa no terco superior e deixa os sulcos do ruido desenharem
+	# cristas, em vez de todos os macicos terminarem no mesmo espeto.
+	var profile := pow(1.0 - d, 1.22)
 	# Ruido de cordilheira: abs() do simplex cria vinco/aresta em vez de bolha.
 	var n := _noise.get_noise_2d(noise_origin.x + local.x, noise_origin.y + local.y)
 	var ridge := 1.0 - absf(n)

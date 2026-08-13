@@ -80,6 +80,15 @@ static var _anim_cache: Dictionary = {}
 var _path_follow: PathFollow3D = null
 var _is_ragdolled := false
 var _anim_player: AnimationPlayer = null
+var _procedural_visual: Node3D = null
+var _procedural_base_pos := Vector3.ZERO
+var _procedural_base_rot := Vector3.ZERO
+var _walk_phase := 0.0
+var _procedural_skeleton: Skeleton3D = null
+var _procedural_bones: Dictionary = {}
+
+func has_locomotion_animation() -> bool:
+	return (_anim_player != null and _anim_player.is_playing()) or _procedural_visual != null
 
 func _ready() -> void:
 	add_to_group("pedestrian")
@@ -119,14 +128,20 @@ func _setup_animation(visual: Node) -> void:
 	# regra de "usa a UAL1 ou a animacao que veio no arquivo" mora no
 	# `CharacterVisual`, compartilhada com o jogador.
 	if not CharacterVisual.esqueleto_compativel(visual as Node3D):
-		_anim_player = CharacterVisual.animar_com_o_proprio(visual as Node3D)
+		# Nao vale apelidar uma pose/idle qualquer de caminhada: foi isso que
+		# produziu NPCs deslizando duros. Se o arquivo nao traz locomocao de
+		# verdade, o fallback procedural abaixo move corpo, bracos e pernas.
+		_anim_player = CharacterVisual.animar_com_o_proprio(visual as Node3D, false)
 		if _anim_player:
 			# O pedestre esta sempre andando; "run" e o apelido que o resto deste
 			# script toca.
 			if not _anim_player.has_animation("run") and _anim_player.has_animation("walk"):
 				_anim_player.get_animation_library("").add_animation(
 					"run", _anim_player.get_animation("walk"))
-			_anim_player.play("run" if _anim_player.has_animation("run") else "idle")
+			if _anim_player.has_animation("run") or _anim_player.has_animation("walk"):
+				_anim_player.play("run" if _anim_player.has_animation("run") else "walk")
+				return
+		_setup_procedural_walk(visual as Node3D)
 		return
 	var idle_anim := _get_cached_animation(idle_anim_scene, idle_anim_name)
 	var walk_anim := _get_cached_animation(walk_anim_scene, walk_anim_name)
@@ -144,6 +159,43 @@ func _setup_animation(visual: Node) -> void:
 		_anim_player.play("run")
 	elif idle_anim:
 		_anim_player.play("idle")
+		_setup_procedural_walk(visual as Node3D)
+
+func _setup_procedural_walk(visual: Node3D) -> void:
+	_procedural_visual = visual
+	_procedural_base_pos = visual.position
+	_procedural_base_rot = visual.rotation
+	_procedural_skeleton = CharacterVisual.find_skeleton(visual)
+	if _procedural_skeleton == null:
+		return
+	for i in range(_procedural_skeleton.get_bone_count()):
+		var n := _procedural_skeleton.get_bone_name(i).to_lower()
+		var side := "left" if (n.contains("left") or n.contains("_l") or n.begins_with("l_")) \
+			else ("right" if (n.contains("right") or n.contains("_r") or n.begins_with("r_")) else "")
+		var limb := "leg" if (n.contains("thigh") or n.contains("upperleg") or n.contains("upleg")) \
+			else ("arm" if (n.contains("upperarm") or n.contains("shoulder")) else "")
+		if side != "" and limb != "":
+			_procedural_bones[side + "_" + limb] = [i,
+				_procedural_skeleton.get_bone_pose_rotation(i)]
+
+func _animate_procedural_walk(delta: float) -> void:
+	if _procedural_visual == null:
+		return
+	_walk_phase = fmod(_walk_phase + delta * (4.8 + speed * 0.75), TAU)
+	var step := sin(_walk_phase)
+	var bounce := absf(sin(_walk_phase))
+	_procedural_visual.position = _procedural_base_pos + Vector3(0.0, bounce * 0.035, 0.0)
+	_procedural_visual.rotation = _procedural_base_rot + Vector3(0.035, 0.0, step * 0.028)
+	if _procedural_skeleton == null:
+		return
+	for key in _procedural_bones:
+		var data: Array = _procedural_bones[key]
+		var direction := -1.0 if str(key).begins_with("left") else 1.0
+		if str(key).ends_with("arm"):
+			direction *= -1.0
+		var amount := 0.38 if str(key).ends_with("leg") else 0.28
+		_procedural_skeleton.set_bone_pose_rotation(data[0],
+			(data[1] as Quaternion) * Quaternion(Vector3.RIGHT, step * amount * direction))
 
 static func _get_cached_animation(scene: PackedScene, anim_name: String) -> Animation:
 	if scene == null:
@@ -173,6 +225,7 @@ func _physics_process(delta: float) -> void:
 		return
 	if _path_follow:
 		_path_follow.progress += speed * delta
+	_animate_procedural_walk(delta)
 
 func _on_body_entered(body: Node) -> void:
 	if _is_ragdolled:

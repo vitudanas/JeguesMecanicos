@@ -61,7 +61,7 @@ extends Node3D
 ## Concreto de calcada de verdade reflete ~40% da luz, nao 72%. Com o valor
 ## antigo a calcada estourava de branco ao lado do asfalto e virava o elemento
 ## mais claro da rua — que nao e o caso em cidade nenhuma.
-@export var curb_color := Color(0.5, 0.49, 0.46)
+@export var curb_color := Color(0.42, 0.41, 0.39)
 ## Asfalto e concreto com material PBR em vez da cor chapada do kit (ver
 ## CitySurface.gd). Chave pra dar pra comparar os dois lado a lado.
 @export var use_pbr_surface := true
@@ -265,10 +265,10 @@ func _ensure_road_resources() -> void:
 	# mesmo tom da calcada — a rua lia como uma laje de concreto larga. Asfalto
 	# de rua reflete pouca luz; o contraste com a calcada (0.5) e o que faz o
 	# meio-fio aparecer.
-	_mat_asfalto = CitySurface.make(null, Color(0.29, 0.29, 0.30), "asfalto",
-		asphalt_texture_size, 0.35, 0.5, 0.0)
+	_mat_asfalto = CitySurface.make(null, Color(0.235, 0.245, 0.255), "asfalto",
+		asphalt_texture_size, 0.48, 0.62, 0.16)
 	_mat_tinta = StandardMaterial3D.new()
-	_mat_tinta.albedo_color = Color(0.86, 0.85, 0.80)
+	_mat_tinta.albedo_color = Color(0.74, 0.73, 0.68)
 	_mat_tinta.roughness = 0.85
 
 func _quad(mesh: Mesh, mat: Material, pos: Vector3, rot_y_deg: float,

@@ -12,10 +12,10 @@ render_mode cull_back, diffuse_burley, specular_schlick_ggx;
 // Mesmo fbm de shaders/ground.gdshader, pra montanha e chao terem o mesmo grao
 // e a transicao no pe da encosta nao ter emenda.
 
-uniform vec3 rock_color : source_color = vec3(0.31, 0.33, 0.34);
-uniform vec3 rock_dark : source_color = vec3(0.18, 0.21, 0.23);
-uniform vec3 grass_color : source_color = vec3(0.23, 0.30, 0.20);
-uniform vec3 snow_color : source_color = vec3(0.67, 0.72, 0.76);
+uniform vec3 rock_color : source_color = vec3(0.34, 0.35, 0.35);
+uniform vec3 rock_dark : source_color = vec3(0.14, 0.17, 0.18);
+uniform vec3 grass_color : source_color = vec3(0.19, 0.28, 0.16);
+uniform vec3 snow_color : source_color = vec3(0.76, 0.79, 0.80);
 
 // Alturas recalibradas quando a serra passou de 138 m pra 320 m: com os valores
 // antigos (mato ate 42, neve a partir de 104) quase todo maciço virava pico
@@ -28,7 +28,7 @@ uniform float detail_scale = 0.35;
 // de "montanha" numa silhueta grande. Sem isso a encosta e uma mancha cinza
 // uniforme, por mais alta que seja.
 uniform float strata_freq = 0.09;
-uniform float strata_strength : hint_range(0.0, 1.0) = 0.34;
+uniform float strata_strength : hint_range(0.0, 1.0) = 0.44;
 // Detalhe fino de perto (~30 cm), que some com a distancia pra nao cintilar.
 uniform float fine_scale = 3.2;
 uniform float fine_fade_start = 40.0;
