@@ -3493,6 +3493,37 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     linhas — crédito que não aparece é o mesmo que crédito nenhum. Hoje são 56.
     Conferido também que `creditos.gd` está dentro do `.pck` exportado.
 
+- **2026-08-13** — Entrada do Codex no fluxo compartilhado com o Claude. Feito
+  um inventário completo dos **2.097 arquivos versionados** e lido o conteúdo
+  autoral legível do projeto: configuração/exportação, autoloads, scripts de
+  gameplay, geradores do mundo, UI, shaders, cenas, documentação, ferramentas,
+  pipelines de assets e a suíte de verificação. Modelos 3D, imagens, áudio,
+  cenas binárias `.scn`, builds e o cache `.godot` foram catalogados por tipo,
+  caminho, dependência e metadados — são artefatos binários/gerados, não texto
+  fonte para leitura linha a linha. O worktree estava limpo e sincronizado com
+  `origin/main` (`c15b772`) no começo da leitura; nenhum arquivo de jogo foi
+  alterado e nenhum teste/build foi rodado, porque esta rodada foi somente de
+  familiarização.
+  - **Achado não corrigido:** `tools/build_characters.py:34` ainda fixa
+    `ROOT = "/Users/<usuario-local>/Documents/JOGO2/assets/quaternius"`,
+    caminho anterior à mudança documentada de 2026-08-08 para
+    `/Users/Shared/JOGO2`. Se o pipeline de personagens nativos precisar ser
+    executado novamente, ele falhará ou trabalhará no lugar errado; convém
+    derivar o caminho a partir do próprio arquivo antes de rodá-lo.
+
+- **2026-08-13 (coordenação Codex + Claude)** — A pedido do usuário, criado
+  `AGENTS.md` na raiz com uma divisão temporária de trabalho, válida até
+  **2026-08-31 inclusive** (`America/Sao_Paulo`). Durante a vigência, o **Codex**
+  faz as implementações, a primeira bateria de testes, as correções iniciais,
+  documenta a rodada, reexporta/verifica as builds quando o jogo mudar e cria e
+  envia o commit ao GitHub. Depois do handoff pelo hash do commit, o **Claude**
+  revisa integralmente o diff e executa testes adicionais/de regressão; os
+  problemas encontrados voltam ao Codex para correção e novo commit, seguidos
+  de nova revisão. Uma ordem direta posterior do usuário pode mudar a divisão,
+  e ela não se renova automaticamente depois de agosto. Esta rodada alterou
+  somente documentação e regras de colaboração; nenhum arquivo do jogo mudou,
+  portanto não houve teste nem reexportação de build.
+
 ### ONDE PAREI (2026-08-11, fim da sessão)
 
 Estado: tudo commitado e enviado, suíte inteira passando (19 testes), builds
