@@ -77,7 +77,7 @@ conta Apple paga nem notarizado, o macOS ainda avisa na primeira abertura. Pra a
 
 ## Repositório
 
-Código no GitHub: [github.com/vitudanas/joguinho2](https://github.com/vitudanas/joguinho2)
+Código no GitHub: [github.com/vitudanas/JeguesMecanicos](https://github.com/vitudanas/JeguesMecanicos)
 (privado). A pasta `assets/kenney/` tem pacotes CC0 do Kenney.nl — ver
 [CLAUDE.md](CLAUDE.md) para os links e licenças.
 

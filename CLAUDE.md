@@ -390,7 +390,7 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
   proporção da UI — confirmado que HUD/mira/texto escalam certo. Builds regenerados.
 - **2026-08-01** — Usuário pediu pra subir o projeto pro GitHub. Instalado GitHub CLI
   (`gh`), autenticado via device code, repo git inicializado localmente e enviado pro
-  repositório privado `vitudanas/joguinho2` (rebase em cima do commit inicial do
+  repositório privado `vitudanas/JeguesMecanicos` (rebase em cima do commit inicial do
   GitHub pra não perder nada). Pasta `builds/` continua fora do git (binários grandes,
   regeneráveis). Em seguida, usuário pediu pra continuar o roadmap e manter tudo
   sincronizado no git: implementados **pedestres com ragdoll**
@@ -611,7 +611,7 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
   (.zip, ~127MB) via `godot --headless --export-release`, testado o macOS de
   verdade (abri o `.app` exportado, não só modo dev — confirma que carrega e mostra
   o menu principal certinho). Publicados como GitHub Release
-  ([v0.1.0](https://github.com/vitudanas/joguinho2/releases/tag/v0.1.0)) em vez de
+  ([v0.1.0](https://github.com/vitudanas/JeguesMecanicos/releases/tag/v0.1.0)) em vez de
   commitar os binários direto no repo (`builds/` continua fora do git, evita inchar
   o histórico com arquivos grandes/regeneráveis).
 - **2026-08-02** — Usuário pediu explicitamente pra sempre verificar tudo antes de
@@ -3383,7 +3383,7 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     commits nunca tinham sido enviados, dava pra reescrevê-los sem risco —
     e essas pastas nunca deveriam ter entrado no git (é a política escrita
     desde `assets/realistas/`). Publicada a
-    [v0.3.0](https://github.com/vitudanas/joguinho2/releases/tag/v0.3.0) com os
+    [v0.3.0](https://github.com/vitudanas/JeguesMecanicos/releases/tag/v0.3.0) com os
     dois builds.
   - **A cabeça de jegue só servia nos dois nativos**, e por dois motivos: o
     código procurava o osso `Head` (dos 44 modelos, só eles usam esse nome) e as
@@ -3480,7 +3480,7 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     pedestre passou a ser **semeado** (semente por rota, tirada do RNG semeado da
     cidade). Além de consertar o teste, isso restaura uma propriedade que o save
     depende: a cidade é gerada com semente fixa e tem que voltar idêntica.
-  - **Release publicada de verdade**: [v0.3.0](https://github.com/vitudanas/joguinho2/releases/tag/v0.3.0)
+  - **Release publicada de verdade**: [v0.3.0](https://github.com/vitudanas/JeguesMecanicos/releases/tag/v0.3.0)
     com os dois zips, já com a cabeça de jegue em todos e os pedestres novos.
     `pack_audit` limpo, `.app` reextraído e o binário exportado sobe sem erro.
   - **Teste instável anotado**: o `audio_test` reprovou uma vez com "clique de
@@ -3771,7 +3771,7 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
   - **[RESOLVIDO] Build e release.** O `.app` foi reextraído — o `.pck` dele
     tem 888.996.516 bytes, os mesmos do que está dentro do zip publicado
     (conferido byte a byte, não pela data da pasta) — e a
-    [v0.3.1](https://github.com/vitudanas/joguinho2/releases/tag/v0.3.1) saiu
+  [v0.3.1](https://github.com/vitudanas/JeguesMecanicos/releases/tag/v0.3.1) saiu
     com os dois artefatos. `pack_audit` limpo: 105 referências, 71 caminhos de
     runtime, nada mais novo que o build.
   - **Suíte rodada nesta revisão, toda passando menos a seção nova**: `rematch`
@@ -3794,7 +3794,7 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
 Estado: negociação em rodadas implementada e validada, suíte desta rodada
 passando (17 cenas), builds Windows/macOS reexportadas e binário macOS real
 verificado. A release pública continua sendo a
-[v0.3.0](https://github.com/vitudanas/joguinho2/releases/tag/v0.3.0); os zips
+[v0.3.0](https://github.com/vitudanas/JeguesMecanicos/releases/tag/v0.3.0); os zips
 novos desta rodada ainda não foram anexados a uma nova release.
 
 **Personagens:** **44 jogáveis** no menu (2 nativos + 42 baixados) de 63
@@ -4273,7 +4273,7 @@ acima, as duas builds foram geradas e auditadas novamente no fechamento final.
 
 A mudança de interface e a correção da negociação foram publicadas também como
 release, conforme a regra obrigatória de `AGENTS.md`: [v0.3.1 — interface e
-negociação](https://github.com/vitudanas/joguinho2/releases/tag/v0.3.1).
+negociação](https://github.com/vitudanas/JeguesMecanicos/releases/tag/v0.3.1).
 
 - Windows: `JeguesMecanicos-Windows.zip`, 463.978.561 bytes, SHA-256
   `8e4cdba81f07d4dc0156ccbd2107d063fba54378778dd29a164b95e293b5bbf4`.
@@ -4482,3 +4482,13 @@ de rua, não aumentar a quantidade de prédios.
 - A descrição do repositório no GitHub deve manter a mesma informação de forma resumida.
 - Esta rodada altera somente documentação e metadados do repositório; não exige nova build ou
   release do jogo.
+
+## 2026-08-13 — repositório renomeado para JeguesMecanicos (Codex)
+
+- O usuário renomeou o repositório no GitHub de `vitudanas/joguinho2` para
+  `vitudanas/JeguesMecanicos`.
+- O remoto local `origin`, o link principal do `README.md` e os links históricos das releases
+  foram atualizados para o endereço novo.
+- A descrição de autoria e transparência sobre assistência de IA foi conferida no repositório
+  renomeado e permaneceu intacta.
+- Não houve mudança no jogo ou nos artefatos; nenhuma nova build/release foi necessária.
