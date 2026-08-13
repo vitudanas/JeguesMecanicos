@@ -4,6 +4,14 @@ Jogo 3D sandbox de humor: conserte carros com gambiarras e venda para NPCs antes
 tudo se desmonte no trânsito. Feito em Godot 4. Veja [CLAUDE.md](CLAUDE.md) para o
 pitch completo, decisões técnicas e roadmap.
 
+## Autoria e uso de inteligência artificial
+
+**Jegues Mecânicos é um jogo criado por Vitor Rodrigues Danas e desenvolvido
+majoritariamente com assistência de inteligência artificial.** Vitor define a
+ideia, a direção criativa e as decisões do projeto. Ferramentas de IA, incluindo
+Claude e Codex, colaboram principalmente na programação, nos testes, na
+documentação e na iteração visual.
+
 ## Como abrir e jogar
 
 1. Abra o Godot 4 (instalado em `/Applications/Godot.app`, ou `godot` no terminal).

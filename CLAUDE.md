@@ -4471,3 +4471,14 @@ de rua, não aumentar a quantidade de prédios.
 - O Codex implementa, faz os testes iniciais, commita, envia ao GitHub e mantém a release
   atualizada; o Claude revisa o código e executa testes adicionais antes da release.
 - A regra de divisão de responsabilidades acima permanece vigente até 31 de agosto de 2026.
+
+## 2026-08-13 — autoria e transparência sobre o uso de IA (Codex)
+
+- A pedido do usuário, o `README.md` agora declara publicamente que **Jegues Mecânicos foi
+  criado por Vitor Rodrigues Danas e é desenvolvido majoritariamente com assistência de IA**.
+- O texto preserva a autoria humana: Vitor responde pela ideia, direção criativa e decisões;
+  Claude e Codex são apresentados como colaboradores em programação, testes, documentação e
+  iteração visual.
+- A descrição do repositório no GitHub deve manter a mesma informação de forma resumida.
+- Esta rodada altera somente documentação e metadados do repositório; não exige nova build ou
+  release do jogo.
