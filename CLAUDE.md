@@ -4529,3 +4529,18 @@ de rua, não aumentar a quantidade de prédios.
 - Hashes antigos citados em registros históricos anteriores a esta entrada são identificadores
   anteriores à higienização e não devem mais ser usados para handoff ou revisão. O estado do
   jogo não mudou, portanto não houve nova build nem nova release.
+
+## 2026-08-13 — bytecode e caminhos locais removidos do histórico (Codex)
+
+- Durante uma revisão paralela, o Claude encontrou dois arquivos `.pyc` versionados; um deles
+  continha em formato binário um caminho absoluto com o nome da conta local. O achado foi
+  confirmado pelo Codex antes da correção.
+- `tools/__pycache__/expand_world.cpython-314.pyc` e
+  `tools/verify/__pycache__/patch.cpython-314.pyc` foram removidos. O `.gitignore` agora bloqueia
+  diretórios `__pycache__` e bytecode `*.pyc`, `*.pyo` e `*.pyd`.
+- As referências públicas foram reescritas novamente para retirar os dois binários de todas as
+  versões alcançáveis, e não somente do `HEAD`. A árvore final e a contagem de commits foram
+  verificadas antes do force-push.
+- O bundle privado criado antes da primeira higienização continua sendo a recuperação do estado
+  antigo e, por conter os dados removidos, não deve ser publicado.
+- Esta limpeza não altera código-fonte ou comportamento do jogo e não exige nova build/release.
