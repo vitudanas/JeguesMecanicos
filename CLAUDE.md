@@ -4503,10 +4503,29 @@ de rua, não aumentar a quantidade de prédios.
 - O `.gitignore` passou a bloquear arquivos `.env`, chaves, certificados, keystores e arquivos
   comuns de credenciais, mantendo a exceção segura para um eventual `.env.example`.
 - Foi encontrado um e-mail pessoal no metadado do commit inicial. O conteúdo não aparece nos
-  arquivos atuais, mas ficará público no histórico se o repositório for aberto. Corrigir esse
-  item exige reescrita de histórico e force-push, operação que deve ser feita separadamente,
-  com cópia de segurança e coordenação entre Codex e Claude.
+  arquivos atuais; a correção por reescrita de histórico foi autorizada e concluída na rodada
+  registrada abaixo.
 - O nome do criador permanece público intencionalmente, conforme a declaração de autoria no
   `README.md`; não foi classificado como informação sensível nesta auditoria.
 - Nenhuma nova build/release é necessária porque esta rodada altera apenas higiene do
   repositório, documentação e comentários.
+
+## 2026-08-13 — e-mail pessoal removido do histórico Git (Codex)
+
+- Com autorização expressa do usuário, o histórico foi reescrito para substituir o e-mail
+  pessoal do commit inicial por `vitudanas@users.noreply.github.com`.
+- Antes da operação foi criado e verificado um bundle privado completo em
+  `/Users/Shared/JeguesMecanicos-history-before-email-redaction-20260813.bundle`, com SHA-256
+  `35bebd82a1a94f36a309c841ce951256dc0ad8474c14e01a785e82a0c99a8d6d`. Esse arquivo contém o
+  histórico anterior e não pode ser publicado ou copiado para dentro do repositório.
+- A reescrita preservou os 101 commits da `main` e a árvore final byte a byte. Nomes, mensagens,
+  datas e conteúdo foram preservados; os hashes mudaram porque o metadado de autoria integra o
+  identificador de cada commit.
+- O force-push foi atômico e protegido pelos hashes remotos conferidos. `main` e as tags
+  `v0.1.0` a `v0.3.2` foram atualizadas juntas; as cinco releases e seus títulos permaneceram
+  associadas às tags novas.
+- A API do GitHub foi consultada depois do envio e apresentou somente o endereço protegido
+  `users.noreply.github.com` no histórico público alcançável.
+- Hashes antigos citados em registros históricos anteriores a esta entrada são identificadores
+  anteriores à higienização e não devem mais ser usados para handoff ou revisão. O estado do
+  jogo não mudou, portanto não houve nova build nem nova release.
