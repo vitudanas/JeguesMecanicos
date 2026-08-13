@@ -160,9 +160,12 @@ func _run() -> void:
 		(car.global_position - buyer.global_position).normalized(), 2.5)
 	await _shot("07_cliente_de_perto")
 
-	# ------------------------------------------------- 6. minigame de labia
+	# ------------------------------------------------- 6. negociacao em rodadas
 	if buyer.has_method("interact"):
 		buyer.interact(player)
-		for i in range(90):
+		# Resultado fixo so para a foto mostrar uma contraproposta ja feita. O
+		# teste numerico cobre sucesso e falha; roteiro visual nao deve variar.
+		buyer._resolve_counter(true)
+		for i in range(4):
 			await get_tree().physics_frame
-		await _shot("08_barra_de_labia")
+		await _shot("08_negociacao")

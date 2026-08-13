@@ -305,44 +305,49 @@ func haggle_floor(asking: int) -> int:
 ## aparece, e o jogador passa a ter uma decisao ("vale a pena consertar mais
 ## antes de entregar, ou esse ai engole qualquer coisa?").
 ##
-## `paga`     multiplica o preco.
-## `enche`    quanto a barra sobe por segundo segurando E.
-## `esvazia`  quanto ela cai por segundo SEM segurar.
-## `paciencia` tempo total, em segundos.
-## `implica`  multiplica a penalidade por gambiarra quebrada.
+## `paga`    multiplica o preco maximo.
+## `abre`    fracao desse teto oferecida no inicio da conversa.
+## `cede`    chance-base de aceitar uma contraproposta segura.
+## `blefe`   chance-base de cair num blefe, sempre menor que `cede`.
+## `rodadas` quantas tentativas o jogador tem antes da oferta virar final.
+## `implica` multiplica a penalidade de chance por gambiarra quebrada.
 ##
-## INVARIANTE, e o teste cobra: `enche * paciencia` > 1 em TODOS os tipos, ou
-## seja segurando E sem soltar a venda sempre fecha. A dificuldade tem que vir
-## de titubear e da avaria, nunca de um cliente impossivel — perder uma entrega
-## depois de atravessar a cidade inteira por um sorteio ruim seria punicao sem
-## aviso.
+## A oferta inicial nunca e zero e pode ser aceita imediatamente. Assim nenhum
+## cliente e impossivel por sorte: o risco existe apenas quando o jogador
+## escolhe pedir mais, e as probabilidades aparecem no prompt antes da acao.
 const CLIENTS: Array[Dictionary] = [
 	{
 		"nome": "Apressado", "dica": "tem pressa, paga pouco",
-		"paga": 0.80, "enche": 0.75, "esvazia": 0.20, "paciencia": 4.0, "implica": 0.8,
+		"paga": 0.80, "abre": 0.78, "cede": 0.72, "blefe": 0.42,
+		"rodadas": 2, "implica": 0.8,
 	},
 	{
 		"nome": "Desconfiado", "dica": "repara em tudo",
-		"paga": 1.15, "enche": 0.36, "esvazia": 0.30, "paciencia": 9.0, "implica": 1.8,
+		"paga": 1.15, "abre": 0.70, "cede": 0.58, "blefe": 0.22,
+		"rodadas": 3, "implica": 1.8,
 	},
 	{
 		"nome": "Entusiasmado", "dica": "topa fácil, mas se distrai",
-		"paga": 1.25, "enche": 0.90, "esvazia": 0.45, "paciencia": 3.2, "implica": 1.0,
+		"paga": 1.25, "abre": 0.86, "cede": 0.83, "blefe": 0.62,
+		"rodadas": 2, "implica": 1.0,
 	},
 	{
 		"nome": "Pão-duro", "dica": "pechincha sem pressa",
-		"paga": 0.70, "enche": 0.50, "esvazia": 0.10, "paciencia": 12.0, "implica": 0.6,
+		"paga": 0.70, "abre": 0.62, "cede": 0.45, "blefe": 0.18,
+		"rodadas": 4, "implica": 0.6,
 	},
 	{
 		"nome": "Colecionador", "dica": "paga bem por carro inteiro",
-		"paga": 1.60, "enche": 0.30, "esvazia": 0.25, "paciencia": 9.0, "implica": 3.0,
+		"paga": 1.60, "abre": 0.74, "cede": 0.64, "blefe": 0.30,
+		"rodadas": 3, "implica": 3.0,
 	},
 	# O LOWBALLER das duas inspiracoes: oferece bem abaixo do valor e nao se
 	# mexe. Existe pra que anunciar caro nem sempre seja a jogada — com ele na
 	# porta, o jogador escolhe entre aceitar pouco ou esperar outro cliente.
 	{
 		"nome": "Abutre", "dica": "oferece uma miséria e não sobe",
-		"paga": 0.62, "enche": 0.55, "esvazia": 0.12, "paciencia": 10.0, "implica": 0.5,
+		"paga": 0.62, "abre": 0.55, "cede": 0.25, "blefe": 0.08,
+		"rodadas": 4, "implica": 0.5,
 	},
 ]
 

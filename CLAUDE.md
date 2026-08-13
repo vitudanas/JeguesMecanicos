@@ -205,8 +205,10 @@ local hard-coded sempre que possível.
   carro ou melhore o pátio.
 - **Venda:** a entrega é numa casa sorteada da cidade (placa verde ENTREGA);
   encoste o carro na frente dela. No cliente, **Q escolhe o preço pedido**
-  (4 degraus) e **segurar E** enche a barra de lábia. O cliente nunca paga acima
-  do que você pediu, e pedir acima do que ele topa deixa a lábia mais difícil.
+  (4 degraus) e **E ouve a oferta**. Durante a conversa, **E aceita**, **Q faz
+  uma contraproposta** e **F tenta um blefe**. Chance, oferta, pedido e rodadas
+  ficam visíveis; preço exagerado, reputação baixa e carro quebrado reduzem a
+  chance. O cliente nunca paga acima do pedido.
 - **Menus:** o jogo abre num menu principal (Jogar/Sair); Esc a qualquer momento
   dentro da partida pausa e abre Continuar/Sair para o Menu/Sair do Jogo.
 - **Personagem** (botão no menu principal): escolhe **mulher ou homem**, cabeça
@@ -271,7 +273,7 @@ scenes/world/           Town.tscn (cidade + anel rural, tudo num só mundo sandb
                         RuralScatter.tscn (wrappers dos scripts em scripts/)
 scenes/traffic/         TrafficCar.tscn/gd, TrafficRoute.tscn/gd — carros de IA
 scenes/npc/             BuyerNPC.tscn/gd, Pedestrian.tscn/gd, PedestrianRoute.tscn/gd
-scenes/ui/              HUD.tscn/gd — dinheiro, prompt de interação, barra de lábia;
+scenes/ui/              HUD.tscn/gd — dinheiro, prompt e painel de negociação;
                         MainMenu.tscn/gd (tela inicial, cena de entrada do jogo);
                         PauseMenu.tscn/gd (Esc pausa a árvore, some com o mouse);
                         SettingsMenu.gd, CharacterMenu.gd e LoadingScreen.gd —
@@ -3524,12 +3526,51 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
   somente documentação e regras de colaboração; nenhum arquivo do jogo mudou,
   portanto não houve teste nem reexportação de build.
 
-### ONDE PAREI (2026-08-11, fim da sessão)
+- **2026-08-13 (Codex — negociação em rodadas)** — A venda deixou de ser a
+  barra automática de "segure E" e ganhou **contraproposta e blefe de verdade**.
+  O cliente agora abre com dinheiro garantido abaixo do teto e o jogador escolhe
+  entre **E aceitar**, **Q contrapropor** e **F blefar**. Cada personalidade tem
+  oferta inicial, chance de ceder, chance de cair no blefe e número de rodadas
+  próprios. A chance exata aparece antes da ação e varia com reputação, preço
+  exagerado, gambiarras quebradas e insistência na conversa.
+  - A contraproposta é a via segura: quando aceita, fecha 38% do espaço restante
+    até o teto; cada tentativa consome uma rodada. O blefe só pode ser tentado
+    uma vez: acertando, fecha 82% do espaço; descoberto, corta 10% da oferta e
+    consome duas rodadas. A oferta inicial sempre pode ser aceita, portanto o
+    sorteio nunca torna uma entrega impossível.
+  - `PersuasionMinigame.gd` virou o estado puro/determinístico da conversa;
+    `BuyerNPC.gd` calcula chance, sorteia a reação, atualiza o HUD e credita
+    exatamente o valor aceito. `Player.gd` ganhou a borda de subida do F para o
+    blefe sem quebrar o mesmo F que sai do carro. Se o carro rolar para fora da
+    zona, a conversa é cancelada e o painel não fica preso.
+  - O HUD mostra oferta/pedido/rodadas e usa a barra como progresso entre oferta
+    inicial e teto. Prompt e dicas de carregamento ensinam as três teclas. A
+    foto real `user://loop_shots/08_negociacao.png` foi inspecionada: textos,
+    probabilidades, cliente e painel ficaram legíveis, sem sobreposição.
+  - `economy_test` cobre os seis clientes, oferta garantida, sucesso/falha das
+    duas jogadas, custo de rodadas, blefe único e queda de chance por exagero.
+    `loop_test` usa Q/F/E reais, aceita a oferta mostrada e cobra que a carteira
+    receba exatamente aquele valor. Rodou uma bateria de **17 cenas**, todas
+    aprovadas: city, drive, loop, attach, scale, yard, audio, obstacles, save,
+    loading, economy, shop, staff, character, street, gaps e npc.
+  - Builds reexportadas: Windows `.exe` **998.525.160 bytes** e zip
+    **464.559.207 bytes**; macOS zip **486.844.503 bytes**. `pack_audit` conferiu
+    o `.pck` de 889 MB, 105 referências, 71 caminhos montados em runtime e o
+    catálogo de personagens: limpo. O `.app` foi extraído do zip novo,
+    `codesign --verify --deep --strict` passou e o binário exportado abriu em
+    headless por 120 frames sem erro de recurso.
+  - Durante a rodada apareceu uma mudança paralela não feita pelo Codex em
+    `tools/build_characters.py`, trocando o caminho absoluto antigo por um caminho
+    derivado de `__file__`. Ela foi preservada e ficou fora do commit desta
+    implementação para não misturar autoria/escopo.
 
-Estado: tudo commitado e enviado, suíte inteira passando (19 testes), builds
-reexportadas e a release [v0.3.0](https://github.com/vitudanas/joguinho2/releases/tag/v0.3.0)
-atualizada com os dois zips (macOS 464 MB, Windows 439 MB). O `.app` extraído
-foi refeito — ele não se atualiza sozinho quando o zip é regravado.
+### ONDE PAREI (2026-08-13, Codex)
+
+Estado: negociação em rodadas implementada e validada, suíte desta rodada
+passando (17 cenas), builds Windows/macOS reexportadas e binário macOS real
+verificado. A release pública continua sendo a
+[v0.3.0](https://github.com/vitudanas/joguinho2/releases/tag/v0.3.0); os zips
+novos desta rodada ainda não foram anexados a uma nova release.
 
 **Personagens:** **44 jogáveis** no menu (2 nativos + 42 baixados) de 63
 arquivos recebidos; os outros 21 estão catalogados como cenário e ficam FORA do
@@ -3561,8 +3602,8 @@ cabeçalho de `MedirPersonagem.gd`). Quem sair de costas na foto entra em
    cobertos desde 2026-08-08/09, mas o jogo não tem trilha nenhuma. Ficou de
    fora de propósito — é o item que menos dá pra decidir sem ouvir.
 2. **Jogar com as mãos.** O loop é testado de ponta a ponta com input real, mas
-   ninguém *sentiu* o jogo: se 76 km/h é rápido demais, se a barra de lábia dura
-   o certo, se o reboque é chato. Só se resolve jogando.
+   ninguém *sentiu* o jogo: se 76 km/h é rápido demais, se as chances/rodadas da
+   negociação são divertidas, se o reboque é chato. Só se resolve jogando.
 3. **Pose de portfólio em alguns modelos**: `ada_wong` e `old_man_in_coat` ficam
    inclinados porque é a ÚNICA animação que veio no arquivo, e `rem_rezero` só
    traz T-pose/A-pose. Não tem conserto por script — precisaria de retarget no
@@ -3600,9 +3641,9 @@ Nenhuma das três pendências anteriores continua aberta. O que sobrou de
 observação pra uma próxima rodada (nada disso foi pedido):
 
 1. **Jogar com as mãos.** O loop agora é testado de ponta a ponta com input
-   real (`tools/verify/loop_test.tscn`, 5/5 rodadas), mas ninguém *sentiu* o
-   jogo: se 76 km/h é rápido demais, se a barra de lábia dura o certo, se o
-   reboque de 38 m é chato. Isso só se resolve jogando.
+   real (`tools/verify/loop_test.tscn`), mas ninguém *sentiu* o jogo: se 76 km/h
+   é rápido demais, se contraproposta/blefe têm o ritmo certo, se o reboque de
+   38 m é chato. Isso só se resolve jogando.
 2. ~~**O pátio da oficina prende o carro.**~~ **Medido e fechado** em
    2026-08-04 (`tools/verify/yard_test.tscn`): o pátio não prende — sai em 4 dos
    8 ângulos, com os bloqueados todos virados pro fundo. O que de fato prendia
@@ -3696,11 +3737,11 @@ todo" — não é só a oficina):
   (2026-08-09, segunda rodada). Junto veio o **lote do ferro-velho**, que não
   estava na lista e sem o qual as vagas não teriam o que encher.
 
-**Falta:** nada da lista das inspirações. O que dá pra levar adiante um dia:
-funcionário designado a uma ESTAÇÃO específica (aqui o mecânico atende o pátio
-inteiro), lava-jato e posto próprio (descartados de propósito — nas duas
-referências lavar e abastecer **não mudam valor**), e negociação de verdade
-(contraproposta, blefe) no lugar de segurar um botão.
+**Falta:** nada da lista das inspirações. A negociação de verdade
+(contraproposta e blefe) foi fechada em 2026-08-13. O que dá pra levar adiante
+um dia: funcionário designado a uma ESTAÇÃO específica (aqui o mecânico atende
+o pátio inteiro), lava-jato e posto próprio (descartados de propósito — nas
+duas referências lavar e abastecer **não mudam valor**).
 
 Não implementado de propósito (e por quê): lavar/abastecer, que nas duas
 referências **não mudam valor** — seria trabalho sem consequência.
@@ -3896,8 +3937,10 @@ minha.
   existe é **inventário** — o jogador não carrega peça, compra na hora de
   instalar; e um item ainda só serve no ponto dele (não dá pra enfiar papelão no
   capô).
-- Economia mais profunda (preços variáveis, múltiplos compradores com personalidades
-  diferentes, negociação).
+- ~~Economia mais profunda (preço pedido, compradores com personalidades e
+  negociação).~~ **Feito**: 6 tipos, reputação, oferta inicial, contraproposta e
+  blefe em rodadas (2026-08-09 e 2026-08-13). O que ainda caberia como expansão
+  é mercado variável por dia, não uma lacuna do loop atual.
 - ~~Sons e efeitos de UI/menu.~~ **Feito em 2026-08-08** (ver changelog): efeitos
   do mundo e da interface com pacotes CC0 do Kenney, motor e chuva sintetizados
   em código, e volume ajustável no menu. O **motor dos carros de IA** e o
@@ -3927,10 +3970,9 @@ minha.
   específica como no jogo de referência: não dá pra designá-lo a uma vaga nem
   contratar dois. Ele também não monta gambiarra, de propósito.
 - As entregas já são em casas sorteadas da cidade (ver 2026-08-03), o cliente
-  tem **personalidade** (5 tipos, ver changelog 2026-08-09) e com a
-  recepcionista há **dois esperando** ao mesmo tempo. O que ainda não existe é
-  **negociação de verdade** (contraproposta, blefe): a lábia segue sendo segurar
-  um botão.
+  tem **personalidade** (6 tipos), com a recepcionista há **dois esperando** ao
+  mesmo tempo e desde 2026-08-13 a conversa tem contraproposta e blefe. O que
+  não existe é mercado com cotação variável por dia.
 - Os buracos (`Pothole*`) e poças de lama continuam em 4 pontos fixos da grade, em
   vez de espalhados/procedurais.
 - Os pedestres e o cliente ainda saem de só 2 personagens-base (um masculino, um

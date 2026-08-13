@@ -1,8 +1,8 @@
 extends CharacterBody3D
 ## Controlador do jogador. WASD anda, Shift corre, Space pula, E interage
 ## (olhando via raycast), **V troca entre 1a e 3a pessoa**, F sai do carro
-## quando dirigindo. Ao entrar num veiculo, some e cede o controle/camera para
-## o Vehicle.gd.
+## quando dirigindo ou tenta um blefe quando negocia com um comprador. Ao
+## entrar num veiculo, some e cede o controle/camera para o Vehicle.gd.
 ##
 ## O corpo e a mulher de cabeca de jegue montada por `PlayerVisual.gd`.
 
@@ -61,6 +61,7 @@ var _free_camera: Camera3D = null
 var _e_prev := false
 var _v_prev := false
 var _q_prev := false
+var _f_prev := false
 var _step_accum := 0.0
 var _anim: AnimationPlayer = null
 
@@ -162,6 +163,12 @@ func _physics_process(delta: float) -> void:
 	var q_just := q_now and not _q_prev
 	_q_prev = q_now
 
+	# F sai do carro ou blefa com o comprador. Tambem usa borda de subida: sem
+	# ela um toque gastaria todas as rodadas da conversa em poucos frames.
+	var f_now := Input.is_key_pressed(KEY_F)
+	var f_just := f_now and not _f_prev
+	_f_prev = f_now
+
 	# V alterna 1a/3a pessoa, na borda de subida (mesmo padrao do E).
 	var v_now := Input.is_key_pressed(KEY_V)
 	if v_now and not _v_prev:
@@ -169,7 +176,7 @@ func _physics_process(delta: float) -> void:
 	_v_prev = v_now
 
 	if driving_vehicle:
-		if Input.is_key_pressed(KEY_F):
+		if f_just:
 			exit_vehicle()
 		return
 
@@ -223,6 +230,8 @@ func _physics_process(delta: float) -> void:
 		_try_interact()
 	if q_just:
 		_try_negotiate()
+	if f_just:
+		_try_bluff()
 
 ## Passo a cada tanto de CHAO ANDADO, nao a cada tanto de tempo: assim a
 ## cadencia acompanha sozinha o andar e a corrida, sem um segundo temporizador
@@ -277,6 +286,12 @@ func _update_interaction() -> void:
 func _try_negotiate() -> void:
 	if current_interactable and current_interactable.has_method("negotiate"):
 		current_interactable.negotiate()
+
+## F no cliente durante a conversa. Fora dela (e fora de um carro), nao faz
+## nada; assim a tecla continua livre no restante do loop.
+func _try_bluff() -> void:
+	if current_interactable and current_interactable.has_method("bluff"):
+		current_interactable.bluff()
 
 func _try_interact() -> void:
 	if current_interactable and current_interactable.is_in_group("interactable") and current_interactable.has_method("interact"):

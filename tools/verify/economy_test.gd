@@ -3,12 +3,12 @@ extends Node
 ##
 ## Duas perguntas diferentes, e as duas importam:
 ##
-##   [1] O sorteio muda mesmo o jogo? Cinco rotulos que pagam igual e enchem a
-##       barra igual sao enfeite, nao mecanica.
-##   [2] Da pra perder por azar? Atravessar a cidade inteira e a entrega nao
-##       fechar porque o sorteio deu um cliente impossivel seria punicao sem
-##       aviso. A INVARIANTE do projeto e: segurando E sem soltar, toda venda
-##       fecha; a dificuldade vem de titubear e da avaria.
+##   [1] O sorteio muda mesmo o jogo? Rotulos que pagam e negociam igual sao
+##       enfeite, nao mecanica.
+##   [2] Da pra perder por azar? Atravessar a cidade inteira e nao ter nenhuma
+##       oferta seria punicao sem aviso. A INVARIANTE agora e: todo cliente abre
+##       com dinheiro garantido; contraproposta e blefe so arriscam esse valor
+##       quando o jogador escolhe faze-los, com a chance visivel no prompt.
 ##
 ##   godot --headless --path . tools/verify/economy_test.tscn
 
@@ -32,8 +32,9 @@ func _ready() -> void:
 	for c in Economy.CLIENTS:
 		var v := Economy.offer(c, mercado)
 		precos[c["nome"]] = v
-		print("    %-14s R$ %3d   enche %.2f/s, paciencia %.1fs, implica x%.1f"
-			% [c["nome"], v, c["enche"], c["paciencia"], c["implica"]])
+		print("    %-14s R$ %3d   abre %.0f%%, cede %.0f%%, blefe %.0f%%, %d rodadas"
+			% [c["nome"], v, float(c["abre"]) * 100.0, float(c["cede"]) * 100.0,
+				float(c["blefe"]) * 100.0, c["rodadas"]])
 	var valores: Array = precos.values()
 	valores.sort()
 	check(valores[0] != valores[-1], "o preco varia com o cliente",
@@ -51,40 +52,39 @@ func _ready() -> void:
 		% [perda_col, perda_apr])
 	check(perda_col > perda_apr, "quem paga mais perde mais com carro quebrado")
 
-	print("\n[3] NENHUM cliente e impossivel (segurando E sem soltar)")
+	print("\n[3] NENHUM cliente e impossivel (todos abrem com oferta aceitavel)")
 	for c in Economy.CLIENTS:
-		# Simula o minigame de verdade, com o mesmo objeto que o jogo usa.
+		var teto := Economy.offer(c, mercado)
+		var abertura := int(round(float(teto) * float(c["abre"])))
 		var mini := PersuasionMinigame.new()
-		mini.fill_rate = c["enche"]
-		mini.drain_rate = c["esvazia"]
-		mini.start(c["paciencia"])
-		var venceu := [false]
-		mini.succeeded.connect(func() -> void: venceu[0] = true)
-		var passo := 1.0 / 60.0
-		# Carro DETONADO (0 de 4 inteiras) e a penalidade cheia deste cliente:
-		# se fecha nessa condicao, fecha em qualquer uma.
-		var penalidade: float = Economy.damage_penalty(0, 4) * float(c["implica"])
-		var t := 0.0
-		while mini.is_active and t < c["paciencia"] + 1.0:
-			mini.update(passo, true, penalidade)
-			t += passo
-		check(venceu[0], "%s fecha segurando E" % c["nome"],
-			"em %.1fs de %.1fs" % [t, c["paciencia"]])
+		mini.start(abertura, teto, int(c["rodadas"]))
+		check(mini.current_offer > 0 and mini.current_offer <= mini.ceiling,
+			"%s abre com dinheiro garantido" % c["nome"],
+			"R$ %d de um teto R$ %d" % [mini.current_offer, mini.ceiling])
+		check(float(c["cede"]) > float(c["blefe"]),
+			"%s: contraproposta e mais segura que blefe" % c["nome"])
 
-	print("\n[4] soltar o botao FAZ diferenca (senao o minigame nao e minigame)")
-	for c in Economy.CLIENTS:
-		var mini := PersuasionMinigame.new()
-		mini.fill_rate = c["enche"]
-		mini.drain_rate = c["esvazia"]
-		mini.start(c["paciencia"])
-		var passo := 1.0 / 60.0
-		var penalidade: float = Economy.damage_penalty(0, 4) * float(c["implica"])
-		var t := 0.0
-		# Segura metade do tempo e solta a outra metade, alternando.
-		while mini.is_active and t < c["paciencia"]:
-			mini.update(passo, fmod(t, 1.0) < 0.5, penalidade)
-			t += passo
-		print("    %-14s titubeando chega a %.0f%%" % [c["nome"], mini.progress * 100.0])
+	print("\n[4] negociacao em rodadas: aceitar, contrapropor ou blefar")
+	var mini := PersuasionMinigame.new()
+	mini.start(70, 100, 3)
+	var oferta_inicial := mini.current_offer
+	mini.counter(true)
+	var depois_counter := mini.current_offer
+	check(depois_counter > oferta_inicial and depois_counter < mini.ceiling,
+		"contraproposta sobe a oferta sem entregar o teto",
+		"R$ %d -> R$ %d" % [oferta_inicial, depois_counter])
+	check(mini.rounds_left == 2, "contraproposta gasta uma rodada")
+	mini.bluff(true)
+	check(mini.current_offer > depois_counter,
+		"blefe bem-sucedido da um salto maior", "R$ %d" % mini.current_offer)
+	check(mini.bluff_used and not mini.can_bluff(), "blefe so pode ser tentado uma vez")
+
+	var falha := PersuasionMinigame.new()
+	falha.start(70, 100, 3)
+	falha.bluff(false)
+	check(falha.current_offer < 70, "blefe descoberto reduz a oferta",
+		"R$ 70 -> R$ %d" % falha.current_offer)
+	check(falha.rounds_left == 1, "blefe descoberto custa duas rodadas")
 
 	print("\n[5] carros diferentes valem coisas diferentes")
 	var rng := RandomNumberGenerator.new()
@@ -200,7 +200,7 @@ func _ready() -> void:
 	check(freio_ruim < freio_bom, "freio quebrado piora a frenagem")
 	carro_teste.queue_free()
 
-	print("\n[10] preco pedido: pedir caro rende mais e custa labia")
+	print("\n[10] preco pedido: pedir caro rende mais e reduz a chance")
 	var npc := (load("res://scenes/npc/BuyerNPC.tscn") as PackedScene).instantiate()
 	add_child(npc)
 	await get_tree().process_frame
@@ -210,19 +210,31 @@ func _ready() -> void:
 	await get_tree().physics_frame
 	for k: String in Economy.PARTS:
 		falso.parts[k] = 1.0
+	# O valor de referencia precisa ser de carro COMPLETO. Sem isso o teste
+	# cai no piso de 40% por ter 0/4 gambiarras e todas as chances saturam no
+	# minimo — parece cobrir dificuldade, mas compara dois clamps iguais.
+	for point: String in Economy.GAMBIARRAS:
+		falso.installed_parts[point] = null
+		falso.installed_options[point] = Economy.gambiarra_option(point, 1)
 	npc.nearby_vehicle = falso
 	# Com um cliente GENEROSO, pedir mais caro tem que render mais.
 	npc.client = _by_name("Colecionador")
 	var linhas: Array = []
 	for passo in range(npc.ASK_STEPS.size()):
 		npc.ask_step = passo
-		linhas.append([npc.ASK_LABELS[passo], npc.asking(), npc._ceiling(), npc._difficulty()])
-		print("    Colecionador  %-12s pede R$ %4d  ->  fecha por R$ %4d  (labia x%.2f)"
-			% [linhas[-1][0], linhas[-1][1], linhas[-1][2], linhas[-1][3]])
+		# Inicia so o estado puro para a chance levar em conta quantas rodadas ja
+		# foram usadas, sem apertar E e vender o veiculo de teste.
+		npc.negotiation.start(npc._opening_offer(), npc._ceiling(), int(npc.client["rodadas"]))
+		linhas.append([npc.ASK_LABELS[passo], npc.asking(), npc._ceiling(),
+			npc._opening_offer(), npc._counter_chance(), npc._bluff_chance()])
+		print("    Colecionador  %-12s pede R$ %4d  -> abre R$ %4d / teto R$ %4d  (Q %2d%%, F %2d%%)"
+			% [linhas[-1][0], linhas[-1][1], linhas[-1][3], linhas[-1][2],
+				int(round(float(linhas[-1][4]) * 100.0)),
+				int(round(float(linhas[-1][5]) * 100.0))])
 	check(linhas[0][2] < linhas[-1][2], "com cliente bom, pedir mais caro rende mais",
 		"R$ %d -> R$ %d" % [linhas[0][2], linhas[-1][2]])
-	check(linhas[-1][3] <= linhas[0][3], "pedir caro deixa a labia mais dificil",
-		"x%.2f -> x%.2f" % [linhas[0][3], linhas[-1][3]])
+	check(float(linhas[-1][5]) < float(linhas[-1][4]),
+		"blefe e mais arriscado que contraproposta")
 	npc.ask_step = 0
 	check(npc._ceiling() <= npc.asking(), "o cliente nunca paga acima do pedido")
 
@@ -232,14 +244,17 @@ func _ready() -> void:
 	npc.client = _by_name("Abutre")
 	npc.ask_step = 0
 	var abutre_barato: int = npc._ceiling()
-	var abutre_facil: float = npc._difficulty()
+	npc.negotiation.start(npc._opening_offer(), npc._ceiling(), int(npc.client["rodadas"]))
+	var abutre_facil: float = npc._counter_chance()
 	npc.ask_step = npc.ASK_STEPS.size() - 1
 	var abutre_caro: int = npc._ceiling()
-	var abutre_dificil: float = npc._difficulty()
-	print("    Abutre        pedindo barato R$ %d (labia x%.2f)  |  caro R$ %d (labia x%.2f)"
-		% [abutre_barato, abutre_facil, abutre_caro, abutre_dificil])
-	check(abutre_barato < abutre_caro or abutre_dificil < abutre_facil,
-		"com o Abutre a escolha de preco tambem pesa")
+	npc.negotiation.start(npc._opening_offer(), npc._ceiling(), int(npc.client["rodadas"]))
+	var abutre_dificil: float = npc._counter_chance()
+	print("    Abutre        pedindo barato R$ %d (Q %.0f%%)  |  caro R$ %d (Q %.0f%%)"
+		% [abutre_barato, abutre_facil * 100.0, abutre_caro, abutre_dificil * 100.0])
+	check(abutre_dificil < abutre_facil,
+		"pedir acima do teto reduz a chance de contraproposta",
+		"%.0f%% -> %.0f%%" % [abutre_facil * 100.0, abutre_dificil * 100.0])
 
 	print("\n[11] reputacao: esconder defeito cobra o preco depois")
 	GameManager.reset()

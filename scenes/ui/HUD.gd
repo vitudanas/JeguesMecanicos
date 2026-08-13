@@ -1,6 +1,6 @@
 extends CanvasLayer
 ## HUD principal: dinheiro do jogador, prompt de interacao contextual,
-## barra de persuasao (labia) e uma bussola simples que aponta pro
+## progresso da negociacao e uma bussola simples que aponta pro
 ## objetivo atual (ferro-velho -> oficina -> comprador). Fica no grupo
 ## "hud" para que Player.gd/Workshop.gd/Vehicle.gd/BuyerNPC.gd consigam
 ## atualizar sem referencia direta (ver GameManager.set_objective()).
@@ -25,12 +25,15 @@ var player: Node = null
 ##
 ## Ate agora o jogador dirigia CEGO em relacao ao que mais mexe no jogo: o preco
 ## de venda vai de 40%% a 100%% do valor base conforme as pecas intactas, e cada
-## peca quebrada ainda acelera o esvaziamento da barra de labia — e nada disso
+## peca quebrada ainda reduz a chance de uma contraproposta — e nada disso
 ## aparecia na tela. Quebrar uma gambiarra num buraco era um evento invisivel.
 ##
 ## Criado em codigo, e nao adicionado ao HUD.tscn: mexer a mao num `.tscn` ja
 ## custou caro neste projeto.
 var damage_label: Label = null
+## Resumo da rodada de negociacao. A barra so mostra quanto a oferta subiu; sem
+## o numero, ela seria decoracao e o jogador nao saberia quanto [E] aceita.
+var negotiation_label: Label = null
 
 func _build_damage_label() -> void:
 	damage_label = Label.new()
@@ -40,6 +43,16 @@ func _build_damage_label() -> void:
 	damage_label.visible = false
 	money_label.get_parent().add_child(damage_label)
 	money_label.get_parent().move_child(damage_label, money_label.get_index() + 1)
+
+func _build_negotiation_label() -> void:
+	negotiation_label = Label.new()
+	negotiation_label.add_theme_font_size_override("font_size", 18)
+	negotiation_label.add_theme_color_override("font_color", Color(1.0, 0.86, 0.38))
+	negotiation_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	negotiation_label.add_theme_constant_override("outline_size", 5)
+	negotiation_label.visible = false
+	persuasion_bar.get_parent().add_child(negotiation_label)
+	persuasion_bar.get_parent().move_child(negotiation_label, persuasion_bar.get_index())
 
 ## Cor do texto conta a historia antes da leitura: verde inteiro, amarelo
 ## arranhado, vermelho caindo aos pedacos.
@@ -74,9 +87,11 @@ func _update_damage() -> void:
 func _ready() -> void:
 	add_to_group("hud")
 	_build_damage_label()
+	_build_negotiation_label()
 	GameManager.money_changed.connect(_on_money_changed)
 	GameManager.reputation_changed.connect(_on_reputation_changed)
 	GameManager.persuasion_updated.connect(_on_persuasion_updated)
+	GameManager.negotiation_updated.connect(_on_negotiation_updated)
 	GameManager.objective_changed.connect(_on_objective_changed)
 	_on_money_changed(GameManager.money)
 	prompt_label.text = ""
@@ -94,6 +109,12 @@ func _on_reputation_changed(_value: int) -> void:
 func _on_persuasion_updated(active: bool, progress: float) -> void:
 	persuasion_bar.visible = active
 	persuasion_bar.value = progress * 100.0
+
+func _on_negotiation_updated(active: bool, summary: String) -> void:
+	if negotiation_label == null:
+		return
+	negotiation_label.visible = active
+	negotiation_label.text = summary
 
 func _on_objective_changed(position: Vector3, label: String) -> void:
 	objective_position = position

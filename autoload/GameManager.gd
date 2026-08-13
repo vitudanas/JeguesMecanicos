@@ -6,6 +6,7 @@ signal money_changed(new_amount: int)
 signal reputation_changed(value: int)
 signal car_sold(amount: int)
 signal persuasion_updated(active: bool, progress: float)
+signal negotiation_updated(active: bool, summary: String)
 signal objective_changed(position: Vector3, label: String)
 
 ## Capital inicial. Subiu de 150 quando a carcaca deixou de ser de graca: com

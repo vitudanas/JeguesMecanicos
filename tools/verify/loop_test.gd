@@ -496,35 +496,51 @@ func _run() -> void:
 		return
 	await _tap(KEY_E)
 	if not buyer.minigame_running:
-		fail("E no cliente nao comecou o minigame de labia")
+		fail("E no cliente nao abriu a negociacao")
 		return
-	ok("minigame de labia comecou")
+	ok("negociacao abriu em R$ %d de um teto R$ %d" % [
+		buyer.negotiation.current_offer, buyer.negotiation.ceiling])
 
-	# ----------------------------------------------------- 6. segurar E e vender
-	print("\n[6] segurar E ate fechar a venda")
+	# ------------------------------------ 6. contrapropor, blefar e aceitar
+	print("\n[6] negociar em rodadas e aceitar a oferta")
 	var money_before: int = GameManager.money
 	var sold := [false]
-	var last_progress := [0.0]
 	buyer.sale_completed.connect(func(_a): sold[0] = true)
-	_key(KEY_E, true)
-	var frames := 0
-	while not sold[0] and frames < 900:
-		if is_instance_valid(buyer):
-			last_progress[0] = buyer.persuasion.progress
-		await get_tree().process_frame
-		frames += 1
-	_key(KEY_E, false)
-	# O comprador e liberado assim que a venda fecha, entao o progresso tem que
-	# ser lido ANTES — tocar nele depois quebra com "previously freed".
-	print("    barra encheu em %d frames (progresso antes de fechar %.2f)" % [
-		frames, last_progress[0]])
-	if not sold[0]:
-		fail("segurando E a venda nao fechou em 15s")
+	var opening: int = buyer.negotiation.current_offer
+	var rounds_before: int = buyer.negotiation.rounds_left
+	await _tap(KEY_Q)
+	if buyer.negotiation.rounds_left != rounds_before - 1:
+		fail("Q nao gastou uma rodada de contraproposta")
 		return
-	ok("venda fechada")
+	ok("Q fez contraproposta: R$ %d -> R$ %d (%s)" % [
+		opening, buyer.negotiation.current_offer, buyer.last_action])
+
+	# O resultado e sorteado, mas as duas saidas sao validas; o teste cobra o
+	# caminho de INPUT e a consequencia estrutural, nao que o sorteio favoreca.
+	var before_bluff: int = buyer.negotiation.current_offer
+	await _tap(KEY_F)
+	if not buyer.negotiation.bluff_used:
+		fail("F no cliente nao tentou o blefe")
+		return
+	ok("F tentou blefe: R$ %d -> R$ %d (%s)" % [
+		before_bluff, buyer.negotiation.current_offer, buyer.last_action])
+	var accepted: int = buyer.negotiation.current_offer
+	if accepted <= 0:
+		fail("a negociacao terminou sem oferta aceitavel")
+		return
+
+	# Segundo E aceita o valor que esta na tela. E uma borda nova de input, nao
+	# manter E apertado ate a venda acontecer sozinha.
+	await _tap(KEY_E)
+	for i in range(10):
+		await get_tree().process_frame
+	if not sold[0]:
+		fail("E nao aceitou a contraproposta de R$ %d" % accepted)
+		return
+	ok("venda fechada ao aceitar R$ %d" % accepted)
 	var gained: int = GameManager.money - money_before
-	if gained <= 0:
-		fail("a venda nao creditou dinheiro (%d)" % gained)
+	if gained != accepted:
+		fail("a venda creditou R$ %d, mas a oferta aceita era R$ %d" % [gained, accepted])
 	else:
 		ok("creditou R$ %d (total %d, carros vendidos %d)" % [
 			gained, GameManager.money, GameManager.cars_sold])
