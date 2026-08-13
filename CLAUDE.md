@@ -4460,3 +4460,14 @@ de rua, não aumentar a quantidade de prédios.
   ZIP novo foi extraído e o `.pck` aberto localmente tem os mesmos 889.330.668
   bytes. O executável real do `.app` rodou 120 quadros em headless e encerrou com
   código 0 (sem `--path`, que o template de distribuição bloqueia de propósito).
+
+## 2026-08-13 — regras de Git e revisão deixadas pelo Claude
+
+- Incorporadas ao `AGENTS.md` as regras de coordenação escritas pelo Claude.
+- Cada agente deve commitar somente os arquivos que realmente alterou e identificar sua
+  participação no commit; mudanças compartilhadas precisam ser conferidas antes do commit.
+- Commits devem ter um único assunto e nomes descritivos; alterações de gameplay precisam
+  citar os testes executados e alterações visuais devem citar a evidência usada.
+- O Codex implementa, faz os testes iniciais, commita, envia ao GitHub e mantém a release
+  atualizada; o Claude revisa o código e executa testes adicionais antes da release.
+- A regra de divisão de responsabilidades acima permanece vigente até 31 de agosto de 2026.
