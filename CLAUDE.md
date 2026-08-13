@@ -4447,3 +4447,16 @@ cidade inteira em mundo aberto autoral**. A grade, as avenidas largas e a mistur
 de fachadas fotográficas com personagens/carros low-poly continuam visíveis. O
 próximo passo correto é um bairro piloto compacto com marco próprio e densidade
 de rua, não aumentar a quantidade de prédios.
+
+### Builds preparadas para a v0.3.2
+
+- Windows EXE: 998.542.840 bytes; ZIP de distribuição SHA-256
+  `ff1f299279ecfcaffad5bb48c6b22367c751f1a796ec085c176e4f32837a198b`.
+- macOS ZIP: 486.849.113 bytes; SHA-256
+  `72f4a784f7de1b8b0a9b5c10981e7d9a51bcf6f5cc712f5c2b5d45fd8564492f`;
+  `.pck` interno de 889.330.668 bytes.
+- `pack_audit.py`: 105 referências, 71 caminhos de runtime e catálogo sem
+  ausência. O `.app` anterior foi preservado em `builds/macos/previous-apps/`, o
+  ZIP novo foi extraído e o `.pck` aberto localmente tem os mesmos 889.330.668
+  bytes. O executável real do `.app` rodou 120 quadros em headless e encerrou com
+  código 0 (sem `--path`, que o template de distribuição bloqueia de propósito).
