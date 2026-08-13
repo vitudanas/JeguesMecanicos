@@ -66,6 +66,11 @@ explicitamente outra divisão para uma tarefa específica.
   supondo que uma cópia local antiga seja a versão enviada.
 - Não considerar uma mudança no jogo concluída sem documentação, testes
   proporcionais e, quando aplicável, builds atualizadas e verificadas.
+- **Preparar o repositório para futura publicação.** Não commitar tokens,
+  credenciais, chaves, arquivos `.env`, e-mails particulares, caminhos que
+  revelem contas locais ou outros dados sensíveis. Antes de tornar o repositório
+  público, auditar também todo o histórico Git — conferir apenas o `HEAD` não é
+  suficiente.
 - **Build atualizada inclui reextrair o `.app`.** O `.zip` é o artefato, mas o
   que o usuário abre com dois cliques é o `builds/macos/Jegues Mecanicos.app`
   extraído, e ele **não se atualiza sozinho** quando o zip é regravado. Já

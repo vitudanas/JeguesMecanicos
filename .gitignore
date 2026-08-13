@@ -4,6 +4,19 @@
 export.cfg
 export_credentials.cfg
 
+# Credenciais e configuracoes locais — nunca versionar
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.keystore
+*.jks
+credentials.json
+secrets.json
+
 # Builds
 builds/
 *.exe

@@ -32,8 +32,8 @@ from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 
 ## O caminho sai do PROPRIO arquivo, e nao escrito a mao. Aqui havia
-## `/Users/<usuario-local>/Documents/JOGO2/...`, que deixou de existir quando
-## o projeto mudou pra `/Users/Shared/JOGO2` (2026-08-08): quem rodasse este
+## um caminho absoluto ligado a uma conta local, que deixou de existir quando
+## o projeto mudou de pasta (2026-08-08): quem rodasse este
 ## script depois disso so veria ele quebrar ao abrir o primeiro arquivo. Como o
 ## Blender recebe o script por `--python tools/build_characters.py`, `__file__` e
 ## o caminho dele, e `tools/..` e a raiz do projeto.

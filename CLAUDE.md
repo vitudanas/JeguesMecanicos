@@ -3531,7 +3531,7 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
   alterado e nenhum teste/build foi rodado, porque esta rodada foi somente de
   familiarização.
   - **Achado não corrigido:** `tools/build_characters.py:34` ainda fixa
-    `ROOT = "/Users/<usuario-local>/Documents/JOGO2/assets/quaternius"`,
+    `ROOT` apontando para um caminho absoluto ligado a uma conta local,
     caminho anterior à mudança documentada de 2026-08-08 para
     `/Users/Shared/JOGO2`. Se o pipeline de personagens nativos precisar ser
     executado novamente, ele falhará ou trabalhará no lugar errado; convém
@@ -3597,7 +3597,7 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
   - **O achado técnico dele estava certo**, e o usuário pediu explicitamente que
     eu corrigisse — ordem direta, que o `AGENTS.md` prevê como exceção à divisão.
     `tools/build_characters.py` fixava
-    `/Users/<usuario-local>/Documents/JOGO2/...`, caminho que deixou de
+    um caminho absoluto ligado a uma conta local, caminho que deixou de
     existir na mudança de 2026-08-08 pra `/Users/Shared/JOGO2`. Agora sai do
     PRÓPRIO arquivo (`tools/..` é a raiz): o Blender recebe o script por
     `--python tools/build_characters.py`, então `__file__` resolve.
@@ -4492,3 +4492,21 @@ de rua, não aumentar a quantidade de prédios.
 - A descrição de autoria e transparência sobre assistência de IA foi conferida no repositório
   renomeado e permaneceu intacta.
 - Não houve mudança no jogo ou nos artefatos; nenhuma nova build/release foi necessária.
+
+## 2026-08-13 — preparação de privacidade para tornar o repositório público (Codex)
+
+- A pedido do usuário, foram auditadas as 102 revisões Git e os 2.101 arquivos
+  versionados em busca de formatos conhecidos de tokens, chaves privadas e credenciais.
+  Nenhum segredo desse tipo foi encontrado.
+- Referências atuais a um nome de usuário local em caminhos absolutos foram removidas da
+  documentação e de um comentário de ferramenta, preservando apenas a explicação técnica.
+- O `.gitignore` passou a bloquear arquivos `.env`, chaves, certificados, keystores e arquivos
+  comuns de credenciais, mantendo a exceção segura para um eventual `.env.example`.
+- Foi encontrado um e-mail pessoal no metadado do commit inicial. O conteúdo não aparece nos
+  arquivos atuais, mas ficará público no histórico se o repositório for aberto. Corrigir esse
+  item exige reescrita de histórico e force-push, operação que deve ser feita separadamente,
+  com cópia de segurança e coordenação entre Codex e Claude.
+- O nome do criador permanece público intencionalmente, conforme a declaração de autoria no
+  `README.md`; não foi classificado como informação sensível nesta auditoria.
+- Nenhuma nova build/release é necessária porque esta rodada altera apenas higiene do
+  repositório, documentação e comentários.
