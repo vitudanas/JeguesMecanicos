@@ -3564,6 +3564,36 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     derivado de `__file__`. Ela foi preservada e ficou fora do commit desta
     implementação para não misturar autoria/escopo.
 
+- **2026-08-13 (Claude — revisão do `1a92401` e a correção do caminho)** —
+  Revisado o commit de entrada do Codex: ele mexe **só em documentação**
+  (`AGENTS.md` novo e duas entradas aqui), então não havia nada funcional a
+  revisar. As afirmações de estado batem — worktree limpo, `HEAD ==
+  origin/main`; a contagem de arquivos versionados dá 2.098 contra os 2.097
+  registrados, e a diferença é o próprio `AGENTS.md`.
+  - **O achado técnico dele estava certo**, e o usuário pediu explicitamente que
+    eu corrigisse — ordem direta, que o `AGENTS.md` prevê como exceção à divisão.
+    `tools/build_characters.py` fixava
+    `/Users/<usuario-local>/Documents/JOGO2/...`, caminho que deixou de
+    existir na mudança de 2026-08-08 pra `/Users/Shared/JOGO2`. Agora sai do
+    PRÓPRIO arquivo (`tools/..` é a raiz): o Blender recebe o script por
+    `--python tools/build_characters.py`, então `__file__` resolve.
+  - **Verificado RODANDO, e não só conferindo a conta.** Copiei o script pra
+    dentro de `tools/` (pra `__file__` derivar a mesma raiz) com o destino
+    trocado por um diretório de rascunho e rodei o Blender headless: ele
+    completou e gerou os dois personagens **byte a byte idênticos** aos do
+    repositório (11.187.972 e 10.171.036 bytes, diferença zero). Prova duas
+    coisas de uma vez — a correção funciona e o pipeline continua reprodutível.
+    O destino de rascunho foi de propósito: regenerar os nativos por causa de um
+    conserto de caminho arriscaria justamente os dois arquivos em que a cabeça de
+    jegue, as alturas (1,788/1,852) e as shape keys são calibradas.
+  - **Lição de fluxo, com dois agentes no mesmo worktree**: no meio da
+    verificação apareceram 10 arquivos modificados que não eram meus (a
+    negociação, ainda em andamento). `git add -A` — que é o que eu vinha usando —
+    teria varrido o trabalho do Codex pra dentro do meu commit. Daqui pra frente,
+    adicionar arquivo por arquivo. O `CLAUDE.md` também mudou embaixo de mim
+    enquanto eu escrevia: quando isso acontecer, reler antes de gravar, senão a
+    anotação do outro some.
+
 ### ONDE PAREI (2026-08-13, Codex)
 
 Estado: negociação em rodadas implementada e validada, suíte desta rodada

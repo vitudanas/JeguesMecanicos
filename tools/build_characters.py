@@ -31,7 +31,15 @@ import os
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 
-ROOT = "/Users/<usuario-local>/Documents/JOGO2/assets/quaternius"
+## O caminho sai do PROPRIO arquivo, e nao escrito a mao. Aqui havia
+## `/Users/<usuario-local>/Documents/JOGO2/...`, que deixou de existir quando
+## o projeto mudou pra `/Users/Shared/JOGO2` (2026-08-08): quem rodasse este
+## script depois disso so veria ele quebrar ao abrir o primeiro arquivo. Como o
+## Blender recebe o script por `--python tools/build_characters.py`, `__file__` e
+## o caminho dele, e `tools/..` e a raiz do projeto.
+ROOT = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "assets", "quaternius")
 BASE = f"{ROOT}/universal-base-characters"
 OUT_DIR = f"{ROOT}/characters-dressed"
 
