@@ -4544,3 +4544,14 @@ de rua, não aumentar a quantidade de prédios.
 - O bundle privado criado antes da primeira higienização continua sendo a recuperação do estado
   antigo e, por conter os dados removidos, não deve ser publicado.
 - Esta limpeza não altera código-fonte ou comportamento do jogo e não exige nova build/release.
+
+## 2026-08-13 — identificadores pessoais removidos de textos históricos (Codex)
+
+- A auditoria final encontrou o nome da conta local embutido em versões antigas de
+  `CLAUDE.md` e `tools/build_characters.py`, mesmo depois de o `HEAD` ter sido corrigido.
+- Todas as ocorrências históricas de `/Users/<conta real>` foram substituídas pelo marcador
+  neutro `/Users/<usuario-local>`. Qualquer ocorrência textual do e-mail particular também foi
+  substituída por um marcador neutro; nomes, explicações técnicas e autoria do jogo permanecem.
+- A anotação paralela do Claude foi preservada com a mesma informação técnica, mas sem repetir o
+  caminho sensível. O histórico público e as tags foram validados novamente após a reescrita.
+- Nenhum arquivo de jogo, build ou release foi alterado nesta etapa de privacidade.
