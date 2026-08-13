@@ -393,7 +393,7 @@ func start_towing(vehicle: Node) -> void:
 	tow_hook.attach(vehicle)
 	var workshop := get_tree().get_first_node_in_group("workshop")
 	if workshop and workshop.has_method("get_drop_position"):
-		GameManager.set_objective(workshop.get_drop_position(), "Leve o carro ate a OFICINA (placa azul)")
+		GameManager.set_objective(workshop.get_drop_position(), "Leve o carro ate a OFICINA (placa amarela)")
 
 func stop_towing() -> void:
 	tow_hook.detach()

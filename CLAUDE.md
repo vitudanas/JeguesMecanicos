@@ -3690,11 +3690,22 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     de 2026-08-04, e ela reincidiu. Os zips são de 13/08 12:12–12:13 e batem com
     os bytes anotados pelo Codex, mas
     `builds/macos/Jegues Mecanicos.app` extraído é de **11/08 21:17**, com um
-    `.pck` de 889.309.244 bytes contra 889.312.988 no zip novo. Conferido que o
-    `.pck` velho não tem a string `contrapropor`. Quem der dois cliques nele hoje
-    joga o build anterior à negociação, sem aviso nenhum. **Reextrair (ou apagar
-    o antigo) faz parte de reexportar** — o zip é o artefato, o `.app` é o que o
-    usuário abre, e ele não se atualiza sozinho.
+    `.pck` de 889.309.244 bytes contra 889.312.988 no zip novo. Quem der dois
+    cliques nele hoje joga o build anterior à negociação, sem aviso nenhum.
+    **Reextrair (ou apagar o antigo) faz parte de reexportar** — o zip é o
+    artefato, o `.app` é o que o usuário abre, e ele não se atualiza sozinho.
+    **[RESOLVIDO no mesmo dia]** o Codex reexportou e reextraiu: o `.pck` do
+    `.app` agora tem 888.996.516 bytes com a mesma data do que está dentro do
+    zip publicado — conferido byte a byte, não pela data da pasta.
+    - **CORREÇÃO DE UM ERRO MEU, e ela importa pra quem for repetir o teste:**
+      eu tinha escrito aqui que "o `.pck` velho não tem a string
+      `contrapropor`". **Esse método não vale.** Fui conferir no build NOVO e
+      ele também não tem a string — GDScript entra no `.pck` compilado, não
+      como texto, então `grep` numa string de código dá 0 nos dois e "prova"
+      qualquer coisa que você quiser. O que de fato distingue um build do outro
+      é **tamanho e data do `.pck`**, que foi o sinal correto o tempo todo. Pra
+      olhar dentro do pacote de verdade existe o `tools/verify/pack_audit.py`,
+      que sabe o formato.
   - **RESSALVA DE WORKTREE, e ela limita esta revisão:** comecei com a árvore
     limpa em `9692181` e, no meio da revisão, apareceram **5 arquivos de UI
     modificados que não são meus** (`HUD.gd`, `HUD.tscn`, `LoadingScreen.gd`,
@@ -3720,6 +3731,63 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     pra reproduzir o exploit, e `pack_audit` mais a inspeção do `.pck` dentro do
     zip contra o `.pck` do `.app` extraído (foi assim que a build velha
     apareceu).
+
+- **2026-08-13 (Claude — 2ª revisão: `1e9fce1`, `9ce5f61`, `cb30b6e`)** — O
+  usuário pediu pra ver se faltava teste. Faltava, e valeu: o Codex tinha
+  corrigido os três achados da revisão anterior enquanto eu escrevia, então
+  rodei a suíte inteira contra o estado novo. **Dois dos três consertos estão
+  provados; um não foi feito; e o conserto do principal abriu um furo novo.**
+  - **O exploit de rezerar a conversa está FECHADO, e é o meu próprio teste que
+    prova.** A solução do Codex é boa: `negotiation_vehicle` guarda a qual carro
+    a conversa pertence e `PersuasionMinigame.resume()` reativa o mesmo estado
+    em vez de `start()`. O `rematch_test` que na revisão passada acusava 3
+    problemas agora passa limpo — R$ 143 continua R$ 143, 1 rodada continua 1,
+    `bluff_used` continua `true`. Q também foi trancado durante a conversa
+    pausada, o que fecha a mesma brecha pela outra porta (trocar o pedido
+    mudaria o teto sem pagar rodada), e o prompt passou a avisar
+    ("Oferta pausada: R$ 127 · 1 rodada(s) · [E] retomar a conversa") — testei
+    as duas coisas, seções [4] do `rematch_test`.
+  - **[BUG NOVO, criado pela correção] A conversa pausada CONGELA o preço do
+    carro inteiro.** Medido na seção [5] que acrescentei ao `rematch_test`: com
+    4/4 gambiarras o teto é R$ 190; perdendo as 4 o teto cai pra R$ 76; mas ao
+    retomar, a oferta continua **R$ 127** — R$ 51 acima do que o carro vale
+    agora, 67% de sobrepreço. O caminho é o mesmo que o exploit antigo usava:
+    abre a conversa, o carro sai da zona, o jogador dá a volta, bate num buraco
+    e volta com menos gambiarra — e recebe pelo carro que já não existe. Antes
+    não dava, porque não havia pausa: o teto era recalculado a cada abertura. A
+    correção é pequena e não desfaz nada do que foi ganho: no `resume()`,
+    reancorar no valor de hoje (`current_offer = min(current_offer, teto_novo)`)
+    — a oferta continua sem poder SUBIR, que é o castigo que se quis preservar,
+    e deixa de poder ficar acima do carro. O teste já cobra essa invariante e
+    **falha hoje**.
+  - **[NÃO corrigido] O prompt de 3 linhas continua vazando pra fora do
+    painel.** Refotografei depois do redesenho do HUD (`loop_shots`,
+    `08_negociacao.png`) e está igual: `[E] aceitar · [Q] contrapropor (10%) ·
+    [F] blefar (5%) · 3 rodada(s)` começa antes da borda esquerda e termina
+    depois da direita, as duas pontas desenhadas sobre o chão sem fundo atrás.
+    O redesenho mexeu no painel (agora `PromptPanel`, 50 px) mas não no
+    tamanho do texto nem na altura do `CenterPrompt` (40 px, fonte 19, sem
+    autowrap).
+  - **[RESOLVIDO] Build e release.** O `.app` foi reextraído — o `.pck` dele
+    tem 888.996.516 bytes, os mesmos do que está dentro do zip publicado
+    (conferido byte a byte, não pela data da pasta) — e a
+    [v0.3.1](https://github.com/vitudanas/joguinho2/releases/tag/v0.3.1) saiu
+    com os dois artefatos. `pack_audit` limpo: 105 referências, 71 caminhos de
+    runtime, nada mais novo que o build.
+  - **Suíte rodada nesta revisão, toda passando menos a seção nova**: `rematch`
+    (seções 1-4 ok, 5 falha de propósito), `economy`, `shop`, `save`, `audio`,
+    `staff`, `loop`, `drive` — headless; `loop_shots` e `ui_shot` em janela
+    real, com as fotos olhadas. O `drive_test` importava porque o `Player.gd`
+    trocou o F de "tecla segurada" pra borda de subida (pra não gastar as
+    rodadas da conversa num toque só) e o F é a mesma tecla que sai do carro:
+    passa, sem regressão. O `audio_test`, que o handoff marcava como instável,
+    passou de primeira aqui.
+  - **Menus novos conferidos na foto** (ninguém tinha olhado): menu principal e
+    tela de carregamento estão bem montados, sem transbordo, sem controle fora
+    da dobra, e o "Continuar (R$ 308 · 1 carro vendido)" lê certo. Os erros de
+    parse de `Town.tscn` no fim do `ui_shot` são o artefato já documentado em
+    2026-08-08 (árvore destruída com a carga em thread ainda em voo, depois do
+    resultado impresso), não defeito de cena.
 
 ### ONDE PAREI (2026-08-13, Codex)
 
@@ -4313,3 +4381,69 @@ propagada.
 essa fatia visual. A próxima implementação deve começar pelo HUD compacto e por
 um único corredor redesenhado, com capturas lado a lado e teste de desempenho;
 só depois se decide se a linguagem deve ser aplicada ao mapa inteiro.
+
+## 2026-08-13 — primeira fatia visual amigável implementada (Codex)
+
+O usuário autorizou executar a direção recomendada acima. Esta rodada não tenta
+fingir que a cidade inteira foi redesenhada: ela fecha uma primeira fatia
+comparável no caminho ferro-velho -> oficina -> comprador e corrige dois achados
+objetivos da segunda revisão do Claude.
+
+### Mudanças entregues
+
+- **HUD compacto e adaptativo:** painel principal passou de 490 x 220 para uma
+  base de 384 x 140 em 1080p, fontes e barra foram reduzidas e o painel agora
+  aumenta somente quando aparecem dano, negociação ou objetivo multilinha. O
+  painel de mundo e o velocímetro também perderam cabeçalhos redundantes e área
+  vazia. A captura dirigindo deixa muito mais da rua visível.
+- **Prompt de negociação corrigido:** a caixa central ficou mais larga, ganhou
+  quebra automática e altura calculada pelas linhas. A nova captura real mostra
+  `[E] aceitar`, `[Q] contrapropor`, `[F] blefar` e rodadas completamente dentro
+  do fundo — resolve o transbordo que o Claude ainda via em `1e9fce1`.
+- **Paleta do mundo recalibrada:** exposição e saturação caíram, o sol ficou mais
+  quente, a névoa ganhou azul/cinza e mais perspectiva aérea, e grama/terra/
+  cascalho perderam o verde-amarelo excessivo. A cordilheira usa rocha azulada,
+  neve mais escura e apenas acima de 255 m; deixou de formar a parede branca que
+  dominava o horizonte.
+- **Corredor rural legível pelo mundo:** foi adicionada uma segunda estrada de
+  terra ligando o ferro-velho à oficina; as duas fitas foram estreitadas para
+  5,2 m depois da primeira captura revelar aparência de pista. O verificador de
+  obstáculos encontrou o corredor novo livre de ponta a ponta. O texto de missão
+  agora diz `placa amarela`, coerente com a identidade atual.
+- **Destinos menos prototípicos:** os letreiros gigantes e sempre visíveis foram
+  reduzidos, passaram a respeitar profundidade e ganharam nomes locais (`Ferro-
+  Velho do Zé`, `Oficina do Pátio`). Eles orientam sem atravessar montanhas e
+  prédios.
+- **Correção devolvida pelo Claude:** ao retomar conversa pausada, teto, oferta
+  atual e abertura são reancorados para baixo ao valor atual do carro. Rodadas e
+  blefe continuam gastos, mas um carro que perdeu 4/4 gambiarras não recebe mais
+  a oferta congelada do carro inteiro. O teste novo do Claude foi preservado e
+  passou: no exemplo final a oferta caiu para o teto atual em vez de ficar acima.
+
+### Verificação desta rodada
+
+- Import/parse do Godot: código 0.
+- Estrutura: `city`, `scale_test`, `obstacles_test` e `street_test` passaram. O
+  censo continuou em 877 prédios, 337 casas, 5.200 props de natureza e 132
+  maciços, sem invasão de rua, sobreposição ou parede invisível. A trilha nova
+  teve 54 posições de carro verificadas e zero bloqueadas.
+- Jogabilidade: `loop_test`, `drive_test`, `attach_test` e `rematch_test`
+  passaram; o loop comprou, rebocou, instalou quatro gambiarras, dirigiu,
+  negociou, vendeu e criou a entrega seguinte.
+- Regressão: `economy_test`, `save_test`, `loading_test` e `audio_test` passaram.
+- Visual: `world_tour` regenerou 17 ângulos e `loop_shots` regenerou oito cenas
+  do caminho real. As imagens de mapa inteiro, rua, oficina aérea/no chão,
+  ferro-velho, cordilheira, direção e negociação foram abertas e conferidas. A
+  primeira estrada de 7 m foi rejeitada visualmente e reduzida antes do aceite.
+- Desempenho observado nas capturas: direção estabilizou em 60 FPS; negociação
+  ficou entre 20 e 31 FPS dependendo do comprador/prédio, e as primeiras fotos
+  rurais podem registrar 1 FPS enquanto o roteiro ainda monta o mundo. Isso não
+  é benchmark e a cidade genérica continua sendo o próximo trabalho estrutural.
+
+### Limite honesto
+
+A fatia ficou mais legível, menos lavada e mais amigável, mas **não transforma a
+cidade inteira em mundo aberto autoral**. A grade, as avenidas largas e a mistura
+de fachadas fotográficas com personagens/carros low-poly continuam visíveis. O
+próximo passo correto é um bairro piloto compacto com marco próprio e densidade
+de rua, não aumentar a quantidade de prédios.

@@ -6,6 +6,7 @@ extends CanvasLayer
 ## atualizar sem referencia direta (ver GameManager.set_objective()).
 
 @onready var money_label: Label = $Margin/VBox/MoneyLabel
+@onready var status_panel: Panel = $StatusPanel
 @onready var prompt_label: Label = $CenterPrompt
 @onready var persuasion_bar: ProgressBar = $Margin/VBox/PersuasionBar
 @onready var objective_label: Label = $Margin/VBox/ObjectiveLabel
@@ -45,7 +46,7 @@ var negotiation_label: Label = null
 
 func _build_damage_label() -> void:
 	damage_label = Label.new()
-	damage_label.add_theme_font_size_override("font_size", 18)
+	damage_label.add_theme_font_size_override("font_size", 13)
 	damage_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
 	damage_label.add_theme_constant_override("outline_size", 5)
 	damage_label.visible = false
@@ -54,7 +55,7 @@ func _build_damage_label() -> void:
 
 func _build_negotiation_label() -> void:
 	negotiation_label = Label.new()
-	negotiation_label.add_theme_font_size_override("font_size", 18)
+	negotiation_label.add_theme_font_size_override("font_size", 13)
 	negotiation_label.add_theme_color_override("font_color", Color(1.0, 0.86, 0.38))
 	negotiation_label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
 	negotiation_label.add_theme_constant_override("outline_size", 5)
@@ -163,16 +164,27 @@ func set_prompt(text: String) -> void:
 	prompt_panel.visible = text != ""
 	# Negociacao usa tres linhas; interacoes comuns usam uma. O fundo acompanha
 	# o conteudo para nenhuma instrucao ficar solta sobre a imagem.
-	var extra := maxi(text.count("\n"), 0) * 24.0
-	prompt_panel.offset_top = 22.0 - extra * 0.5
-	prompt_panel.offset_bottom = 72.0 + extra * 0.5
-	prompt_label.offset_top = 27.0 - extra * 0.5
-	prompt_label.offset_bottom = 67.0 + extra * 0.5
+	var extra := maxi(text.count("\n"), 0) * 20.0
+	prompt_panel.offset_top = 24.0 - extra * 0.5
+	prompt_panel.offset_bottom = 76.0 + extra * 0.5
+	prompt_label.offset_top = 29.0 - extra * 0.5
+	prompt_label.offset_bottom = 71.0 + extra * 0.5
 
 func _process(delta: float) -> void:
 	_update_fps(delta)
 	_update_damage()
 	_update_vehicle_hud(delta)
+	# O painel acompanha o conteudo real: objetivo curto deixa o mundo visivel;
+	# negociacao e texto em duas linhas ganham altura sem vazar para fora.
+	var wanted_bottom := 158.0
+	if damage_label and damage_label.visible:
+		wanted_bottom += 21.0
+	if negotiation_label and negotiation_label.visible:
+		wanted_bottom += 34.0
+	if objective_label.text.count("\n") > 0:
+		wanted_bottom += 20.0
+	status_panel.offset_bottom = move_toward(status_panel.offset_bottom, wanted_bottom,
+		delta * 420.0)
 	if not has_objective:
 		return
 	if player == null:

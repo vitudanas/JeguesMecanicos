@@ -47,9 +47,15 @@ func stop() -> void:
 	is_active = false
 	changed.emit()
 
-## Sair da zona do comprador fecha a interface, mas nao deve apagar o preco,
-## as rodadas gastas nem o blefe. Retomar reativa exatamente o mesmo estado.
-func resume() -> void:
+## Sair da zona do comprador fecha a interface, mas nao deve apagar as rodadas
+## gastas nem o blefe. O carro pode se danificar enquanto a conversa esta
+## pausada, entao a oferta e o teto precisam descer para o valor de hoje.
+## Nunca sobem ao retomar: sair da zona nao pode virar uma forma de renegociar.
+func resume(maximum_now: int = -1) -> void:
+	if maximum_now > 0:
+		ceiling = maxi(maximum_now, 1)
+		current_offer = mini(current_offer, ceiling)
+		opening_offer = mini(opening_offer, current_offer)
 	is_active = true
 	changed.emit()
 

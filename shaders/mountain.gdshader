@@ -12,16 +12,16 @@ render_mode cull_back, diffuse_burley, specular_schlick_ggx;
 // Mesmo fbm de shaders/ground.gdshader, pra montanha e chao terem o mesmo grao
 // e a transicao no pe da encosta nao ter emenda.
 
-uniform vec3 rock_color : source_color = vec3(0.38, 0.37, 0.36);
-uniform vec3 rock_dark : source_color = vec3(0.24, 0.23, 0.24);
-uniform vec3 grass_color : source_color = vec3(0.29, 0.36, 0.21);
-uniform vec3 snow_color : source_color = vec3(0.86, 0.88, 0.92);
+uniform vec3 rock_color : source_color = vec3(0.31, 0.33, 0.34);
+uniform vec3 rock_dark : source_color = vec3(0.18, 0.21, 0.23);
+uniform vec3 grass_color : source_color = vec3(0.23, 0.30, 0.20);
+uniform vec3 snow_color : source_color = vec3(0.67, 0.72, 0.76);
 
 // Alturas recalibradas quando a serra passou de 138 m pra 320 m: com os valores
 // antigos (mato ate 42, neve a partir de 104) quase todo maciço virava pico
 // nevado e o mato sumia num tapete no pe.
-uniform float grass_max_height = 78.0;   // ate onde o mato sobe
-uniform float snow_min_height = 205.0;   // de onde a neve comeca
+uniform float grass_max_height = 92.0;   // ate onde o mato sobe
+uniform float snow_min_height = 255.0;   // neve vira acento, nao parede branca
 uniform float slope_rock = 0.62;         // acima disso e rocha exposta
 uniform float detail_scale = 0.35;
 // Estratos: a rocha de uma encosta de verdade tem camadas, e e o que dá leitura

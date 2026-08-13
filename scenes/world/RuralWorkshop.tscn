@@ -28,15 +28,15 @@ roughness = 0.95
 script = ExtResource("1")
 
 [node name="SignLabel" type="Label3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 8.5, 2)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 6.2, 2)
 billboard = 1
-no_depth_test = true
-pixel_size = 0.012
-outline_size = 10
-modulate = Color(0.3, 0.6, 1, 1)
-font_size = 56
-text = "OFICINA
-(monte as gambiarras aqui)"
+no_depth_test = false
+pixel_size = 0.008
+outline_size = 8
+modulate = Color(0.93, 0.66, 0.20, 1)
+font_size = 44
+text = "OFICINA DO PÁTIO
+MONTE AS GAMBIARRAS AQUI"
 
 [node name="Pad" type="StaticBody3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.08, 1)

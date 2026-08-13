@@ -95,6 +95,43 @@ func _ready() -> void:
 		print("        castigo. Ganho de R$ %d por reestacionamento, de graca." % (
 			depois - castigo))
 
+	print("\n[4] a conversa pausada se anuncia, e o preco fica travado")
+	# O jogador precisa SABER que a oferta ficou de pe; senao ele chega achando
+	# que vai comecar de novo e a trava do preco vira mistério.
+	npc._on_car_exited(carro)
+	npc._on_car_entered(carro)
+	var prompt: String = npc.get_interact_prompt()
+	check(prompt.contains("pausada") or prompt.contains("retomar"),
+		"o prompt avisa que a conversa esta pausada", prompt.split("\n")[1] if
+		prompt.split("\n").size() > 1 else prompt)
+	# Trocar o pedido reabriria o teto sem pagar rodada: e a mesma brecha por
+	# outra porta, entao Q tem que ser recusado enquanto a conversa existe.
+	var passo_antes: int = npc.ask_step
+	npc.negotiate()
+	check(npc.ask_step == passo_antes, "Q nao muda o preco com conversa pausada",
+		"ask_step %d -> %d" % [passo_antes, npc.ask_step])
+
+	print("\n[5] e se o carro QUEBRAR enquanto a conversa esta pausada?")
+	# Cenario real: o carro rola pra fora, o jogador da a volta, bate num buraco
+	# e volta com menos gambiarra. A oferta foi congelada com o carro inteiro.
+	var teto_inteiro: int = npc._ceiling()
+	var pausada: int = npc.negotiation.current_offer
+	for point: String in Economy.GAMBIARRAS:
+		carro.installed_parts.erase(point)
+	var teto_quebrado: int = npc._ceiling()
+	print("    teto com 4/4: R$ %d   |   depois de perder as 4: R$ %d" % [
+		teto_inteiro, teto_quebrado])
+	npc.interact(null)  # retoma
+	var oferta_retomada: int = npc.negotiation.current_offer
+	print("    oferta retomada: R$ %d (o carro agora vale bem menos)" % oferta_retomada)
+	check(oferta_retomada <= teto_quebrado,
+		"a oferta retomada nao passa do que o carro vale AGORA",
+		"R$ %d contra um teto de R$ %d" % [oferta_retomada, teto_quebrado])
+	if oferta_retomada > teto_quebrado:
+		print("    >>> a conversa pausada congela o preco do carro INTEIRO:")
+		print("        R$ %d a mais do que o carro danificado vale." % (
+			oferta_retomada - teto_quebrado))
+
 	carro.queue_free()
 	npc.queue_free()
 	_finish()

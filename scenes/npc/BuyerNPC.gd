@@ -196,7 +196,9 @@ func interact(player: Node) -> void:
 		return
 	minigame_running = true
 	if negotiation_vehicle == nearby_vehicle and negotiation.current_offer > 0:
-		negotiation.resume()
+		# A oferta pausada nao pode continuar acima do valor atual se o jogador
+		# quebrou gambiarras enquanto esteve fora da zona do comprador.
+		negotiation.resume(_ceiling())
 		if last_action == "":
 			last_action = "Conversa retomada."
 	else:

@@ -163,12 +163,12 @@ sky_material = SubResource("SkyMat")
 background_mode = 2
 sky = SubResource("Sky_1")
 ambient_light_source = 3
-ambient_light_color = Color(0.66, 0.68, 0.72, 1)
-ambient_light_energy = 0.5
-ambient_light_sky_contribution = 0.85
+ambient_light_color = Color(0.58, 0.61, 0.62, 1)
+ambient_light_energy = 0.42
+ambient_light_sky_contribution = 0.72
 reflected_light_source = 2
 tonemap_mode = 3
-tonemap_exposure = 1.05
+tonemap_exposure = 0.9
 tonemap_white = 6.0
 ssao_enabled = true
 ssao_radius = 2.0
@@ -186,18 +186,18 @@ glow_bloom = 0.0
 glow_hdr_threshold = 1.7
 fog_enabled = true
 fog_mode = 0
-fog_light_color = Color(0.71, 0.76, 0.83, 1)
-fog_light_energy = 1.0
-fog_sun_scatter = 0.08
-fog_density = 0.0006
-fog_sky_affect = 0.12
-fog_aerial_perspective = 0.22
+fog_light_color = Color(0.48, 0.56, 0.61, 1)
+fog_light_energy = 0.72
+fog_sun_scatter = 0.04
+fog_density = 0.00085
+fog_sky_affect = 0.08
+fog_aerial_perspective = 0.42
 fog_height = 0.0
 fog_height_density = 0.0
 adjustment_enabled = true
 adjustment_brightness = 1.0
-adjustment_contrast = 1.09
-adjustment_saturation = 0.92
+adjustment_contrast = 1.06
+adjustment_saturation = 0.82
 
 ; 2200 e nao 1800: com a serra subindo pra 320 m a base dela cresceu junto e o
 ; pe passou a alcancar 914 do centro, ou seja PRA FORA da placa antiga (meia
@@ -211,10 +211,10 @@ size = Vector3(3100, 1, 3100)
 
 [sub_resource type="ShaderMaterial" id="GroundMat"]
 shader = ExtResource("400")
-shader_parameter/grass_color = Color(0.3, 0.38, 0.21, 1)
-shader_parameter/grass_dry_color = Color(0.46, 0.47, 0.28, 1)
-shader_parameter/dirt_color = Color(0.37, 0.31, 0.24, 1)
-shader_parameter/gravel_color = Color(0.44, 0.45, 0.36, 1)
+shader_parameter/grass_color = Color(0.24, 0.31, 0.20, 1)
+shader_parameter/grass_dry_color = Color(0.39, 0.38, 0.25, 1)
+shader_parameter/dirt_color = Color(0.34, 0.27, 0.20, 1)
+shader_parameter/gravel_color = Color(0.37, 0.37, 0.31, 1)
 shader_parameter/city_extent = 360.0
 shader_parameter/city_fade = 115.0
 shader_parameter/macro_scale = 0.007
@@ -250,8 +250,8 @@ shadow_enabled = true
 shadow_bias = 0.04
 shadow_normal_bias = 1.5
 shadow_blur = 1.4
-light_energy = 1.15
-light_color = Color(1, 0.96, 0.89, 1)
+light_energy = 1.05
+light_color = Color(1, 0.89, 0.75, 1)
 light_angular_distance = 1.2
 directional_shadow_mode = 2
 directional_shadow_split_1 = 0.06
@@ -484,6 +484,14 @@ layer_radius = Array[float]([26.0, 34.0, 30.0])
 [node name="DirtRoadWorkshop" type="Node3D" parent="." groups=["dirt_road"]]
 script = ExtResource("402")
 points = Array[Vector2]([Vector2(-362, 2.6), Vector2(-369, 2), Vector2(-376, -0.5), Vector2(-383, -1), Vector2(-390, 0), Vector2(-397, 1)])
+width = 5.2
+
+; Liga visualmente os dois primeiros destinos do loop. Antes o jogador saía do
+; ferro-velho atravessando um gramado sem trilha e dependia apenas da seta.
+[node name="DirtRoadJunkyard" type="Node3D" parent="." groups=["dirt_road"]]
+script = ExtResource("402")
+points = Array[Vector2]([Vector2(-397, 1), Vector2(-400, 10), Vector2(-399, 20), Vector2(-400, 31), Vector2(-400, 35)])
+width = 5.2
 
 [node name="MountainRange" type="Node3D" parent="."]
 script = ExtResource("401")
