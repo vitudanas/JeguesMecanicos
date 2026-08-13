@@ -17,6 +17,10 @@ export_credentials.cfg
 credentials.json
 secrets.json
 
+# Bytecode do Python (gerado localmente e pode embutir caminhos da maquina)
+__pycache__/
+*.py[cod]
+
 # Builds
 builds/
 *.exe
