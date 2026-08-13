@@ -6,6 +6,15 @@ uma decisão relevante for tomada ou o escopo mudar.
 
 ## Notas de fluxo de trabalho
 
+- **Sempre publicar as builds atualizadas numa release do GitHub.** Pedido
+  explícito do usuário em 2026-08-13: commit/push da `main` não basta. Toda
+  rodada que muda o jogo deve terminar com Windows e macOS reexportados,
+  auditados, testados e anexados à release pública. Se o usuário não indicar a
+  versão, criar a próxima versão de correção, sem sobrescrever silenciosamente
+  um lançamento anterior. Conferir no GitHub os nomes, tamanhos e data dos dois
+  arquivos depois do upload. A rodada só está concluída quando código **e**
+  downloads públicos correspondem ao mesmo commit.
+
 - **Sempre reexportar as builds ao terminar uma modificação.** Pedido do usuário em
   2026-08-03: é pelo `.app` que ele testa o jogo, então uma mudança só está
   concluída depois do export — não deixar pra "quando pedir". Rodar os dois

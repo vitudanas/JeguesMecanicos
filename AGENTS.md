@@ -24,7 +24,10 @@ O Codex é responsável por:
 5. quando houver mudança no jogo, reexportar Windows e macOS e conferir o
    binário exportado conforme as regras do `CLAUDE.md`;
 6. criar o commit e enviar a alteração ao GitHub;
-7. entregar ao Claude o hash do commit, o resumo da mudança, os testes feitos e
+7. **publicar também as builds verificadas na release do GitHub**; push do código
+   sozinho não conclui uma mudança do jogo. Se o usuário não indicar uma versão,
+   criar a próxima release de correção e anexar Windows e macOS com nomes claros;
+8. entregar ao Claude o hash do commit, o resumo da mudança, os testes feitos e
    qualquer ressalva conhecida.
 
 ### Claude — revisão e validação adicional
@@ -68,3 +71,7 @@ explicitamente outra divisão para uma tarefa específica.
   aconteceu duas vezes (2026-08-04 e 2026-08-13) de o usuário estar jogando um
   build anterior sem nenhum aviso. Apagar o antigo e extrair de novo faz parte
   de exportar.
+- **Build atualizada inclui release atualizada no GitHub.** Regra pedida pelo
+  usuário em 2026-08-13: toda mudança do jogo precisa terminar com os artefatos
+  Windows e macOS verificados publicados numa release. Commit e push na `main`
+  sem atualizar a release pública deixam o trabalho incompleto.
