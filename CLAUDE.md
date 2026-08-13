@@ -4581,4 +4581,8 @@ de rua, não aumentar a quantidade de prédios.
 - Os metadados Git alcançáveis continuam usando apenas endereços `noreply`. O e-mail comum
   encontrado no conteúdo pertence ao autor público de uma ferramenta/licença de terceiro, não ao
   usuário e não a uma credencial; foi preservado como atribuição.
+- A área `About` do GitHub ganhou uma descrição pública mais direta, mantendo Vitor como criador
+  e informando a assistência de IA, além dos tópicos `godot`, `godot-engine`, `gdscript`, `game`,
+  `open-world`, `sandbox`, `brazilian-game` e `ai-assisted`. Nenhuma homepage fictícia foi
+  cadastrada e a visibilidade permaneceu privada.
 - Esta alteração é somente documental e não exige nova build/release.
