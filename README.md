@@ -1,86 +1,83 @@
 # Jegues Mecânicos
 
-Jogo 3D sandbox de humor: conserte carros com gambiarras e venda para NPCs antes que
-tudo se desmonte no trânsito. Feito em Godot 4. Veja [CLAUDE.md](CLAUDE.md) para o
-pitch completo, decisões técnicas e roadmap.
+**Um sandbox 3D brasileiro de carros, gambiarras e negócios questionáveis.**
+
+Em *Jegues Mecânicos*, você compra carcaças no ferro-velho, diagnostica defeitos,
+improvisa consertos com peças absurdas, enfrenta ruas esburacadas e tenta vender o
+resultado antes que tudo se desmonte. O jogo combina mundo aberto, física caótica,
+gestão de oficina e negociação com humor.
+
+[Baixar a versão mais recente](https://github.com/vitudanas/JeguesMecanicos/releases/latest)
+· [Ver todas as versões](https://github.com/vitudanas/JeguesMecanicos/releases)
+· [Créditos dos assets](docs/creditos.md)
+
+> O projeto está em desenvolvimento ativo. Sistemas, balanceamento, desempenho e
+> apresentação visual ainda podem mudar.
+
+## Principais recursos
+
+- Explore uma cidade aberta com tráfego, pedestres, clima, lama e eventos.
+- Compre carros usados depois de vistoriar e pechinchar no ferro-velho.
+- Diagnostique problemas mecânicos e evolua oficina, funilaria, pátio e escritório.
+- Instale 12 tipos de gambiarra com preços e resistências diferentes.
+- Faça test-drives em ruas esburacadas, com peças que podem se soltar durante o trajeto.
+- Negocie a venda por rodadas usando oferta, contraproposta e blefe.
+- Personalize o personagem e escolha entre diferentes câmeras ao dirigir.
+- Continue o progresso salvo automaticamente após as vendas.
+
+## Como jogar
+
+Baixe o pacote do seu sistema na
+[release mais recente](https://github.com/vitudanas/JeguesMecanicos/releases/latest).
+
+### Windows
+
+Extraia `JeguesMecanicos-Windows.zip` e execute `JeguesMecanicos.exe`. Como o jogo
+ainda não possui certificado de assinatura comercial, o Windows pode mostrar um aviso
+do SmartScreen na primeira execução.
+
+### macOS
+
+Extraia `JeguesMecanicos.zip`. Na primeira execução, clique com o botão direito em
+`Jegues Mecanicos.app`, escolha **Abrir** e confirme. O aplicativo usa assinatura
+ad-hoc e ainda não é notarizado pela Apple.
+
+## Controles principais
+
+| Contexto | Controles |
+| --- | --- |
+| A pé | `W A S D` mover · `Shift` correr · `Espaço` pular · `E` interagir |
+| Carro | `W/S` acelerar e dar ré · `A/D` virar · `Espaço` freio de mão · `F` sair · `R` desvirar |
+| Ferro-velho e oficina | `Q` vistoriar, pechinchar, diagnosticar ou trocar opção · `E` comprar/instalar |
+| Negociação | `E` aceitar · `Q` contrapropor · `F` blefar |
+| Câmera e menus | `V` trocar câmera · `Esc` pausar |
+
+As ações disponíveis também aparecem no HUD conforme o contexto.
 
 ## Autoria e uso de inteligência artificial
 
-**Jegues Mecânicos é um jogo criado por Vitor Rodrigues Danas e desenvolvido
-majoritariamente com assistência de inteligência artificial.** Vitor define a
-ideia, a direção criativa e as decisões do projeto. Ferramentas de IA, incluindo
-Claude e Codex, colaboram principalmente na programação, nos testes, na
-documentação e na iteração visual.
+**Jegues Mecânicos é criado por Vitor Rodrigues Danas**, responsável pela ideia,
+direção criativa e decisões do projeto. O desenvolvimento é realizado
+majoritariamente com assistência de inteligência artificial. Claude e Codex colaboram
+principalmente em programação, testes, documentação e iteração visual.
 
-## Como abrir e jogar
+## Desenvolvimento
 
-1. Abra o Godot 4 (instalado em `/Applications/Godot.app`, ou `godot` no terminal).
-2. Botão "Import" → selecione a pasta deste projeto (`project.godot`).
-3. Pressione **F5** (ou o botão de play) para rodar a cena `Main.tscn`.
+O projeto usa [Godot Engine 4](https://godotengine.org/) e GDScript.
 
-Controles: veja a seção "Controles" no [CLAUDE.md](CLAUDE.md).
+Para executar pelo editor:
 
-## Como exportar (Windows + macOS)
+1. Instale uma versão compatível do Godot 4.
+2. Importe o arquivo `project.godot`.
+3. Pressione `F5` para iniciar o jogo.
 
-Os dois presets (`Windows Desktop` e `macOS`) já estão configurados em
-`export_presets.cfg` e foram testados com sucesso nesta máquina.
+## Créditos e licenças
 
-### Pelo editor
+O jogo utiliza assets de terceiros sob licenças CC0 e CC-BY 4.0. A relação de obras,
+autores, fontes e licenças está em [docs/creditos.md](docs/creditos.md) e também é
+exibida dentro do jogo.
 
-Projeto → Exportar... → selecione o preset → "Exportar Projeto".
-
-### Pela linha de comando
-
-```bash
-godot --headless --export-release "Windows Desktop" builds/windows/JeguesMecanicos.exe
-godot --headless --export-release "macOS" builds/macos/JeguesMecanicos.zip
-```
-
-A pasta `builds/` é ignorada pelo git (`.gitignore`) — os binários não devem ser
-versionados, só gerados sob demanda.
-
-### Observação sobre o macOS (Gatekeeper)
-
-O preset macOS usa assinatura **ad-hoc** (`codesign/codesign=1` em
-`export_presets.cfg`) — gratuita, não exige conta de desenvolvedor Apple, e evita o
-erro mais feio do Gatekeeper ("app está danificado e deve ser movido pro lixo", que
-aparece em apps totalmente sem assinatura). Mesmo assim, por não ser assinado por uma
-conta Apple paga nem notarizado, o macOS ainda avisa na primeira abertura. Pra abrir:
-
-1. **Clique com o botão direito (ou Control+clique) no `.app` → "Abrir"** → confirme no
-   diálogo. Isso só é necessário na primeira vez.
-2. Se aparecer um aviso sem a opção de abrir direto, vá em **Ajustes do Sistema →
-   Privacidade e Segurança**, role até a mensagem sobre o app bloqueado e clique em
-   **"Abrir Mesmo Assim"**.
-3. Alternativa via terminal, removendo a quarentena manualmente:
-   ```bash
-   xattr -cr "Jegues Mecanicos.app"
-   ```
-
-## Como publicar no itch.io
-
-1. Crie o projeto no itch.io (tipo "Downloadable", categoria "Windows" e "macOS").
-2. Instale o [butler](https://itch.io/docs/butler/) (ferramenta oficial da itch.io):
-   ```bash
-   brew install --cask butler
-   butler login
-   ```
-3. Exporte os dois builds (comandos acima).
-4. Suba cada canal (troque `seu-usuario/seu-jogo` pelo slug do seu projeto no itch.io):
-   ```bash
-   butler push builds/windows seu-usuario/seu-jogo:windows
-   butler push builds/macos seu-usuario/seu-jogo:mac
-   ```
-5. No painel do itch.io, marque os dois canais como "This file will be played in the
-   browser" **desativado** (é um executável nativo) e confira se os canais aparecem com
-   os ícones de Windows/macOS na página do jogo.
-
-## Repositório
-
-Código no GitHub: [github.com/vitudanas/JeguesMecanicos](https://github.com/vitudanas/JeguesMecanicos)
-(privado). A pasta `assets/kenney/` tem pacotes CC0 do Kenney.nl — ver
-[CLAUDE.md](CLAUDE.md) para os links e licenças.
-
-## Estrutura do projeto
-
-Ver seção "Estrutura do projeto" em [CLAUDE.md](CLAUDE.md).
+O código-fonte do projeto ainda não possui uma licença geral definida. A presença do
+código neste repositório não concede automaticamente permissão de reutilização,
+redistribuição ou venda. Os assets de terceiros continuam sujeitos às licenças de seus
+respectivos autores.

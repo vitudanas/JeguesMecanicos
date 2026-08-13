@@ -4555,3 +4555,30 @@ de rua, não aumentar a quantidade de prédios.
 - A anotação paralela do Claude foi preservada com a mesma informação técnica, mas sem repetir o
   caminho sensível. O histórico público e as tags foram validados novamente após a reescrita.
 - Nenhum arquivo de jogo, build ou release foi alterado nesta etapa de privacidade.
+
+## 2026-08-13 — README público profissional e nova auditoria (Codex)
+
+- O `README.md` foi reescrito como página pública do produto: apresentação curta, recursos
+  verificados, downloads oficiais, instruções para Windows/macOS, controles, autoria,
+  desenvolvimento e créditos/licenças.
+- Foram removidos o tutorial interno de publicação no itch.io, comandos de exportação, caminhos
+  específicos da máquina e a afirmação de que o repositório é privado. A página não presume qual
+  será a visibilidade futura.
+- O README deixou de destacar o `CLAUDE.md` como leitura para visitantes: ele continua sendo a
+  memória operacional obrigatória do projeto, mas não é documentação de produto.
+- A autoria de Vitor Rodrigues Danas e o uso majoritário de assistência de IA continuam
+  declarados de forma explícita. Claude e Codex aparecem como colaboradores, não como autores ou
+  donos do jogo.
+- O README não inventa requisitos mínimos nem atribui uma licença geral ao projeto. Ele informa
+  que o código ainda não possui licença escolhida e encaminha os assets CC0/CC-BY para
+  `docs/creditos.md`.
+- Nova auditoria do estado atual encontrou zero formatos conhecidos de chave/token, zero
+  atribuições genéricas de credencial, zero strings de conexão e nenhum arquivo versionado com
+  nome típico de segredo, certificado, `.env`, bytecode ou cache Python.
+- A auditoria histórica examinou por extração de strings os **3.236 blobs únicos** alcançáveis
+  por `main` e pelas tags `v0.1.0` a `v0.3.2`, incluindo binários: zero ocorrência do e-mail
+  particular, do nome da conta local ou dos formatos conhecidos de tokens/chaves verificados.
+- Os metadados Git alcançáveis continuam usando apenas endereços `noreply`. O e-mail comum
+  encontrado no conteúdo pertence ao autor público de uma ferramenta/licença de terceiro, não ao
+  usuário e não a uma credencial; foi preservado como atribuição.
+- Esta alteração é somente documental e não exige nova build/release.
