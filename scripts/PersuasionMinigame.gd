@@ -47,6 +47,12 @@ func stop() -> void:
 	is_active = false
 	changed.emit()
 
+## Sair da zona do comprador fecha a interface, mas nao deve apagar o preco,
+## as rodadas gastas nem o blefe. Retomar reativa exatamente o mesmo estado.
+func resume() -> void:
+	is_active = true
+	changed.emit()
+
 func can_counter() -> bool:
 	return is_active and rounds_left > 0 and current_offer < ceiling
 

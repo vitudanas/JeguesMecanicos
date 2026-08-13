@@ -408,6 +408,10 @@ func _run() -> void:
 	if not hud.damage_label.text.contains("4/4"):
 		fail("carro inteiro mas o HUD nao diz 4/4: '%s'" % hud.damage_label.text)
 		return
+	if not hud.compass_distance.visible or not hud.compass_distance.text.ends_with("m"):
+		fail("HUD nao mostra a distancia do objetivo: '%s'" % hud.compass_distance.text)
+		return
+	ok("bussola mostra distancia real: %s" % hud.compass_distance.text)
 
 	# Arrebenta uma gambiarra e cobra que a leitura ACOMPANHE: um indicador que
 	# so acerta no estado inicial nao serve pra nada.
@@ -462,6 +466,11 @@ func _run() -> void:
 		fail("segurando W o carro nao acelerou (pico %.2f m/s, andou %.2f m)" % [peak_speed, moved])
 	else:
 		ok("W acelera o carro dirigido")
+	await get_tree().process_frame
+	if not hud.speed_panel.visible or not hud.speed_label.text.contains("km/h"):
+		fail("velocimetro nao apareceu ao dirigir: '%s'" % hud.speed_label.text)
+		return
+	ok("velocimetro contextual mostra '%s'" % hud.speed_label.text)
 
 	# ------------------------------------------------------------- 5. a entrega
 	print("\n[5] entrega")
@@ -544,6 +553,10 @@ func _run() -> void:
 	else:
 		ok("creditou R$ %d (total %d, carros vendidos %d)" % [
 			gained, GameManager.money, GameManager.cars_sold])
+	if not hud.world_status_label.text.contains("1 VENDA"):
+		fail("HUD nao atualizou o total de vendas: '%s'" % hud.world_status_label.text)
+		return
+	ok("painel do patio atualizou: '%s'" % hud.world_status_label.text)
 
 	# O DeliveryManager tem que agendar a proxima entrega sozinho.
 	for i in range(480):

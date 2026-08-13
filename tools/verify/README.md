@@ -21,6 +21,7 @@ godot --headless --path . tools/verify/obstacles_test.tscn  # parede invisível 
 godot --headless --path . tools/verify/save_test.tscn   # progresso salva e volta
 godot --headless --path . tools/verify/loading_test.tscn # a tela de carregamento chega ao fim
 godot --headless --path . tools/verify/economy_test.tscn # valor, peças, clientes
+godot --headless --path . tools/verify/rematch_test.tscn # punição da negociação sobrevive ao reestacionar
 godot --headless --path . tools/verify/shop_test.tscn    # as áreas da loja destravam
 godot --headless --path . tools/verify/staff_test.tscn   # lote, vagas do pátio e funcionários
 godot --path . tools/verify/mix_shots.tscn    # a cidade realista: custo e foto

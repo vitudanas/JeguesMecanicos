@@ -1,62 +1,285 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scenes/ui/MainMenu.gd" id="1"]
 
-[sub_resource type="StyleBoxFlat" id="BgStyle"]
-bg_color = Color(0.16, 0.18, 0.24, 1)
+[sub_resource type="StyleBoxFlat" id="MenuCard"]
+bg_color = Color(0.055, 0.061, 0.07, 0.94)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.98, 0.67, 0.12, 0.78)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+shadow_color = Color(0, 0, 0, 0.45)
+shadow_size = 18
+
+[sub_resource type="StyleBoxFlat" id="ButtonNormal"]
+bg_color = Color(0.12, 0.135, 0.15, 0.96)
+border_width_left = 5
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.35, 0.38, 0.4, 0.75)
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+content_margin_left = 20.0
+
+[sub_resource type="StyleBoxFlat" id="ButtonHover"]
+bg_color = Color(0.98, 0.67, 0.12, 1)
+border_width_left = 5
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 0.84, 0.35, 1)
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+content_margin_left = 24.0
+shadow_color = Color(0, 0, 0, 0.35)
+shadow_size = 6
+
+[sub_resource type="StyleBoxFlat" id="ButtonPressed"]
+bg_color = Color(0.78, 0.45, 0.055, 1)
+border_width_left = 5
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(1, 0.77, 0.22, 1)
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+content_margin_left = 24.0
+
+[sub_resource type="StyleBoxFlat" id="ButtonFocus"]
+bg_color = Color(0, 0, 0, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.88, 0.48, 0.95)
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+expand_margin_left = 3.0
+expand_margin_top = 3.0
+expand_margin_right = 3.0
+expand_margin_bottom = 3.0
+
+[sub_resource type="StyleBoxFlat" id="TagStyle"]
+bg_color = Color(0.98, 0.67, 0.12, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+content_margin_left = 12.0
+content_margin_top = 5.0
+content_margin_right = 12.0
+content_margin_bottom = 5.0
+
+[sub_resource type="StyleBoxFlat" id="RuleStyle"]
+bg_color = Color(0.98, 0.67, 0.12, 0.9)
 
 [node name="MainMenu" type="Control"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1")
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
 
-[node name="Background" type="Panel" parent="."]
+[node name="Shade" type="ColorRect" parent="."]
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-theme_override_styles/panel = SubResource("BgStyle")
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.015, 0.018, 0.022, 0.16)
+
+[node name="TopTag" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 58.0
+offset_top = 48.0
+offset_right = 255.0
+offset_bottom = 83.0
+theme_override_colors/font_color = Color(0.09, 0.095, 0.1, 1)
+theme_override_font_sizes/font_size = 15
+theme_override_styles/normal = SubResource("TagStyle")
+text = "OFICINA DESDE ONTEM"
+
+[node name="BrandBlock" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 58.0
+offset_top = -196.0
+offset_right = 770.0
+offset_bottom = 190.0
+grow_vertical = 2
+theme_override_constants/separation = -2
+
+[node name="Eyebrow" type="Label" parent="BrandBlock"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.98, 0.67, 0.12, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.65)
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 19
+text = "COMPRA  •  CONSERTA  •  EMPURRA"
+
+[node name="TitleLabel" type="Label" parent="BrandBlock"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.96, 0.95, 0.9, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.72)
+theme_override_constants/outline_size = 10
+theme_override_font_sizes/font_size = 70
+text = "JEGUES"
+
+[node name="TitleLabel2" type="Label" parent="BrandBlock"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.98, 0.67, 0.12, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.72)
+theme_override_constants/outline_size = 10
+theme_override_font_sizes/font_size = 70
+text = "MECÂNICOS"
+
+[node name="Rule" type="Panel" parent="BrandBlock"]
+custom_minimum_size = Vector2(420, 5)
+layout_mode = 2
+size_flags_horizontal = 0
+theme_override_styles/panel = SubResource("RuleStyle")
+
+[node name="SubtitleLabel" type="Label" parent="BrandBlock"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.88, 0.87, 0.82, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.7)
+theme_override_constants/outline_size = 5
+theme_override_font_sizes/font_size = 22
+text = "Conserta com gambiarra. Vende com lábia."
+
+[node name="MenuCard" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -568.0
+offset_top = -346.0
+offset_right = -58.0
+offset_bottom = 346.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_styles/panel = SubResource("MenuCard")
+
+[node name="MenuHeading" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -520.0
+offset_top = -305.0
+offset_right = -105.0
+offset_bottom = -270.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.98, 0.67, 0.12, 1)
+theme_override_font_sizes/font_size = 15
+text = "▰  PORTA DA OFICINA"
+
+[node name="MenuHint" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -520.0
+offset_top = 274.0
+offset_right = -105.0
+offset_bottom = 310.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_colors/font_color = Color(0.53, 0.55, 0.56, 1)
+theme_override_font_sizes/font_size = 13
+text = "↑ ↓ NAVEGAR     ENTER SELECIONAR"
+horizontal_alignment = 1
 
 [node name="VBox" type="VBoxContainer" parent="."]
-anchors_preset = 8
-anchor_left = 0.5
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
 anchor_top = 0.5
-anchor_right = 0.5
+anchor_right = 1.0
 anchor_bottom = 0.5
-offset_left = -160.0
-offset_top = -140.0
-offset_right = 160.0
-offset_bottom = 140.0
-theme_override_constants/separation = 18
-
-[node name="TitleLabel" type="Label" parent="VBox"]
-theme_override_font_sizes/font_size = 40
-theme_override_colors/font_color = Color(1, 0.85, 0.2, 1)
-horizontal_alignment = 1
-autowrap_mode = 2
-text = "Jegues Mecânicos"
-
-[node name="SubtitleLabel" type="Label" parent="VBox"]
-theme_override_font_sizes/font_size = 15
-theme_override_colors/font_color = Color(0.85, 0.85, 0.85, 1)
-horizontal_alignment = 1
-autowrap_mode = 2
-text = "conserta com gambiarra, vende com lábia"
-
-[node name="Spacer" type="Control" parent="VBox"]
-custom_minimum_size = Vector2(0, 10)
+offset_left = -520.0
+offset_top = -246.0
+offset_right = -105.0
+offset_bottom = 250.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_constants/separation = 12
 
 [node name="PlayButton" type="Button" parent="VBox"]
-custom_minimum_size = Vector2(260, 48)
+custom_minimum_size = Vector2(415, 58)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.93, 0.93, 0.89, 1)
+theme_override_colors/font_hover_color = Color(0.08, 0.085, 0.09, 1)
+theme_override_colors/font_pressed_color = Color(0.08, 0.085, 0.09, 1)
 theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("ButtonNormal")
+theme_override_styles/hover = SubResource("ButtonHover")
+theme_override_styles/pressed = SubResource("ButtonPressed")
+theme_override_styles/focus = SubResource("ButtonFocus")
 text = "Jogar"
+alignment = 0
 
 [node name="SettingsButton" type="Button" parent="VBox"]
-custom_minimum_size = Vector2(260, 48)
+custom_minimum_size = Vector2(415, 58)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.93, 0.93, 0.89, 1)
+theme_override_colors/font_hover_color = Color(0.08, 0.085, 0.09, 1)
+theme_override_colors/font_pressed_color = Color(0.08, 0.085, 0.09, 1)
 theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("ButtonNormal")
+theme_override_styles/hover = SubResource("ButtonHover")
+theme_override_styles/pressed = SubResource("ButtonPressed")
+theme_override_styles/focus = SubResource("ButtonFocus")
 text = "Configurações"
+alignment = 0
 
 [node name="QuitButton" type="Button" parent="VBox"]
-custom_minimum_size = Vector2(260, 48)
+custom_minimum_size = Vector2(415, 58)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.93, 0.93, 0.89, 1)
+theme_override_colors/font_hover_color = Color(0.08, 0.085, 0.09, 1)
+theme_override_colors/font_pressed_color = Color(0.08, 0.085, 0.09, 1)
 theme_override_font_sizes/font_size = 20
+theme_override_styles/normal = SubResource("ButtonNormal")
+theme_override_styles/hover = SubResource("ButtonHover")
+theme_override_styles/pressed = SubResource("ButtonPressed")
+theme_override_styles/focus = SubResource("ButtonFocus")
 text = "Sair"
+alignment = 0
+
+[node name="Footer" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 58.0
+offset_top = -54.0
+offset_right = -58.0
+offset_bottom = -24.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(0.56, 0.57, 0.55, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 0.75)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 13
+text = "NEGÓCIOS QUESTIONÁVEIS  •  MECÂNICA CRIATIVA  •  NENHUMA GARANTIA"

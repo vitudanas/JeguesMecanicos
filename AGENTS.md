@@ -35,6 +35,13 @@ Depois do envio do Codex, o Claude é responsável por:
    integração, desempenho, assets, exportação e aderência ao pedido do usuário;
 2. executar testes adicionais e de regressão além da primeira bateria feita
    pelo Codex, incluindo testes visuais ou do build quando forem relevantes;
+   **teste prático é obrigação, não item opcional da revisão** — rodar o jogo
+   de verdade, tirar as fotos do que mudou e OLHAR uma a uma, exercitar o
+   caminho pelo input real e, quando o achado for de comportamento, escrever um
+   teste novo que o reproduza. Revisão só por leitura de diff não conta como
+   revisão feita. Um worktree sujo com trabalho do outro agente **não é motivo
+   pra pular**: rode assim mesmo e diga na anotação qual estado foi
+   fotografado (commit puro ou commit + rodada em andamento);
 3. documentar no `CLAUDE.md` o que revisou, os resultados e as pendências;
 4. devolver ao Codex os problemas encontrados, com evidências e passos de
    reprodução, para que o Codex faça a correção e um novo commit;
@@ -55,3 +62,9 @@ explicitamente outra divisão para uma tarefa específica.
   supondo que uma cópia local antiga seja a versão enviada.
 - Não considerar uma mudança no jogo concluída sem documentação, testes
   proporcionais e, quando aplicável, builds atualizadas e verificadas.
+- **Build atualizada inclui reextrair o `.app`.** O `.zip` é o artefato, mas o
+  que o usuário abre com dois cliques é o `builds/macos/Jegues Mecanicos.app`
+  extraído, e ele **não se atualiza sozinho** quando o zip é regravado. Já
+  aconteceu duas vezes (2026-08-04 e 2026-08-13) de o usuário estar jogando um
+  build anterior sem nenhum aviso. Apagar o antigo e extrair de novo faz parte
+  de exportar.

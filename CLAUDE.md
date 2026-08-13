@@ -18,6 +18,21 @@ uma decisão relevante for tomada ou o escopo mudar.
   15MB sem ninguém pedir (2026-08-03). Se o build crescer sem motivo, é o
   primeiro lugar pra olhar.
 
+- **Testar na prática faz parte do trabalho — inclusive quando o trabalho é
+  REVISAR.** Pedido do usuário em 2026-08-13, depois de eu ter entregado uma
+  revisão só de leitura de diff + teste headless, alegando que o worktree estava
+  sujo com a rodada do outro agente. Não cola: rodar o jogo de verdade, tirar as
+  fotos do que mudou e **olhar uma a uma**, exercitar o caminho pelo input real e
+  escrever um teste novo quando o achado for de comportamento. Worktree sujo não
+  é motivo pra pular — é motivo pra dizer na anotação qual estado foi
+  fotografado. A prova de que a regra vale: nessa mesma rodada, as duas baterias
+  numéricas passaram limpas e foi **a foto** que achou o prompt de negociação
+  vazando pra fora do painel, e foi **um teste novo** que provou o exploit de
+  rezerar a conversa. Isso repete a lição que este arquivo já tinha desde
+  2026-08-04 ("quando o usuário diz que algo não funciona e a verificação passa,
+  fotografar antes de mexer") — agora ela vale também pra revisão, não só pra
+  implementação. A regra está espelhada no `AGENTS.md`.
+
 - **Anotar SEMPRE neste arquivo, a cada rodada.** Pedido do usuário em
   2026-08-09, e ele pediu explicitamente que esta instrução também ficasse
   registrada. Vale pra tudo: o que foi feito, o que foi medido, o erro que eu
@@ -3594,6 +3609,109 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     enquanto eu escrevia: quando isso acontecer, reler antes de gravar, senão a
     anotação do outro some.
 
+- **2026-08-13 (Claude — revisão do `f561f2b`, a negociação em rodadas)** —
+  Revisado o commit inteiro (11 arquivos, +477/−233) e rodadas duas baterias
+  próprias. **O que o Codex entregou está correto**: a mecânica funciona, a
+  aritmética fecha e a suíte passa. Achei quatro coisas, e só a primeira é
+  problema de jogo de verdade.
+  - **Regressão de API: zero.** Varri o projeto atrás das chaves que sumiram
+    (`enche`, `esvazia`, `paciencia`) e da API antiga do minigame (`fill_rate`,
+    `drain_rate`, `_difficulty`, `.persuasion`): **nenhum consumidor órfão**
+    fora dos testes, que foram atualizados junto. O som novo `"abre"` existe de
+    verdade em `AudioManager.SOUNDS` (`interface/open_001.ogg`) — vale conferir
+    porque `play_ui` com chave inexistente falha calada.
+  - **Testes que rodei** (não os do Codex, os meus): `economy_test` passa
+    inteiro, incluindo as seções novas [3] e [4] e a trava "a seção rodou até o
+    fim"; `loop_test` fecha de ponta a ponta pelo caminho de INPUT real
+    (`negociação abriu em R$ 22 de um teto R$ 28` → Q gastou rodada → F caiu no
+    blefe R$ 22 → R$ 27 → E creditou **exatamente** R$ 27). A trava nova
+    `gained != accepted` é a melhor parte do diff: o teste antigo só cobrava
+    `gained > 0`, que passaria com o valor errado.
+  - **[BUG, pra devolver ao Codex] Dá pra rezerar a negociação tirando o carro
+    da zona e recolocando.** `_on_car_exited` chama `_cancel_negotiation()`, que
+    zera `minigame_running`; ao reestacionar, o E seguinte cai no ramo de abrir
+    e chama `negotiation.start(...)`, que **restaura a oferta de abertura, as
+    rodadas cheias e `bluff_used = false`**. Ou seja: blefe descoberto (−10% e
+    duas rodadas) e sequência de contrapropostas fracassadas são apagados de
+    graça — basta entrar no carro, sair da zona e voltar. Custa ~15 s e sempre
+    vale a pena, então na prática **o risco das duas jogadas deixa de existir**,
+    que é justamente a decisão que a rodada foi criada pra introduzir. Não é
+    crash e não aparece em teste nenhum, porque nenhum deles reestaciona. O
+    cancelamento em si está certo (sem ele o HUD prende); o que falta é a
+    conversa lembrar do que já aconteceu com aquele carro — guardar o estado por
+    veículo e retomar em vez de recomeçar, ou pelo menos não devolver o blefe.
+    **Provado rodando, não só lendo** (`tools/verify/rematch_test.tscn`, novo,
+    fica no repo como trava de regressão): Colecionador, carro em ordem e 4/4
+    gambiarras — abre em R$ 128 com 3 rodadas (teto R$ 173), blefe descoberto
+    derruba pra R$ 115 e sobra 1 rodada; `_on_car_exited` + `_on_car_entered` +
+    E e **volta exatamente pra R$ 128, 3 rodadas e `bluff_used = false`**. São
+    R$ 13 de volta na hora, mais o blefe de novo na mão (até 82% do vão de
+    R$ 45), e dá pra repetir até acertar. O teste **falha hoje**, de propósito:
+    passa quando o castigo sobreviver.
+  - **[BUG visual, e só a FOTO pegou] A terceira linha do prompt sai pra fora
+    da caixa.** Rodei `tools/verify/loop_shots.tscn` e ampliei o
+    `08_negociacao.png`: a linha `[E] aceitar · [Q] contrapropor (10%) · [F]
+    blefar (5%) · 3 rodada(s)` **estoura o painel dos DOIS lados** — o `[E]` no
+    começo e o `rodada(s)` no fim ficam desenhados por cima do concreto, sem o
+    fundo escuro atrás, e a linha assenta em cima da borda inferior
+    arredondada. Causa: o `CenterPrompt` tem 40 px de altura (`offset_top` 27,
+    `offset_bottom` 67), fonte 19, **sem autowrap**, e o prompt novo tem 3
+    linhas com a de controles passando de 68 caracteres; Label do Godot não
+    recorta por padrão, então transborda em vez de sumir. É a interseção das
+    duas rodadas: no commit puro não há painel e o transbordo é invisível, mas
+    a rodada de HUD em andamento acrescenta o `PromptPanel` (50 px), e aí o
+    defeito fica gritante. Quem for arrumar: ou o prompt cabe em 2 linhas, ou o
+    painel/label crescem junto com o texto. O `negotiation_label` do HUD, esse,
+    está **certo e confirmado na foto** — "Oferta R$ 67 / pedido R$ 126 · 3
+    rodada(s)" aparece no painel de cima, na pilha, sem sobrepor nada, e a barra
+    acompanha (38% pro caso fotografado, que é a conta certa).
+  - **[Balanceamento, visto na mesma foto] Com o Abutre, o preço PADRÃO já
+    satura as duas chances no piso** (Q 10%, F 5%). O `ask_step` nasce em 1
+    ("camarada", 0.85× do mercado) e isso já dá R$ 126 contra um teto de ~R$ 93
+    dele — ou seja, o jogador nem escolheu exagerar e a negociação já chegou
+    morta, sobrando só apertar E. Não é defeito de código (o Abutre é o
+    lowballer de propósito), mas vale decidir se o piso devia ser mais alto ou
+    se o prompt devia sugerir baixar o preço com Q antes de abrir a conversa.
+  - **[Limpeza] Duas coisas mortas**: `PersuasionMinigame.changed` é emitido
+    4× e **não tem um único `connect`** no projeto, e `BuyerNPC._offer()` ficou
+    sem nenhuma chamada depois que `_complete_sale` passou a receber o valor por
+    parâmetro. Nenhum dos dois quebra nada; o sinal morto é o mais enganoso,
+    porque parece que a UI reage sozinha ao estado e ela não reage.
+  - **O `.app` que o usuário abre estava DESATUALIZADO de novo** — é a armadilha
+    de 2026-08-04, e ela reincidiu. Os zips são de 13/08 12:12–12:13 e batem com
+    os bytes anotados pelo Codex, mas
+    `builds/macos/Jegues Mecanicos.app` extraído é de **11/08 21:17**, com um
+    `.pck` de 889.309.244 bytes contra 889.312.988 no zip novo. Conferido que o
+    `.pck` velho não tem a string `contrapropor`. Quem der dois cliques nele hoje
+    joga o build anterior à negociação, sem aviso nenhum. **Reextrair (ou apagar
+    o antigo) faz parte de reexportar** — o zip é o artefato, o `.app` é o que o
+    usuário abre, e ele não se atualiza sozinho.
+  - **RESSALVA DE WORKTREE, e ela limita esta revisão:** comecei com a árvore
+    limpa em `9692181` e, no meio da revisão, apareceram **5 arquivos de UI
+    modificados que não são meus** (`HUD.gd`, `HUD.tscn`, `LoadingScreen.gd`,
+    `MainMenu.gd`, `MainMenu.tscn`, +760/−91), com mtime avançando enquanto eu
+    trabalhava (o `HUD.tscn` mudou 30 s antes de eu olhar). É outra rodada em
+    andamento — painel de prompt, velocímetro, etapa do loop, clima no HUD. Não
+    toquei em nenhum deles.
+    **Minha primeira reação foi pular o teste visual por causa disso, e estava
+    errada** — o usuário corrigiu na hora: teste prático é parte do trabalho do
+    revisor, não item opcional (a regra foi pro `AGENTS.md`). Rodei assim mesmo,
+    e foi justamente a foto que achou o transbordo do prompt, que nenhuma das
+    duas baterias numéricas pegava. **Estado fotografado**: commit `f561f2b` +
+    a rodada de HUD em andamento — o que aliás foi melhor, porque é a combinação
+    das duas que produz o defeito. O `loop_test` terminou 12:30:25, antes de
+    `HUD.gd`/`HUD.tscn` serem tocados (12:33:15), então esse resultado vale para
+    o commit puro. Também por isso o `pack_audit` acusa
+    `LoadingScreen.gd`/`MainMenu.gd`/`MainMenu.tscn` "mais novos que o build":
+    é a rodada em andamento, **não** falha de exportação do Codex — o build de
+    12:12 contém sim o commit revisado (`BuyerNPC.gd` é de 12:06).
+  - **Testes práticos desta revisão** (além de ler o diff): `economy_test` e
+    `loop_test` headless, `loop_shots` em janela real com as 8 fotos **olhadas
+    uma a uma** (foi a 08 que denunciou o prompt), `rematch_test` novo escrito
+    pra reproduzir o exploit, e `pack_audit` mais a inspeção do `.pck` dentro do
+    zip contra o `.pck` do `.app` extraído (foi assim que a build velha
+    apareceu).
+
 ### ONDE PAREI (2026-08-13, Codex)
 
 Estado: negociação em rodadas implementada e validada, suíte desta rodada
@@ -4011,3 +4129,65 @@ minha.
   roupa não** — dois pedestres do mesmo gênero continuam com a mesma cara. Rosto
   diferente exigiria outro pacote de assets; o pacote gratuito do Quaternius só
   traz esses dois corpos, dois cabelos e a roupa Peasant.
+
+## 2026-08-13 — identidade visual do menu, carregamento e HUD (Codex)
+
+Pedido do usuário: deixar o menu inicial e a tela de carregamento mais bonitos e
+acrescentar informação ao HUD, seguindo as referências já adotadas pelo projeto
+(`Car For Sale Simulator 2023`, `Car Dealer Simulator` e a oficina duvidosa do
+pitch), sem virar uma interface genérica de aplicativo.
+
+- **Menu principal redesenhado** em carvão/preto e amarelo de oficina: fachada e
+  carro em silhueta desenhados de forma responsiva, faixa de segurança, placa
+  “Oficina desde ontem”, marca em duas linhas, cartão lateral e botões com estados
+  normal/hover/pressionado/foco. Os botões criados em código (`Continuar`,
+  `Personagem` e `Créditos`) copiam o mesmo estilo dos botões da cena; portanto o
+  menu com e sem save continua coerente e navegável por teclado.
+- **Carregamento redesenhado** como ficha de abertura da oficina: três etapas
+  visuais (ferramentas, cidade e negócios), percentual numérico ligado ao progresso
+  real, barra própria, dica em cartão, fundo industrial e mensagem específica antes
+  da montagem bloqueante da cidade. A tela cobre completamente o menu anterior.
+- **HUD reorganizado em painéis**, em vez de texto solto sobre o cenário. O canto
+  esquerdo reúne caixa, reputação, estado/valor das gambiarras, negociação e
+  objetivo; o canto direito mostra clima, vendas e etapa atual (garimpo/oficina/
+  entrega). A bússola ganhou distância em metros/quilômetros e o canto inferior
+  direito ganhou velocímetro contextual com marcha e estado do carro, visível só
+  quando há alguém dirigindo. O prompt central agora aumenta o próprio fundo para
+  mensagens multilinha — isso resolve a observação do Claude sobre as três linhas
+  da negociação escapando do retângulo.
+- **Teste reforçado**: `loop_test` agora cobra que distância, velocímetro e contador
+  de vendas apareçam e se atualizem pelo caminho real do jogo. Na execução final,
+  a bússola mostrou 485 m, o velocímetro 48 km/h e o painel mudou para `1 VENDA`.
+- **Verificação feita**: import/parse do Godot limpo; 15 cenas automatizadas
+  (`city`, `drive_test`, `loop_test`, `attach_test`, `scale_test`, `yard_test`,
+  `audio_test`, `obstacles_test`, `save_test`, `loading_test`, `economy_test`,
+  `shop_test`, `staff_test`, `character_test`, `street_test`) passaram. Também
+  passaram `ui_shot` e `loop_shots`; as imagens do menu, carregamento, HUD normal,
+  direção e negociação foram abertas e conferidas. O `ui_shot`, depois de salvar
+  todas as seis imagens e imprimir resultado positivo, ainda repete o erro tardio
+  já conhecido de `Town.tscn:156` enquanto encerra uma carga assíncrona; o
+  `loading_test` carrega a mesma `Main.tscn` até o fim com código 0, então não é
+  erro real da cena nem do pacote.
+- **Builds fechados**: Windows `998.208.688 bytes`; macOS ZIP `486.555.722
+  bytes`, contendo `.pck` de `888.996.516 bytes`. O `pack_audit.py` conferiu 105
+  referências, 71 caminhos de runtime e o catálogo de personagens, sem falta.
+  O `.app` anterior foi movido para a Lixeira (recuperável), o ZIP novo foi
+  extraído de novo e o executável exportado real abriu em headless por 120
+  quadros e encerrou com código 0.
+
+### Correção devolvida pela revisão do Claude
+
+Enquanto esta rodada de UI estava em andamento, o Claude terminou a revisão do
+commit `f561f2b` e provou com o novo `rematch_test` que tirar o carro da zona e
+reestacionar reabria a negociação do zero: oferta perdida por blefe, rodadas e o
+próprio blefe voltavam de graça. O Codex implementou a correção conforme a divisão
+do `AGENTS.md`: a conversa agora fica vinculada ao veículo, é apenas pausada ao
+sair da zona e retoma exatamente a oferta, rodadas e `bluff_used` anteriores.
+Também não deixa trocar o preço pedido durante essa pausa, o que mudaria o teto
+sem pagar rodada. O prompt avisa `Oferta pausada` e permite retomar com E.
+
+O teste que antes falhava agora passou: após blefe descoberto, `R$ 124 -> R$ 112`,
+restou 1 rodada e `bluff_used = true`; depois de sair e voltar, permaneceu em
+`R$ 112`, 1 rodada e blefe usado. `economy_test` e `loop_test` também continuaram
+passando. Como isso altera código de jogo depois da primeira exportação anotada
+acima, as duas builds foram geradas e auditadas novamente no fechamento final.

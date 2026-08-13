@@ -47,6 +47,9 @@ var active_player: Node = null
 ## significa "conversa em rodadas aberta", nao barra baseada em tempo.
 var minigame_running := false
 var last_action := ""
+## Carro ao qual pertence o estado atual da conversa. Sair da zona pausa a UI,
+## mas reestacionar o MESMO carro nao devolve oferta, rodadas nem blefe.
+var negotiation_vehicle: Node = null
 
 func _ready() -> void:
 	add_to_group("interactable")
@@ -101,6 +104,9 @@ func get_interact_prompt() -> String:
 	var aviso := ""
 	if asking() > _client_max():
 		aviso = "  ·  acima do que ele costuma pagar"
+	if negotiation_vehicle == nearby_vehicle and negotiation.current_offer > 0:
+		return "%s (%s)\nOferta pausada: R$ %d  ·  %d rodada(s)\n[E] retomar a conversa" % [
+			nome, client.get("dica", ""), negotiation.current_offer, negotiation.rounds_left]
 	return "%s (%s)\nPedindo %s: R$ %d  ·  [Q] mudar preço%s\n[E] ouvir a oferta" % [
 		nome, client.get("dica", ""), ASK_LABELS[ask_step], asking(), aviso]
 
@@ -110,6 +116,11 @@ func negotiate() -> void:
 		return
 	if minigame_running:
 		_attempt_counter()
+		return
+	if negotiation_vehicle == nearby_vehicle and negotiation.current_offer > 0:
+		# O pedido faz parte da conversa pausada; trocar agora mudaria o teto sem
+		# pagar uma rodada e criaria outra forma de rezerar a negociacao.
+		AudioManager.play_ui("erro", -10.0)
 		return
 	ask_step = (ask_step + 1) % ASK_STEPS.size()
 	AudioManager.play_ui("passar", -8.0)
@@ -184,8 +195,14 @@ func interact(player: Node) -> void:
 		_complete_sale(negotiation.current_offer)
 		return
 	minigame_running = true
-	negotiation.start(_opening_offer(), _ceiling(), int(client.get("rodadas", 3)))
-	last_action = "Oferta inicial — aceite ou tente subir."
+	if negotiation_vehicle == nearby_vehicle and negotiation.current_offer > 0:
+		negotiation.resume()
+		if last_action == "":
+			last_action = "Conversa retomada."
+	else:
+		negotiation.start(_opening_offer(), _ceiling(), int(client.get("rodadas", 3)))
+		negotiation_vehicle = nearby_vehicle
+		last_action = "Oferta inicial — aceite ou tente subir."
 	AudioManager.play_ui("abre", -6.0)
 	_update_negotiation_ui()
 
@@ -233,12 +250,12 @@ func _cancel_negotiation() -> void:
 		return
 	minigame_running = false
 	negotiation.stop()
-	last_action = ""
 	_hide_negotiation_ui()
 
 func _complete_sale(amount: int) -> void:
 	minigame_running = false
 	negotiation.stop()
+	negotiation_vehicle = null
 	AudioManager.play_ui("confirma", 0.0)
 	var escondido := 0
 	if nearby_vehicle:

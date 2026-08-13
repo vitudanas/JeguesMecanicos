@@ -10,12 +10,20 @@ extends CanvasLayer
 @onready var persuasion_bar: ProgressBar = $Margin/VBox/PersuasionBar
 @onready var objective_label: Label = $Margin/VBox/ObjectiveLabel
 @onready var compass_arrow: Label = $CompassArrow
+@onready var compass_distance: Label = $CompassDistance
 @onready var fps_label: Label = $FpsLabel
+@onready var prompt_panel: Panel = $PromptPanel
+@onready var world_status_label: Label = $WorldStatusPanel/WorldStatusVBox/WorldStatusLabel
+@onready var stage_label: Label = $WorldStatusPanel/WorldStatusVBox/StageLabel
+@onready var speed_panel: Panel = $SpeedPanel
+@onready var speed_label: Label = $SpeedPanel/SpeedVBox/SpeedLabel
+@onready var vehicle_state_label: Label = $SpeedPanel/SpeedVBox/VehicleStateLabel
 
 ## O contador de FPS e atualizado 4x por segundo, nao a cada quadro: texto
 ## trocando 60 vezes por segundo e ilegivel (e cada troca remonta o Label).
 const FPS_REFRESH := 0.25
 var _fps_timer := 0.0
+var _vehicle_hud_timer := 0.0
 
 var objective_position: Vector3 = Vector3.ZERO
 var has_objective := false
@@ -93,7 +101,10 @@ func _ready() -> void:
 	GameManager.persuasion_updated.connect(_on_persuasion_updated)
 	GameManager.negotiation_updated.connect(_on_negotiation_updated)
 	GameManager.objective_changed.connect(_on_objective_changed)
+	GameManager.car_sold.connect(_on_car_sold)
+	WeatherManager.weather_changed.connect(_on_weather_changed)
 	_on_money_changed(GameManager.money)
+	_update_world_status()
 	prompt_label.text = ""
 	persuasion_bar.visible = false
 	compass_arrow.pivot_offset = compass_arrow.size / 2.0
@@ -121,14 +132,47 @@ func _on_objective_changed(position: Vector3, label: String) -> void:
 	has_objective = label != ""
 	objective_label.text = label
 	compass_arrow.visible = has_objective
+	compass_distance.visible = has_objective
+	_update_stage(label)
+
+func _on_car_sold(_amount: int) -> void:
+	_update_world_status()
+
+func _on_weather_changed(_raining: bool) -> void:
+	_update_world_status()
+
+func _update_world_status() -> void:
+	var weather := "CHUVA / PISO LISO" if WeatherManager.is_raining else "TEMPO SECO"
+	var sales := "%d VENDA" % GameManager.cars_sold
+	if GameManager.cars_sold != 1:
+		sales += "S"
+	world_status_label.text = "%s  •  %s" % [weather, sales]
+
+func _update_stage(label: String) -> void:
+	var upper := label.to_upper()
+	var stage := "GARIMPO"
+	if upper.contains("OFICINA") or upper.contains("CONSERT") or upper.contains("REBOC"):
+		stage = "OFICINA"
+	elif upper.contains("ENTREG") or upper.contains("CASA") or upper.contains("COMPRADOR"):
+		stage = "ENTREGA"
+	stage_label.text = "ETAPA  ·  " + stage
 
 func set_prompt(text: String) -> void:
 	prompt_label.text = text
 	prompt_label.visible = text != ""
+	prompt_panel.visible = text != ""
+	# Negociacao usa tres linhas; interacoes comuns usam uma. O fundo acompanha
+	# o conteudo para nenhuma instrucao ficar solta sobre a imagem.
+	var extra := maxi(text.count("\n"), 0) * 24.0
+	prompt_panel.offset_top = 22.0 - extra * 0.5
+	prompt_panel.offset_bottom = 72.0 + extra * 0.5
+	prompt_label.offset_top = 27.0 - extra * 0.5
+	prompt_label.offset_bottom = 67.0 + extra * 0.5
 
 func _process(delta: float) -> void:
 	_update_fps(delta)
 	_update_damage()
+	_update_vehicle_hud(delta)
 	if not has_objective:
 		return
 	if player == null:
@@ -137,12 +181,37 @@ func _process(delta: float) -> void:
 			return
 	var to_target: Vector3 = objective_position - player.global_position
 	to_target.y = 0.0
+	var distance := to_target.length()
+	if distance >= 1000.0:
+		compass_distance.text = "%.1f km" % (distance / 1000.0)
+	else:
+		compass_distance.text = "%d m" % int(round(distance))
 	if to_target.length() < 1.0:
 		return
 	var forward: Vector3 = -player.global_transform.basis.z
 	forward.y = 0.0
 	var angle: float = forward.signed_angle_to(to_target, Vector3.UP)
 	compass_arrow.rotation = -angle
+
+## Velocimetro aparece apenas quando realmente existe alguem dirigindo o carro
+## ativo. Fora dele o canto inferior direito fica livre, em vez de mostrar um
+## zero permanente que nao ajuda durante compra, oficina ou negociacao.
+func _update_vehicle_hud(delta: float) -> void:
+	_vehicle_hud_timer += delta
+	if _vehicle_hud_timer < 0.10:
+		return
+	_vehicle_hud_timer = 0.0
+	var v: Node = GameManager.active_vehicle
+	var driving := v != null and is_instance_valid(v) and v.driver != null
+	speed_panel.visible = driving
+	if not driving:
+		return
+	var meters_per_second: float = absf(float(v.forward_speed()))
+	var signed_speed: float = float(v.forward_speed())
+	speed_label.text = "%03d km/h" % int(round(meters_per_second * 3.6))
+	var gear := "R" if signed_speed < -0.5 else "D"
+	var health := "AVARIADO" if v.is_wrecked else "RODANDO"
+	vehicle_state_label.text = "MARCHA %s  •  %s" % [gear, health]
 
 ## Contador de FPS no canto inferior esquerdo. Verde acima de 50, amarelo entre
 ## 30 e 50, vermelho abaixo — assim da pra ver de relance, jogando, ONDE o mapa
