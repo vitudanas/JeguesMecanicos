@@ -4200,3 +4200,116 @@ restou 1 rodada e `bluff_used = true`; depois de sair e voltar, permaneceu em
 `R$ 112`, 1 rodada e blefe usado. `economy_test` e `loop_test` também continuaram
 passando. Como isso altera código de jogo depois da primeira exportação anotada
 acima, as duas builds foram geradas e auditadas novamente no fechamento final.
+
+## 2026-08-13 — release v0.3.1 publicada (Codex)
+
+A mudança de interface e a correção da negociação foram publicadas também como
+release, conforme a regra obrigatória de `AGENTS.md`: [v0.3.1 — interface e
+negociação](https://github.com/vitudanas/joguinho2/releases/tag/v0.3.1).
+
+- Windows: `JeguesMecanicos-Windows.zip`, 463.978.561 bytes, SHA-256
+  `8e4cdba81f07d4dc0156ccbd2107d063fba54378778dd29a164b95e293b5bbf4`.
+- macOS: `JeguesMecanicos.zip`, 486.555.722 bytes, SHA-256
+  `2c98f22e5bdf8d14ae197041ac1473efa512992617de586ce9a94ab61a803513`.
+- O GitHub confirmou os dois assets com estado `uploaded` e digest igual ao dos
+  arquivos locais. A release foi publicada em 2026-08-13 e aponta para `main`.
+
+## 2026-08-13 — auditoria franca da direção visual e do mundo aberto (Codex)
+
+Pedido do usuário: depois da rodada de UI, reconsiderar cores, mundo, mapa e
+experiência amigável porque o resultado ainda não estava convencendo. Esta seção
+é deliberadamente um diagnóstico, não uma autorização para remodelar o mapa sem
+uma direção aprovada.
+
+### Evidência inspecionada
+
+- `tools/verify/world_tour.tscn` foi executado novamente no estado atual e gerou
+  17 capturas novas: mapa inteiro, cidade aérea, quatro vistas de rua, trânsito,
+  pedestres, entrega, oficina, ferro-velho, fazendas, cordilheira e transição
+  campo/cidade. Também foram reabertas as capturas atuais do menu, carregamento e
+  direção do loop completo.
+- Portanto, o parecer abaixo não se baseia nas imagens antigas das referências
+  nem só na contagem de prédios: ele compara o que o jogador realmente enxerga
+  hoje, no chão e de cima.
+
+### Veredito
+
+**Ainda não está digno, visualmente, de um mundo aberto comercial.** O jogo já é
+um mundo contínuo, dirigível e com sistemas vivos (trânsito, pedestres, clima,
+oficina, ferro-velho e entregas), mas a apresentação ainda comunica “mapa grande
+de protótipo gerado” em vez de “lugar autoral que dá vontade de explorar”. É um
+problema de direção de arte, escala, densidade e navegação — não falta de tamanho.
+
+O menu e o carregamento novos ficaram mais coerentes entre si que o próprio
+mundo. Eles têm uma linguagem clara de oficina em carvão/preto e amarelo, porém
+a personalidade cínica e muito escura é mais agressiva do que amigável. O HUD
+herdou a coerência, mas o painel de objetivo cobre aproximadamente 38% da largura
+e 28% da altura em 1080p; junto com o painel direito e a seta central, ele esconde
+uma parte grande do cenário e transforma orientação em poluição visual.
+
+### Problemas observados, em ordem de impacto
+
+1. **Cidade sem identidade navegável.** A vista aérea revela uma grade muito
+   regular, com quarteirões repetidos e poucos marcos realmente reconhecíveis. No
+   chão, avenidas largas e retas criam longos corredores vazios. Há muitos prédios,
+   mas pouca diferença de função e personalidade entre uma rua e a seguinte.
+2. **Mistura de estilos sem uma regra aparente.** Fachadas fotográficas e torres
+   realistas convivem com carros, personagens, oficina, árvores e cercas low-poly.
+   O contraste parece uma colagem de pacotes, não uma escolha artística híbrida.
+   Réplicas repetidas de arranha-céus conhecidos pioram a sensação de catálogo.
+3. **Cor e luz lavadas.** Calçadas e montanhas quase brancas, névoa clara e céu
+   forte reduzem profundidade e estouram grandes áreas da imagem. No campo, grama
+   verde-limão e árvores vermelhas muito saturadas brigam com a cidade cinza. A
+   cordilheira branca ao redor de todo o mapa domina o horizonte e parece uma
+   parede artificial.
+4. **Escala e densidade inconsistentes.** O centro tem torres coladas e enormes;
+   logo depois aparecem terrenos muito abertos com props pequenos e espaçados.
+   Oficina e ferro-velho parecem miniaturas soltas num gramado, enquanto ruas e
+   edifícios parecem grandes demais. Trânsito e pedestres existem, mas não ocupam
+   visualmente a avenida larga o suficiente para fazê-la parecer viva.
+5. **Orientação depende de UI, não do mundo.** A seta e a distância resolveram a
+   dúvida de direção imediata, mas faltam mapa/minimapa, bairros nomeados, placas
+   legíveis e marcos que deixem o jogador aprender a cidade. Textos 3D gigantes
+   sobre ferro-velho/oficina/entrega são funcionais, porém reforçam aparência de
+   protótipo.
+6. **Custo visual sem retorno equivalente.** No passeio automatizado, as vistas
+   de rua ficaram frequentemente entre 10 e 27 FPS, enquanto a vista aérea chegou
+   a 59 FPS; a captura do loop dirigindo estabilizou em 60 FPS. O roteiro de fotos
+   não substitui benchmark, mas a oscilação é sinal suficiente para exigir um
+   perfil real antes de aumentar ainda mais a cidade.
+
+### Direção recomendada antes de adicionar mais conteúdo
+
+Fazer primeiro uma **fatia vertical visual de cinco minutos** no percurso
+ferro-velho -> oficina -> primeiro comprador. Não remodelar o mapa inteiro de uma
+vez. A fatia deve provar a nova direção com comparação antes/depois e só então ser
+propagada.
+
+1. Definir uma bíblia curta de arte: “Brasil interiorano de oficina improvisada”,
+   estilização semi-realista, materiais e proporções comuns. O mundo deve combinar
+   com a personalidade de `Jegues Mecânicos`, não parecer Manhattan cercada por
+   fazendas.
+2. Criar 3 ou 4 bairros reconhecíveis por silhueta, cor, vegetação, tipo de rua e
+   props, cada um com pelo menos um marco visível de longe. Reduzir repetição de
+   torres e evitar prédios mundialmente reconhecíveis duplicados.
+3. Recalibrar a paleta: grama menos amarela/saturada, árvores vermelhas usadas como
+   acento e não como massa, asfalto um pouco mais quente, calçadas menos brancas,
+   montanhas mais escuras e azuladas pela distância, sol mais quente e neblina
+   menos leitosa.
+4. Densificar as rotas úteis em vez de ampliar a área: ruas secundárias mais
+   estreitas, carros estacionados, postes, placas, lixo de oficina, comércios e
+   pontos de interesse próximos. Se necessário, encolher a área jogável; mundo
+   aberto compacto e memorável é melhor que grande e vazio.
+5. Tornar navegação amigável: minimapa simples ou mapa de papel, nome do bairro ao
+   entrar, rota opcional e placas consistentes. Compactar o objetivo no HUD em uma
+   ou duas linhas, deixar detalhes expandirem só quando solicitado e preservar o
+   centro da tela para dirigir.
+6. Suavizar o primeiro contato: manter amarelo como acento, mas usar grafite mais
+   quente, creme e ilustrações/personagens no menu. No início da partida, ensinar
+   uma ação por vez e esconder clima/vendas/etapa até essas informações serem
+   relevantes.
+
+**Decisão recomendada:** pausar a adição de novos sistemas e assets até aprovar
+essa fatia visual. A próxima implementação deve começar pelo HUD compacto e por
+um único corredor redesenhado, com capturas lado a lado e teste de desempenho;
+só depois se decide se a linguagem deve ser aplicada ao mapa inteiro.
