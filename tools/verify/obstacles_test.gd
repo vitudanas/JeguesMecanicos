@@ -204,8 +204,11 @@ func _check_silhouette() -> void:
 	bad.sort_custom(func(a, b): return (a[1] - a[2]) > (b[1] - b[2]))
 	print("    %d corpo(s) com colisao larga e malha fina na altura do carro" % bad.size())
 	for b in bad.slice(0, 15):
-		print("      %-38s em %s | colisao %.1f m, malha %.1f m -> %.1f m de ar solido"
-			% [_path(b[0]), _v(b[3]), b[1], b[2], b[1] - b[2]])
+		var source := ""
+		if b[0].get("visual_scene") is PackedScene:
+			source = (b[0].get("visual_scene") as PackedScene).resource_path
+		print("      %-38s em %s | colisao %.1f m, malha %.1f m -> %.1f m de ar solido | %s"
+			% [_path(b[0]), _v(b[3]), b[1], b[2], b[1] - b[2], source])
 	if not info.is_empty():
 		print("    %d predio(s) com terreo recuado (colisao mantida de proposito):" % info.size())
 		for b in info.slice(0, 6):

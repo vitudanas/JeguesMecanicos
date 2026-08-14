@@ -4622,3 +4622,31 @@ de rua, não aumentar a quantidade de prédios.
   ainda merece uma futura rodada exclusiva de iluminação/neblina, que hoje lava o horizonte.
 - Esta rodada altera o jogo e requer revisão e testes adicionais do Claude antes de o Codex
   gerar/publicar os novos artefatos Windows/macOS na release, conforme `AGENTS.md`.
+
+## 2026-08-13 — correção das regressões encontradas na revisão de `fb7b78c` (Codex)
+
+- O Claude encontrou duas regressões que a primeira bateria do Codex não cobriu: `city`
+  mostrou a cordilheira chegando a 1.608 m do centro com o chão terminando em 1.550 m;
+  `obstacles_test` encontrou uma parede invisível na `twisted-tree.glb`, cuja colisão media
+  6,7 m para uma silhueta de 4,1 m na altura do carro.
+- O `GroundMesh` e o `GroundShape` passaram de 3.100 para 3.300 m. A meia-largura agora é
+  1.650 m, dando 42 m de margem além do ponto mais distante da serra sem reduzir os maciços
+  pedidos na rodada visual.
+- O limiar `AutoCollisionBody.SHRINK_MIN` caiu de 2,5 para 2,2 m no modo opt-in
+  `slim_collision`. Isso inclui a `twisted-tree` na colisão pela silhueta do tronco; prédios
+  não são afetados porque não ativam esse modo. O diagnóstico de `obstacles_test` agora também
+  imprime o `visual_scene` do infrator para tornar uma futura reprodução objetiva.
+- Testes refeitos e aprovados: `city`, `obstacles_test`, `scale_test`, `street_test`,
+  `npc_test` e `audio_test`. Resultados relevantes: ponto mais distante da serra 1.608 m <
+  chão 1.650 m; zero colisões largas na altura do carro; 84 bases de maciço no chão; zero
+  objeto flutuando e zero parede invisível.
+- O `world_tour` regenerou as 17 capturas. `01_mapa_inteiro` e `16_cordilheira` foram abertas
+  e conferidas: o terreno cobre o anel inteiro e a aparência da serra permanece estável.
+- Por ordem do usuário, `AGENTS.md` agora declara explicitamente que o Codex pode reexportar,
+  substituir/reextrair o `.app` local e publicar Windows/macOS nas releases. A regra de esperar
+  a revisão do Claude antes da release permanece. Também ficaram obrigatórios `city` e
+  `obstacles_test` em toda alteração futura de mundo — foram exatamente os dois ausentes que
+  detectaram estas regressões.
+- A release continua aguardando a nova revisão do Claude sobre o commit de correção. Após o
+  aval, o Codex deve reexportar, reextrair o `.app`, verificar os artefatos e publicar a próxima
+  release de correção no GitHub.

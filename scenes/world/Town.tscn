@@ -204,10 +204,10 @@ adjustment_saturation = 0.82
 ; largura 900) — a montanha ficava com o pe no vazio. Meia largura 1100 devolve
 ; a folga.
 [sub_resource type="BoxShape3D" id="GroundShape"]
-size = Vector3(3100, 1, 3100)
+size = Vector3(3300, 1, 3300)
 
 [sub_resource type="BoxMesh" id="GroundMesh"]
-size = Vector3(3100, 1, 3100)
+size = Vector3(3300, 1, 3300)
 
 [sub_resource type="ShaderMaterial" id="GroundMat"]
 shader = ExtResource("400")

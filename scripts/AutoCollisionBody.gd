@@ -63,7 +63,10 @@ const MIN_FOOTPRINT := 0.3
 ## por causa de degrau/beiral, e encolher ELE tem efeito colateral: a colisao
 ## deixa de cobrir a laje, e os props de telhado passam a nao ter nada solido
 ## embaixo (o verificador de flutuacao acusou 9 malhas boiando a ate 11,6 m).
-const SHRINK_MIN := 2.5
+# 2,2 m: a twisted-tree mede 6,7 m pela copa e 4,1 m na faixa do carro.
+# Com 2,5 ela caia exatamente no lado errado do limiar e deixava 2,6 m de ar
+# solido. Predios continuam fora porque nao ativam `slim_collision`.
+const SHRINK_MIN := 2.2
 
 ## Pegada horizontal da malha na faixa de trafego.
 ##
