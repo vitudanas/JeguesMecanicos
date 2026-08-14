@@ -253,7 +253,7 @@ func _build_block(x_street_a: float, x_street_b: float, z_street_a: float, z_str
 	# dentro de cada quarteirao. Uma base continua de patio/cascalho fecha o lote
 	# visualmente; predios, quintais e miolo continuam por cima dela.
 	_patch(Vector3(center.x, 0.0, center.y), Vector2(x_max - x_min, z_max - z_min),
-		Color(0.43, 0.42, 0.38), "block_courtyard", 0.025, "lote_urbano", "cascalho")
+		Color(0.29, 0.30, 0.29), "block_courtyard", 0.025, "lote_urbano", "cascalho")
 
 	# Nenhum predio pode passar da metade do quarteirao: assim as duas bordas
 	# opostas nunca se encontram no meio, por construcao (sem essa trava, um
@@ -318,10 +318,10 @@ func _build_block(x_street_a: float, x_street_b: float, z_street_a: float, z_str
 		add_child(shops)
 
 const GRASS := Color(0.44, 0.58, 0.36)
-const PATH := Color(0.78, 0.75, 0.68)
+const PATH := Color(0.48, 0.47, 0.44)
 const ASPHALT := Color(0.30, 0.31, 0.34)
-const CONCRETE := Color(0.70, 0.69, 0.66)
-const STRIPE := Color(0.88, 0.88, 0.84)
+const CONCRETE := Color(0.46, 0.46, 0.44)
+const STRIPE := Color(0.75, 0.74, 0.69)
 
 func _lot_kind() -> String:
 	var roll := _rng.randf()

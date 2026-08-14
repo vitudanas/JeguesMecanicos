@@ -68,3 +68,5 @@ Só entra o que de fato viaja no build.
 - **Quaternius** (https://quaternius.com) — personagens, animacoes, carros, fazenda e natureza
 - **ambientCG** (https://ambientcg.com) — texturas PBR de asfalto, tijolo, concreto, grama e rocha
 - **Poly Haven** (https://polyhaven.com) — céu HDRI e material PBR Gravel Road, de Amal Kumar
+- **domasx2 / OpenGameArt** (https://opengameart.org/content/racing-car-engine-sound-loops) — gravação CC0 de motor em laço
+- **IgnasD / OpenGameArt** (https://opengameart.org/content/wind) — gravação CC0 de vento rural

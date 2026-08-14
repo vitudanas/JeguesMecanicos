@@ -64,14 +64,17 @@ func _run() -> void:
 	await _shot("02_cidade_de_cima")
 
 	# ------------------------------------------------------ cidade no chao
-	# Cruzamentos reais da grade (ruas a cada 37.5, de -112.5 a 112.5).
-	_look(Vector3(0, 2.0, 40), Vector3(0, 3.0, -60))
+	# Cruzamentos reais da grade atual (9 ruas por eixo, espacadas 90 m,
+	# de -360 a +360).
+	# As coordenadas antigas cobriam apenas o miolo do primeiro prototipo e
+	# deixavam a maior parte da cidade nova fora da revisao visual.
+	_look(Vector3(0, 2.0, 300), Vector3(0, 3.0, 180))
 	await _shot("03_rua_centro")
-	_look(Vector3(-37.5, 2.0, 100), Vector3(-37.5, 4.0, 20))
+	_look(Vector3(-90, 2.0, 260), Vector3(-90, 4.0, 130))
 	await _shot("04_avenida")
-	_look(Vector3(75, 2.0, 75), Vector3(20, 6.0, 20))
+	_look(Vector3(90, 2.0, 90), Vector3(25, 6.0, 25))
 	await _shot("05_cruzamento")
-	_look(Vector3(112, 1.8, 60), Vector3(60, 4.0, 40))
+	_look(Vector3(360, 1.8, 250), Vector3(270, 4.0, 245))
 	await _shot("06_periferia")
 
 	# ------------------------------------------------------ quem esta na rua
@@ -98,7 +101,11 @@ func _run() -> void:
 	if not peds.is_empty():
 		var p: Node3D = peds[0]
 		_look(p.global_position + Vector3(3.5, 1.8, 3.5), p.global_position + Vector3(0, 0.9, 0))
-		await _shot("08_pedestres")
+		await _shot("08a_pedestres_passo_1")
+		for i in range(18):
+			await get_tree().physics_frame
+		_look(p.global_position + Vector3(3.5, 1.8, 3.5), p.global_position + Vector3(0, 0.9, 0))
+		await _shot("08b_pedestres_passo_2")
 
 	# ------------------------------------------------------ a casa da entrega
 	var buyer := get_tree().get_first_node_in_group("buyer")

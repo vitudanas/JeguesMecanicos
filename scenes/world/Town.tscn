@@ -168,7 +168,7 @@ ambient_light_energy = 0.42
 ambient_light_sky_contribution = 0.72
 reflected_light_source = 2
 tonemap_mode = 3
-tonemap_exposure = 0.9
+tonemap_exposure = 0.78
 tonemap_white = 6.0
 ssao_enabled = true
 ssao_radius = 2.0
@@ -189,15 +189,15 @@ fog_mode = 0
 fog_light_color = Color(0.48, 0.56, 0.61, 1)
 fog_light_energy = 0.72
 fog_sun_scatter = 0.04
-fog_density = 0.00085
+fog_density = 0.00045
 fog_sky_affect = 0.08
-fog_aerial_perspective = 0.42
+fog_aerial_perspective = 0.18
 fog_height = 0.0
 fog_height_density = 0.0
 adjustment_enabled = true
 adjustment_brightness = 1.0
-adjustment_contrast = 1.06
-adjustment_saturation = 0.82
+adjustment_contrast = 1.04
+adjustment_saturation = 0.92
 
 ; 2200 e nao 1800: com a serra subindo pra 320 m a base dela cresceu junto e o
 ; pe passou a alcancar 914 do centro, ou seja PRA FORA da placa antiga (meia
@@ -372,7 +372,7 @@ crop_scene = ExtResource("66")
 crop_rows = 4
 crop_cols = 5
 crop_offset = Vector2(0, -15)
-tree_scenes = Array[PackedScene]([ExtResource("57"), ExtResource("63"), ExtResource("60")])
+tree_scenes = Array[PackedScene]([ExtResource("57"), ExtResource("58"), ExtResource("59")])
 tree_count = 8
 tree_min_radius = 12.0
 tree_max_radius = 19.0
@@ -410,7 +410,7 @@ crop_scene = ExtResource("66")
 crop_rows = 4
 crop_cols = 6
 crop_offset = Vector2(0, -16)
-tree_scenes = Array[PackedScene]([ExtResource("57"), ExtResource("63"), ExtResource("58")])
+tree_scenes = Array[PackedScene]([ExtResource("57"), ExtResource("56"), ExtResource("58")])
 tree_count = 9
 tree_min_radius = 13.0
 tree_max_radius = 20.0
@@ -419,33 +419,33 @@ rng_seed = 505
 [node name="Scrapyard1" parent="." instance=ExtResource("44")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -520, 0, 240)
 wreck_count = 3
-decor_scenes = Array[PackedScene]([ExtResource("60"), ExtResource("62"), ExtResource("66")])
+decor_scenes = Array[PackedScene]([ExtResource("58"), ExtResource("62"), ExtResource("66")])
 decor_count = 6
 rng_seed = 601
 
 [node name="Scrapyard2" parent="." instance=ExtResource("44")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 300, 0, -560)
 wreck_count = 4
-decor_scenes = Array[PackedScene]([ExtResource("60"), ExtResource("62"), ExtResource("66")])
+decor_scenes = Array[PackedScene]([ExtResource("59"), ExtResource("62"), ExtResource("66")])
 decor_count = 7
 rng_seed = 602
 
 [node name="Scrapyard3" parent="." instance=ExtResource("44")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -300, 0, -560)
 wreck_count = 3
-decor_scenes = Array[PackedScene]([ExtResource("60"), ExtResource("62"), ExtResource("66")])
+decor_scenes = Array[PackedScene]([ExtResource("58"), ExtResource("62"), ExtResource("66")])
 decor_count = 6
 rng_seed = 603
 
 [node name="NatureScatter" parent="." instance=ExtResource("45")]
 decor_scenes = Array[PackedScene]([ExtResource("64"), ExtResource("65"), ExtResource("66"), ExtResource("67"), ExtResource("68"), ExtResource("69"), ExtResource("70"), ExtResource("71"), ExtResource("75"), ExtResource("76")])
-decor_count = 2800
+decor_count = 1800
 decor_height_min = Array[float]([0.30, 0.25, 0.45, 0.14, 0.35, 0.30, 0.14, 0.55, 0.10, 0.12])
 decor_height_max = Array[float]([0.55, 0.45, 0.85, 0.26, 0.60, 0.55, 0.28, 0.95, 0.22, 0.25])
-solid_scenes = Array[PackedScene]([ExtResource("56"), ExtResource("57"), ExtResource("58"), ExtResource("59"), ExtResource("60"), ExtResource("61"), ExtResource("62"), ExtResource("63"), ExtResource("72"), ExtResource("73"), ExtResource("74")])
-solid_count = 2400
-solid_height_min = Array[float]([6.5, 6.5, 7.5, 8.0, 7.0, 8.0, 1.0, 0.9, 1.2, 1.4, 1.4])
-solid_height_max = Array[float]([12.0, 12.0, 14.0, 15.0, 12.0, 14.0, 2.0, 1.8, 3.2, 3.6, 3.8])
+solid_scenes = Array[PackedScene]([ExtResource("56"), ExtResource("57"), ExtResource("58"), ExtResource("59"), ExtResource("62"), ExtResource("72"), ExtResource("73"), ExtResource("74")])
+solid_count = 1500
+solid_height_min = Array[float]([6.5, 6.5, 7.5, 8.0, 1.0, 1.2, 1.4, 1.4])
+solid_height_max = Array[float]([12.0, 12.0, 14.0, 15.0, 2.0, 3.2, 3.6, 3.8])
 inner_extent = 365.0
 outer_radius = 685.1
 exclude_points = Array[Vector3]([Vector3(520, 0, 180), Vector3(-200, 0, 540), Vector3(560, 0, -330), Vector3(-560, 0, -260), Vector3(150, 0, 600), Vector3(-520, 0, 240), Vector3(300, 0, -560), Vector3(-300, 0, -560), Vector3(-400, 0, 0), Vector3(-400, 0, 40)])
@@ -496,13 +496,17 @@ width = 5.2
 
 [node name="MountainRange" type="Node3D" parent="."]
 script = ExtResource("401")
-foot_radius = 901.1
-foot_spread = 90.0
-count = 84
-radius_min = 125.0
-radius_max = 220.0
-height_min = 145.0
-height_max = 340.0
+foot_radius = 780.0
+foot_spread = 70.0
+count = 30
+radius_min = 190.0
+radius_max = 250.0
+height_min = 110.0
+height_max = 220.0
+segments = 40
+peak_offset = 0.22
+ridge_strength = 0.28
+detail_relief = 0.07
 rng_seed = 20260888
 
 [node name="CityOutskirts" type="Node3D" parent="."]

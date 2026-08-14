@@ -83,22 +83,28 @@ func _check_buses() -> void:
 # ------------------------------------------------------------------ sintetico
 
 func _check_synth() -> void:
-	for entry in [["motor", AudioManager.engine_stream()], ["chuva", AudioManager.rain_stream()],
-			["cidade", ProceduralAudio.city_hum()], ["vento", ProceduralAudio.wind()]]:
+	# Motor agora e gravacao CC0, mas continua WAV para permitir checar a emenda
+	# amostra a amostra. Chuva e cama urbana ainda sao geradas em codigo.
+	for entry in [["motor gravado", AudioManager.engine_stream()],
+			["chuva", AudioManager.rain_stream()], ["cidade", ProceduralAudio.city_hum()]]:
 		var nome: String = entry[0]
 		var s: AudioStreamWAV = entry[1]
 		if s == null or s.data.size() == 0:
 			problems.append("laco '%s' saiu vazio" % nome)
 			continue
 		var frames := s.data.size() / 2
-		var dur := float(frames) / float(s.mix_rate)
-		if s.loop_mode != AudioStreamWAV.LOOP_FORWARD or s.loop_end != frames:
+		var dur := s.get_length()
+		print("    fonte %-13s formato=%d stereo=%s bytes=%d loop=%d [%d,%d]" % [
+			nome, s.format, s.stereo, s.data.size(), s.loop_mode, s.loop_begin, s.loop_end])
+		if s.loop_mode != AudioStreamWAV.LOOP_FORWARD or s.loop_begin < 0 \
+				or s.loop_end <= s.loop_begin or s.loop_end > frames:
 			problems.append("laco '%s' nao esta marcado como laco" % nome)
+			continue
 		# Emenda: a ultima amostra tem que estar perto da primeira, senao a volta
 		# do laco da um ESTALO — o defeito mais audivel possivel num som que
 		# repete o tempo todo.
-		var primeiro := s.data.decode_s16(0) / 32768.0
-		var ultimo := s.data.decode_s16((frames - 1) * 2) / 32768.0
+		var primeiro := s.data.decode_s16(s.loop_begin * 2) / 32768.0
+		var ultimo := s.data.decode_s16((s.loop_end - 1) * 2) / 32768.0
 		var salto: float = absf(ultimo - primeiro)
 		var pico := 0.0
 		for i in range(0, frames, maxi(1, frames / 2000)):
@@ -109,6 +115,11 @@ func _check_synth() -> void:
 			problems.append("laco '%s' quase mudo (pico %.2f)" % [nome, pico])
 		if salto > 0.35:
 			problems.append("laco '%s' estala na volta (salto de %.2f)" % [nome, salto])
+	var vento := AudioManager.wind_stream()
+	if vento == null or not vento.loop:
+		problems.append("gravacao CC0 de vento ausente ou sem laco")
+	else:
+		print("[3] vento gravado %.2f s, laco ativo" % vento.get_length())
 
 # ------------------------------------------------------------------ ambiente
 

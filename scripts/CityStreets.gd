@@ -61,7 +61,7 @@ extends Node3D
 ## Concreto de calcada de verdade reflete ~40% da luz, nao 72%. Com o valor
 ## antigo a calcada estourava de branco ao lado do asfalto e virava o elemento
 ## mais claro da rua — que nao e o caso em cidade nenhuma.
-@export var curb_color := Color(0.42, 0.41, 0.39)
+@export var curb_color := Color(0.34, 0.35, 0.35)
 ## Asfalto e concreto com material PBR em vez da cor chapada do kit (ver
 ## CitySurface.gd). Chave pra dar pra comparar os dois lado a lado.
 @export var use_pbr_surface := true

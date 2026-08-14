@@ -19,6 +19,7 @@ func _ready() -> void:
 		var achados := PackedStringArray()
 		var topo := ""
 		var topo_y := -1e9
+		var anims := PackedStringArray()
 		if skel:
 			for i in range(skel.get_bone_count()):
 				var nome := str(skel.get_bone_name(i))
@@ -28,7 +29,22 @@ func _ready() -> void:
 				if y > topo_y:
 					topo_y = y
 					topo = nome
-		print("%-46s cabeca=[%s]  topo=%s" % [entrada["id"],
-			", ".join(achados) if achados.size() > 0 else "NENHUM", topo])
+		var ap := _achar_player(inst)
+		if ap:
+			for lib_name in ap.get_animation_library_list():
+				for anim_name in ap.get_animation_library(lib_name).get_animation_list():
+					anims.append(("%s/%s" % [lib_name, anim_name]) if lib_name != "" else anim_name)
+		print("%-46s cabeca=[%s] topo=%s anim=[%s]" % [entrada["id"],
+			", ".join(achados) if achados.size() > 0 else "NENHUM", topo,
+			", ".join(anims) if anims.size() > 0 else "NENHUMA"])
 		inst.queue_free()
 	get_tree().quit(0)
+
+func _achar_player(node: Node) -> AnimationPlayer:
+	if node is AnimationPlayer:
+		return node as AnimationPlayer
+	for c in node.get_children():
+		var found := _achar_player(c)
+		if found:
+			return found
+	return null

@@ -135,14 +135,28 @@ func _height_at(local: Vector2, radius: float, height: float, stretch: Vector2,
 	var p := local.rotated(-spin)
 	p.x /= stretch.x
 	p.y /= stretch.y
-	var d := (p / radius - peak).length() / (1.0 + peak.length())
-	if d >= 1.0:
+	var q := p / radius
+	var edge_d := q.length()
+	if edge_d >= 1.0:
 		return 0.0
-	# Perfil concavo: encosta que abre na base e afina no cume.
-	# Perfil mais largo e com ombros. 1.7 criava uma fileira de cones finos;
-	# 1.22 preserva massa no terco superior e deixa os sulcos do ruido desenharem
-	# cristas, em vez de todos os macicos terminarem no mesmo espeto.
-	var profile := pow(1.0 - d, 1.22)
+	# Um macico, nao um cone: tres cumes sobrepostos criam ombros e uma crista
+	# irregular. A semente vem da origem do ruido, portanto cada setor continua
+	# deterministico sem repetir a mesma silhueta pontuda trinta vezes.
+	var phase := fposmod((noise_origin.x + noise_origin.y) * 0.0137, TAU)
+	var secondary := peak.rotated(2.15) * 0.55 \
+		+ Vector2(cos(phase), sin(phase)) * 0.24
+	var tertiary := peak.rotated(-1.65) * 0.42 \
+		+ Vector2(cos(phase + 2.2), sin(phase + 2.2)) * 0.28
+	var main_profile := pow(maxf(1.0 - (q - peak).length() / 0.98, 0.0), 1.18)
+	var second_profile := pow(maxf(1.0 - (q - secondary).length() / 0.88, 0.0), 1.28) * 0.72
+	var third_profile := pow(maxf(1.0 - (q - tertiary).length() / 0.78, 0.0), 1.36) * 0.56
+	# Soma-potencia arredonda o encontro dos tres volumes. `max()` deixava uma
+	# quina visivel entre eles e cada macico ainda parecia tres cones colados.
+	var profile := minf(pow(pow(main_profile, 3.0) + pow(second_profile, 3.0)
+		+ pow(third_profile, 3.0), 1.0 / 3.0), 1.0)
+	# A mascara de borda faz a base morrer no chao mesmo quando um cume lateral
+	# chega perto do limite da elipse.
+	profile *= smoothstep(0.0, 0.16, 1.0 - edge_d)
 	# Ruido de cordilheira: abs() do simplex cria vinco/aresta em vez de bolha.
 	var n := _noise.get_noise_2d(noise_origin.x + local.x, noise_origin.y + local.y)
 	var ridge := 1.0 - absf(n)
@@ -153,7 +167,7 @@ func _height_at(local: Vector2, radius: float, height: float, stretch: Vector2,
 	shaped += profile * fine * detail_relief
 	# Amortece o ruido perto da borda pra nao levantar degrau no encontro com o
 	# chao (a beirada tem que morrer em zero de verdade).
-	return height * lerpf(profile, shaped, smoothstep(1.0, 0.55, d))
+	return height * lerpf(profile, shaped, smoothstep(1.0, 0.55, edge_d))
 
 func _build_mesh(res: int, radius: float, height: float, stretch: Vector2, spin: float,
 		peak: Vector2, noise_origin: Vector2) -> ArrayMesh:

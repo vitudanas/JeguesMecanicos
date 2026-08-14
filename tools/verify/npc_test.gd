@@ -58,18 +58,38 @@ func _secao_variedade(peds: Array) -> void:
 func _secao_animacao(peds: Array) -> void:
 	print("\n[2] todo pedestre esta ANIMADO")
 	var mudos: Array[String] = []
+	var procedural := 0
+	var progresso_antes: Dictionary = {}
 	for p in peds:
 		var ap := _achar_player(p)
-		var procedural: bool = p.has_locomotion_animation() if p.has_method("has_locomotion_animation") else false
-		if (ap == null or not ap.is_playing()) and not procedural:
+		var has_fallback: bool = p.has_locomotion_animation() if p.has_method("has_locomotion_animation") else false
+		if p.has_method("locomotion_kind") and p.locomotion_kind() == "procedural":
+			procedural += 1
+		if (ap == null or not ap.is_playing()) and not has_fallback:
 			var cena: PackedScene = p.get("character_model")
 			var nome: String = cena.resource_path.get_base_dir().get_file() if cena else "?"
 			if not mudos.has(nome):
 				mudos.append(nome)
+		if p.has_method("locomotion_progress"):
+			progresso_antes[p.get_instance_id()] = p.locomotion_progress()
 	if mudos.is_empty():
-		ok("os %d pedestres estao tocando animacao" % peds.size())
+		ok("os %d pedestres estao tocando animacao (%d fallback procedural)" % [peds.size(), procedural])
 	else:
 		fail("modelo(s) sem animacao tocando (T-pose na rua): %s" % ", ".join(mudos))
+	if procedural > 0:
+		fail("%d pedestre(s) ainda dependem de locomocao procedural" % procedural)
+	# Verifica movimento temporal, nao apenas o estado nominal do AnimationPlayer.
+	await get_tree().create_timer(0.25).timeout
+	var congelados := 0
+	for p in peds:
+		var antes := float(progresso_antes.get(p.get_instance_id(), -1.0))
+		var depois := float(p.locomotion_progress()) if p.has_method("locomotion_progress") else -1.0
+		if antes < 0.0 or depois < 0.0 or absf(depois - antes) < 0.001:
+			congelados += 1
+	if congelados == 0:
+		ok("os %d clipes avancaram durante 0,25 s" % peds.size())
+	else:
+		fail("%d pedestre(s) com clipe congelado ou sem progresso" % congelados)
 	_fim["animacao"] = true
 
 ## Altura na RUA. Cada modelo vem numa escala propria no arquivo (de 0,7 a 208

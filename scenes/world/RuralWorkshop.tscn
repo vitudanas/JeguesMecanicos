@@ -6,7 +6,7 @@
 [ext_resource type="PackedScene" path="res://assets/kenney/city-kit-industrial/Models/GLB format/building-l.glb" id="4"]
 [ext_resource type="PackedScene" path="res://assets/kenney/city-kit-industrial/Models/GLB format/detail-tank.glb" id="5"]
 [ext_resource type="PackedScene" path="res://assets/quaternius/farm-buildings/fence-a.glb" id="6"]
-[ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/dead-tree.glb" id="7"]
+[ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/pine-b.glb" id="7"]
 [ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/bush.glb" id="8"]
 [ext_resource type="PackedScene" path="res://assets/quaternius/nature-megakit/tall-grass.glb" id="9"]
 [ext_resource type="Script" path="res://scripts/WorkshopYard.gd" id="10"]

@@ -1,0 +1,15 @@
+Recorded ambience and vehicle audio used by Jegues Mecânicos
+
+1. "Racing car engine sound loops" by domasx2
+   Source: https://opengameart.org/content/racing-car-engine-sound-loops
+   File used: loop_0.wav, renamed racing_engine_loop.wav
+   License: CC0 1.0 Universal (public domain dedication)
+   https://creativecommons.org/publicdomain/zero/1.0/
+
+2. "Wind" by IgnasD
+   Source: https://opengameart.org/content/wind
+   File used: wind/Wind.ogg, renamed rural_wind.ogg
+   License: CC0 1.0 Universal (public domain dedication)
+   https://creativecommons.org/publicdomain/zero/1.0/
+
+The files are redistributed without modification other than their filenames.

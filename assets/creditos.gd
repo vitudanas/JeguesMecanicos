@@ -65,4 +65,6 @@ const CC0: Array[Dictionary] = [
 	{"autor": "Quaternius", "site": "https://quaternius.com", "o_que": "personagens, animacoes, carros, fazenda e natureza"},
 	{"autor": "ambientCG", "site": "https://ambientcg.com", "o_que": "texturas PBR de asfalto, tijolo, concreto, grama e rocha"},
 	{"autor": "Poly Haven / Amal Kumar", "site": "https://polyhaven.com", "o_que": "ceu HDRI e material PBR Gravel Road"},
+	{"autor": "domasx2 / OpenGameArt", "site": "https://opengameart.org/content/racing-car-engine-sound-loops", "o_que": "gravacao CC0 de motor em laco"},
+	{"autor": "IgnasD / OpenGameArt", "site": "https://opengameart.org/content/wind", "o_que": "gravacao CC0 de vento rural"},
 ]

@@ -100,13 +100,46 @@ static func npc_models() -> Array[Dictionary]:
 	for entry: Dictionary in models():
 		if int(entry.get("faces", 0)) > FACES_PARA_NPC:
 			continue
-		# Sem animacao propria e sem o esqueleto da UAL1, o modelo fica em
-		# T-POSE andando pela rua. Os dois nativos nao declaram `animacoes` (usam
-		# a UAL1, que casa com o esqueleto deles) e por isso passam.
-		if entry.has("animacoes") and int(entry["animacoes"]) <= 0:
+		# Contar clipe nao basta: 23 modelos tinham exatamente um clipe de POSE ou
+		# idle e deslizavam pela rua como estatuas. Para pedestre de verdade so
+		# entram arquivos cujo clipe se identifica como caminhada/corrida. Os dois
+		# nativos nao declaram `animacoes` e usam a UAL1 compatível.
+		if entry.has("animacoes") and not _tem_locomocao_nomeada(entry):
 			continue
 		out.append(entry)
 	return out
+
+static var _locomocao_cache: Dictionary = {}
+
+static func _tem_locomocao_nomeada(entry: Dictionary) -> bool:
+	var path := str(entry.get("caminho", ""))
+	if _locomocao_cache.has(path):
+		return bool(_locomocao_cache[path])
+	var scene := load(path) as PackedScene
+	if scene == null:
+		_locomocao_cache[path] = false
+		return false
+	var inst := scene.instantiate()
+	var names := PackedStringArray()
+	_coletar_animacoes(inst, names)
+	inst.free()
+	for name in names:
+		var lower := name.to_lower()
+		for word in ["walk", "walking", "run", "jog", "sprint"]:
+			if lower.contains(word):
+				_locomocao_cache[path] = true
+				return true
+	_locomocao_cache[path] = false
+	return false
+
+static func _coletar_animacoes(node: Node, out: PackedStringArray) -> void:
+	if node is AnimationPlayer:
+		var player := node as AnimationPlayer
+		for lib_name in player.get_animation_library_list():
+			for anim_name in player.get_animation_library(lib_name).get_animation_list():
+				out.append(("%s/%s" % [lib_name, anim_name]) if lib_name != "" else anim_name)
+	for child in node.get_children():
+		_coletar_animacoes(child, out)
 
 ## As formas do corpo, na escala 0..1 das shape keys gravadas no modelo (ver
 ## `tools/build_characters.py`). `so_feminino` marca as que o modelo masculino

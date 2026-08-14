@@ -4650,3 +4650,46 @@ de rua, não aumentar a quantidade de prédios.
 - A release continua aguardando a nova revisão do Claude sobre o commit de correção. Após o
   aval, o Codex deve reexportar, reextrair o `.app`, verificar os artefatos e publicar a próxima
   release de correção no GitHub.
+
+## 2026-08-13 — segunda revisão visual integrada: NPCs, áudio e paisagem (Codex)
+
+- A rejeição visual do usuário foi tratada como falha de aceitação da rodada anterior, não como
+  trabalho concluído. Esta passagem refez em conjunto os elementos que ainda pareciam artificiais:
+  pedestres, paisagem sonora, paleta urbana, vegetação rural e silhueta da cordilheira.
+- Os NPCs agora só entram na seleção quando o modelo possui um clipe nomeado de caminhada,
+  corrida ou trote. O fallback procedural foi removido da população usada no mapa: são 72
+  pedestres, distribuídos entre 7 modelos realmente animados. O `npc_test` mede a posição do
+  clipe antes e depois de 0,25 s e confirmou avanço nos 72, além de zero modelo procedural,
+  alturas entre 1,63 e 1,87 m e todos visíveis. O tour também fotografou dois instantes da mesma
+  cena (`08a` e `08b`), nos quais braços e pernas mudam de pose.
+- Motor e vento deixaram de depender do timbre procedural e passaram a usar gravações CC0:
+  `Racing car engine sound loops`, de domasx2, e `Wind`, de IgnasD, ambas obtidas no
+  OpenGameArt. Arquivos, licença e URLs estão em `assets/opengameart/audio/`; créditos também
+  foram adicionados às telas/documentação do projeto. O loop do motor foi recortado em ponto de
+  emenda medido como 0,000 no `audio_test`, e o ambiente urbano foi reduzido para não mascarar
+  motor e efeitos.
+- A cidade recebeu asfalto, concreto, faixas e meios-fios menos claros; exposição, neblina e
+  perspectiva aérea foram reduzidas, enquanto a saturação recuperou parte da cor perdida. A
+  densidade de decoração rural caiu para abrir leitura entre os elementos. Árvores mortas e
+  retorcidas deixaram de dominar fazendas, oficina e ferros-velhos rurais, que agora usam árvores
+  e pinheiros vivos.
+- A serra anterior ainda lia como uma repetição de 84 espigões. Ela foi substituída por 30
+  maciços mais largos, com múltiplos picos internos, mistura suave entre cristas e alturas entre
+  110 e 220 m. O shader ganhou rocha/grama mais quentes e estratos menos agressivos. O teste
+  mediu o maior ponto em 1.482 m, dentro do chão de meia-largura 1.650 m, com as 30 bases no solo
+  e zero objeto natural na encosta indevida.
+- A estrada de terra continua usando o material PBR CC0 Gravel Road e foi conferida novamente ao
+  nível do chão. O `world_tour` foi atualizado para a malha viária atual e gerou 18 imagens:
+  foram abertas e inspecionadas as ruas do centro/periferia, dois quadros dos NPCs, estrada rural,
+  oficina, ferro-velho, fazenda, panorama e três enquadramentos da cordilheira. Não apareceu mato
+  sobre o asfalto; as áreas rurais perderam as árvores mortas gigantes; a serra passou a formar
+  massas largas em vez de uma floresta de cones.
+- Validação final aprovada: importação/editor, `npc_test`, `audio_test`, `city`,
+  `obstacles_test`, `scale_test`, `street_test`, `settings_test`, `gaps_test` e `world_tour`.
+  Resultados de mundo: 64 quarteirões, 877 construções, zero borda completamente vazia, 6.439
+  sólidos, zero parede invisível, zero colisão excessiva e os dois corredores de terra livres.
+  `gaps_test` permanece um relatório de cobertura (93%), não uma trava automática. Os presets
+  Baixo, Médio, Alto e Ultra passaram funcionalmente; esta rodada não afirma ganho de FPS.
+- O código desta rodada deve ser enviado ao Claude com o hash para revisão prática independente.
+  Builds Windows/macOS, reextração do `.app` e publicação da release continuam bloqueadas até o
+  aval dele, conforme a ordem obrigatória do `AGENTS.md`.

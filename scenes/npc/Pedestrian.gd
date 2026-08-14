@@ -90,6 +90,19 @@ var _procedural_bones: Dictionary = {}
 func has_locomotion_animation() -> bool:
 	return (_anim_player != null and _anim_player.is_playing()) or _procedural_visual != null
 
+func locomotion_kind() -> String:
+	if _procedural_visual != null:
+		return "procedural"
+	if _anim_player != null and _anim_player.is_playing():
+		return "animation"
+	return "none"
+
+## Posicao temporal do clipe que move este pedestre. Exposta para o teste nao
+## confundir `is_playing()` com animacao realmente avancando (um player pausado
+## ou com speed_scale zero tambem pode conservar o nome do clipe atual).
+func locomotion_progress() -> float:
+	return _anim_player.current_animation_position if _anim_player != null else -1.0
+
 func _ready() -> void:
 	add_to_group("pedestrian")
 	contact_monitor = true

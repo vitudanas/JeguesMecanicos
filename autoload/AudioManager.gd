@@ -17,6 +17,12 @@ extends Node
 
 const PATH := "user://audio.cfg"
 
+## Gravacoes CC0. O motor e o vento sintetizados eram funcionais, mas soavam
+## como tom de teste; estes dois arquivos sao capturas reais e ficam com fonte
+## e licenca ao lado dos assets.
+const ENGINE_RECORDING: AudioStreamWAV = preload("res://assets/opengameart/audio/racing_engine_loop.wav")
+const WIND_RECORDING: AudioStreamOggVorbis = preload("res://assets/opengameart/audio/rural_wind.ogg")
+
 const BUS_SFX := "SFX"
 const BUS_UI := "UI"
 
@@ -78,6 +84,7 @@ var _next_3d := 0
 var _next_2d := 0
 var _engine_stream: AudioStreamWAV = null
 var _rain_stream: AudioStreamWAV = null
+var _wind_stream: AudioStreamOggVorbis = null
 
 func _ready() -> void:
 	# O som nao pode parar junto com a arvore: o menu de pause precisa dos
@@ -142,7 +149,7 @@ func _on_ui_slider(_value: float) -> void:
 const CITY_EXTENT := 360.0
 ## Faixa de transicao entre cidade e campo.
 const CITY_FADE := 70.0
-const CITY_DB := -26.0
+const CITY_DB := -32.0
 const WIND_DB := -30.0
 const AMBIENCE_FADE := 1.5
 
@@ -164,7 +171,7 @@ var _traffic_wait := 0.0
 
 func _build_ambience() -> void:
 	_city = _bed_player(ProceduralAudio.city_hum())
-	_wind = _bed_player(ProceduralAudio.wind())
+	_wind = _bed_player(wind_stream())
 	for i in range(TRAFFIC_VOICES):
 		var p := AudioStreamPlayer3D.new()
 		p.stream = engine_stream()
@@ -180,7 +187,7 @@ func _build_ambience() -> void:
 		p.play()
 		_traffic.append(p)
 
-func _bed_player(stream: AudioStreamWAV) -> AudioStreamPlayer:
+func _bed_player(stream: AudioStream) -> AudioStreamPlayer:
 	var p := AudioStreamPlayer.new()
 	p.stream = stream
 	p.bus = BUS_SFX
@@ -384,12 +391,23 @@ func _free_voice_2d() -> AudioStreamPlayer:
 
 # ------------------------------------------------------------- sons continuos
 
-## Os dois lacos sintetizados sao gerados UMA vez e reaproveitados: gerar custa
-## alguns milhares de senos, e todo carro da cidade pede o mesmo motor.
+## Os lacos sao preparados UMA vez e reaproveitados. O motor e o vento usam
+## gravacoes CC0; a chuva ainda e procedural para responder sem arquivo grande.
 func engine_stream() -> AudioStreamWAV:
 	if _engine_stream == null:
-		_engine_stream = ProceduralAudio.engine()
+		_engine_stream = ENGINE_RECORDING.duplicate() as AudioStreamWAV
+		# A importacao WAV do Godot 4.7 conserva PCM mas nao reaplica os marcadores
+		# editados no .import ao recurso duplicado; fixe o trecho de zero-crossing
+		# medido no arquivo para a emenda nao estalar.
+		_engine_stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
+		_engine_stream.loop_begin = 336
+		_engine_stream.loop_end = 36415
 	return _engine_stream
+
+func wind_stream() -> AudioStreamOggVorbis:
+	if _wind_stream == null:
+		_wind_stream = WIND_RECORDING.duplicate() as AudioStreamOggVorbis
+	return _wind_stream
 
 func rain_stream() -> AudioStreamWAV:
 	if _rain_stream == null:
