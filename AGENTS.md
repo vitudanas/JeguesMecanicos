@@ -22,7 +22,10 @@ O Codex é responsável por:
 3. corrigir os problemas encontrados nessa primeira validação;
 4. documentar cada rodada no `CLAUDE.md`;
 5. quando houver mudança no jogo, reexportar Windows e macOS e conferir o
-   binário exportado conforme as regras do `CLAUDE.md`;
+   binário exportado conforme as regras do `CLAUDE.md`. O usuário autorizou
+   expressamente o Codex a substituir/reextrair o
+   `builds/macos/Jegues Mecanicos.app`, gerar os ZIPs e publicar os artefatos
+   Windows/macOS nas releases do GitHub;
 6. criar o commit e enviar a alteração ao GitHub;
 7. entregar ao Claude o hash do commit, o resumo da mudança, os testes feitos e
    qualquer ressalva conhecida;
@@ -66,6 +69,13 @@ explicitamente outra divisão para uma tarefa específica.
   supondo que uma cópia local antiga seja a versão enviada.
 - Não considerar uma mudança no jogo concluída sem documentação, testes
   proporcionais e, quando aplicável, builds atualizadas e verificadas.
+- **Mudança de mundo exige `city` e `obstacles_test`.** Ambos fazem parte da
+  primeira validação obrigatória do Codex sempre que houver alteração em mapa,
+  terreno, ruas, quarteirões, vegetação, fazendas, montanhas, colisões ou
+  espalhadores. Eles não podem ser substituídos apenas por `scale_test` ou por
+  screenshots: na revisão de `fb7b78c`, foram justamente `city` e
+  `obstacles_test` que encontraram a serra passando da borda do chão e uma
+  parede invisível da `twisted-tree`.
 - **Preparar o repositório para futura publicação.** Não commitar tokens,
   credenciais, chaves, arquivos `.env`, e-mails particulares, caminhos que
   revelem contas locais ou outros dados sensíveis. Antes de tornar o repositório
