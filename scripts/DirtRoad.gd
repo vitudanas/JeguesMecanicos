@@ -17,8 +17,8 @@ extends Node3D
 @export var lift := 0.03
 ## A cor multiplica a fotografia PBR; valores muito escuros transformavam o
 ## cascalho marrom numa faixa quase preta sob o sol do jogo.
-@export var dirt_color := Color(0.78, 0.72, 0.63)
-@export var rut_color := Color(0.56, 0.50, 0.43)
+@export var dirt_color := Color(0.62, 0.68, 0.69)
+@export var rut_color := Color(0.45, 0.50, 0.51)
 @export var rng_seed := 20260804
 
 const GRAVEL_COLOR := preload("res://assets/polyhaven/GravelRoad/gravel_road_diff_1k.jpg")

@@ -14,15 +14,23 @@ extends Node
 
 ## Vao a partir do qual conta como buraco (m). Abaixo disso e recuo entre lotes.
 const BURACO := 6.0
+const COBERTURA_MIN := 85.0
 
 var town: Node3D
+var problems: Array[String] = []
 
 func _ready() -> void:
 	town = (load("res://scenes/world/Town.tscn") as PackedScene).instantiate()
 	add_child(town)
 	await get_tree().process_frame
 	_rodar()
-	get_tree().quit()
+	if problems.is_empty():
+		print("\n=== RESULTADO ===\ncobertura de fachadas dentro do piso")
+	else:
+		print("\n=== PROBLEMAS (%d) ===" % problems.size())
+		for problem in problems:
+			print("  - " + problem)
+	get_tree().quit(0 if problems.is_empty() else 1)
 
 func _caixa(body: Node3D) -> Rect2:
 	for child in body.get_children():
@@ -196,6 +204,12 @@ func _rodar() -> void:
 		quadras_com, (ruas_x.size() - 1) * (ruas_z.size() - 1)])
 
 	print("\nBORDAS COMPLETAMENTE VAZIAS: %d" % vazias.size())
+	var coverage := 100.0 * (total_borda - total_vazio) / maxf(total_borda, 1.0)
+	if coverage < COBERTURA_MIN:
+		problems.append("cobertura caiu para %.1f%% (piso %.1f%%)" % [
+			coverage, COBERTURA_MIN])
+	if not vazias.is_empty():
+		problems.append("%d borda(s) de quarteirao completamente vazia(s)" % vazias.size())
 	var por_tamanho := {}
 	var nomes := ["sul", "norte", "oeste", "leste"]
 	for v: Array in vazias:

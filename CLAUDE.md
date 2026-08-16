@@ -4737,3 +4737,32 @@ de rua, não aumentar a quantidade de prédios.
   retargetada para impedir a regressão da rotação de quadril que deita o corpo.
 - Resultado final: 72 pedestres, 23 modelos elegíveis e 23 presentes, zero fallback procedural,
   72 clipes avançando, 72 poses de membros mudando, todos visíveis e alturas de 1,63 a 1,87 m.
+
+## 2026-08-16 — paisagem rural e validação visual corrigidas (Codex)
+
+- Os três ferros-velhos rurais receberam mais carcaças, caixas e decoração. Cada carcaça agora
+  tem cabine e quatro rodas, e o agrupamento ganhou uma base escura contínua: na captura `15` o
+  ponto passa a ler como ferro-velho, não como duas caixas perdidas no campo.
+- A estrada de terra preserva o material PBR CC0 Gravel Road, mas o tom da base e dos sulcos foi
+  neutralizado para retirar o laranja que destoava do asfalto, da oficina e do terreno rural.
+- `gaps_test` deixou de ser apenas um relatório que sempre encerrava com sucesso: agora exige ao
+  menos 85% de cobertura das bordas e reprova qualquer borda de quarteirão completamente vazia.
+  O mapa atual passou com 93% de cobertura, 64 quarteirões e zero borda vazia.
+- O `world_tour` apaga capturas antigas antes de começar, enquadra as ruas seguindo carros reais,
+  falha quando falta o conteúdo esperado e usa coordenadas rurais para a cordilheira e para a
+  transição campo–cidade. As fotos `03` e `06` agora mostram tráfego no centro e periferia;
+  `16` mostra a cadeia inteira de maciços; e `17` mostra campo, fazenda, cidade e serra no mesmo
+  panorama. O pedestre fotografado precisa estar animado e em pé.
+- As 18 imagens novas foram abertas e inspecionadas individualmente nos pontos alterados. Essa
+  inspeção encontrou uma regressão que os números não viam: o retarget movimentava os membros do
+  soldado, mas a rotação absoluta do quadril o deixava deitado. A correção e a trava automatizada
+  ficaram no commit específico de NPCs; as capturas `08a`/`08b` finais mostram o soldado ereto e
+  em duas fases distintas da passada.
+- Validação final aprovada: `world_tour` com 18 capturas e resultado explícito; `npc_test` com 72
+  NPCs/23 modelos; `city` com 64 quarteirões, 877 construções e 30 maciços dentro do chão;
+  `obstacles_test` com 6.458 sólidos, zero parede invisível/colisão excessiva e corredor central
+  livre nas duas estradas; `scale_test` com 9.379 objetos, zero flutuante e 30 bases no solo; e
+  `gaps_test` com 93%/zero borda vazia. Os avisos de objetos/recursos no encerramento já são
+  conhecidos e aparecem depois de `RESULTADO`; os testes encerraram em sucesso.
+- Esta mudança do jogo deve ser enviada ao Claude para revisão prática independente. Builds,
+  reextração do `.app` e release pública permanecem como último passo, somente após o aval.

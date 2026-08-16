@@ -418,23 +418,26 @@ rng_seed = 505
 
 [node name="Scrapyard1" parent="." instance=ExtResource("44")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -520, 0, 240)
-wreck_count = 3
+wreck_count = 5
+crate_count = 5
 decor_scenes = Array[PackedScene]([ExtResource("58"), ExtResource("62"), ExtResource("66")])
-decor_count = 6
+decor_count = 8
 rng_seed = 601
 
 [node name="Scrapyard2" parent="." instance=ExtResource("44")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 300, 0, -560)
-wreck_count = 4
+wreck_count = 6
+crate_count = 6
 decor_scenes = Array[PackedScene]([ExtResource("59"), ExtResource("62"), ExtResource("66")])
-decor_count = 7
+decor_count = 9
 rng_seed = 602
 
 [node name="Scrapyard3" parent="." instance=ExtResource("44")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -300, 0, -560)
-wreck_count = 3
+wreck_count = 5
+crate_count = 5
 decor_scenes = Array[PackedScene]([ExtResource("58"), ExtResource("62"), ExtResource("66")])
-decor_count = 6
+decor_count = 8
 rng_seed = 603
 
 [node name="NatureScatter" parent="." instance=ExtResource("45")]
