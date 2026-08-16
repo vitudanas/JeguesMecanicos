@@ -100,18 +100,18 @@ static func npc_models() -> Array[Dictionary]:
 	for entry: Dictionary in models():
 		if int(entry.get("faces", 0)) > FACES_PARA_NPC:
 			continue
-		# Contar clipe nao basta: 23 modelos tinham exatamente um clipe de POSE ou
-		# idle e deslizavam pela rua como estatuas. Para pedestre de verdade so
-		# entram arquivos cujo clipe se identifica como caminhada/corrida. Os dois
-		# nativos nao declaram `animacoes` e usam a UAL1 compatível.
-		if entry.has("animacoes") and not _tem_locomocao_nomeada(entry):
+		# Contar clipe nao basta: pose unica continua sendo estatua. Entra quem tem
+		# locomocao propria identificavel OU rig Mixamo que aceita a caminhada
+		# retargetada e verificada de `CharacterVisual`. Os dois nativos usam UAL1.
+		if entry.has("animacoes") and not _tem_locomocao_propria(entry) \
+				and not _tem_rig_mixamo(entry):
 			continue
 		out.append(entry)
 	return out
 
 static var _locomocao_cache: Dictionary = {}
 
-static func _tem_locomocao_nomeada(entry: Dictionary) -> bool:
+static func _tem_locomocao_propria(entry: Dictionary) -> bool:
 	var path := str(entry.get("caminho", ""))
 	if _locomocao_cache.has(path):
 		return bool(_locomocao_cache[path])
@@ -120,8 +120,24 @@ static func _tem_locomocao_nomeada(entry: Dictionary) -> bool:
 		_locomocao_cache[path] = false
 		return false
 	var inst := scene.instantiate()
+	var player := CharacterVisual._achar_player(inst)
 	var names := PackedStringArray()
-	_coletar_animacoes(inst, names)
+	if player:
+		for name in player.get_animation_list():
+			names.append(name)
+	var declared_path := false
+	for word in ["walk", "walking", "run", "running"]:
+		if path.to_lower().contains(word):
+			declared_path = true
+			break
+	var declared_motion := false
+	if declared_path and player:
+		for name in names:
+			var anim := player.get_animation(name)
+			if anim != null and anim.length >= 0.35 and anim.length <= 5.0 \
+					and CharacterVisual.animation_limb_motion_score(anim) >= 4:
+				declared_motion = true
+				break
 	inst.free()
 	for name in names:
 		var lower := name.to_lower()
@@ -129,8 +145,27 @@ static func _tem_locomocao_nomeada(entry: Dictionary) -> bool:
 			if lower.contains(word):
 				_locomocao_cache[path] = true
 				return true
+	if declared_motion:
+		_locomocao_cache[path] = true
+		return true
 	_locomocao_cache[path] = false
 	return false
+
+static var _mixamo_cache: Dictionary = {}
+
+static func _tem_rig_mixamo(entry: Dictionary) -> bool:
+	var path := str(entry.get("caminho", ""))
+	if _mixamo_cache.has(path):
+		return bool(_mixamo_cache[path])
+	var scene := load(path) as PackedScene
+	if scene == null:
+		_mixamo_cache[path] = false
+		return false
+	var inst := scene.instantiate() as Node3D
+	var compatible := inst != null and CharacterVisual.tem_rig_mixamo(inst)
+	inst.free()
+	_mixamo_cache[path] = compatible
+	return compatible
 
 static func _coletar_animacoes(node: Node, out: PackedStringArray) -> void:
 	if node is AnimationPlayer:

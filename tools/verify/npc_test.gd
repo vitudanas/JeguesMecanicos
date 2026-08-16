@@ -47,7 +47,18 @@ func _secao_variedade(peds: Array) -> void:
 			modelos[cena.resource_path] = int(modelos.get(cena.resource_path, 0)) + 1
 	print("\n[1] variedade")
 	print("    %d modelos distintos entre %d pedestres" % [modelos.size(), peds.size()])
-	if modelos.size() < 5:
+	var model_names := PackedStringArray()
+	for path in modelos:
+		model_names.append("%s=%d" % [str(path).get_base_dir().get_file(), modelos[path]])
+	model_names.sort()
+	print("    %s" % ", ".join(model_names))
+	var first_scene: PackedScene = peds[0].get("character_model")
+	print("    primeiro da rota: %s" % (first_scene.resource_path if first_scene else "?"))
+	var pool_size := Appearance.npc_models().size()
+	print("    pool elegivel: %d modelos" % pool_size)
+	if pool_size < 18:
+		fail("pool de NPC regrediu para %d modelos (piso 18)" % pool_size)
+	if modelos.size() < 15:
 		fail("so %d modelo(s) distinto(s) na rua" % modelos.size())
 	else:
 		ok("%d modelos distintos" % modelos.size())
@@ -59,12 +70,26 @@ func _secao_animacao(peds: Array) -> void:
 	print("\n[2] todo pedestre esta ANIMADO")
 	var mudos: Array[String] = []
 	var procedural := 0
+	var retarget_com_quadril := PackedStringArray()
 	var progresso_antes: Dictionary = {}
+	var pose_antes: Dictionary = {}
 	for p in peds:
 		var ap := _achar_player(p)
 		var has_fallback: bool = p.has_locomotion_animation() if p.has_method("has_locomotion_animation") else false
 		if p.has_method("locomotion_kind") and p.locomotion_kind() == "procedural":
 			procedural += 1
+		if ap != null and ap.has_meta("mixamo_retarget"):
+			var current := ap.current_animation
+			var anim := ap.get_animation(current) if ap.has_animation(current) else null
+			if anim != null:
+				for track in range(anim.get_track_count()):
+					var path := anim.track_get_path(track)
+					if path.get_subname_count() > 0 and \
+							str(path.get_subname(0)).to_lower().contains("hips"):
+						var scene: PackedScene = p.get("character_model")
+						var model_name := scene.resource_path.get_base_dir().get_file() if scene else "?"
+						if not retarget_com_quadril.has(model_name):
+							retarget_com_quadril.append(model_name)
 		if (ap == null or not ap.is_playing()) and not has_fallback:
 			var cena: PackedScene = p.get("character_model")
 			var nome: String = cena.resource_path.get_base_dir().get_file() if cena else "?"
@@ -72,24 +97,51 @@ func _secao_animacao(peds: Array) -> void:
 				mudos.append(nome)
 		if p.has_method("locomotion_progress"):
 			progresso_antes[p.get_instance_id()] = p.locomotion_progress()
+		if p.has_method("locomotion_pose_snapshot"):
+			pose_antes[p.get_instance_id()] = p.locomotion_pose_snapshot()
 	if mudos.is_empty():
 		ok("os %d pedestres estao tocando animacao (%d fallback procedural)" % [peds.size(), procedural])
 	else:
 		fail("modelo(s) sem animacao tocando (T-pose na rua): %s" % ", ".join(mudos))
 	if procedural > 0:
 		fail("%d pedestre(s) ainda dependem de locomocao procedural" % procedural)
+	if retarget_com_quadril.is_empty():
+		ok("retarget Mixamo preserva o quadril-base e a orientacao vertical")
+	else:
+		fail("retarget voltou a girar o quadril e pode deitar NPCs: %s" % ", ".join(retarget_com_quadril))
 	# Verifica movimento temporal, nao apenas o estado nominal do AnimationPlayer.
 	await get_tree().create_timer(0.25).timeout
 	var congelados := 0
+	var poses_congeladas := 0
+	var modelos_pose_congelada := PackedStringArray()
 	for p in peds:
 		var antes := float(progresso_antes.get(p.get_instance_id(), -1.0))
 		var depois := float(p.locomotion_progress()) if p.has_method("locomotion_progress") else -1.0
 		if antes < 0.0 or depois < 0.0 or absf(depois - antes) < 0.001:
 			congelados += 1
+		var before: Dictionary = pose_antes.get(p.get_instance_id(), {})
+		var after: Dictionary = p.locomotion_pose_snapshot() \
+			if p.has_method("locomotion_pose_snapshot") else {}
+		var max_angle := 0.0
+		for bone in before:
+			if after.has(bone):
+				max_angle = maxf(max_angle,
+					(before[bone] as Quaternion).angle_to(after[bone] as Quaternion))
+		if max_angle < 0.005:
+			poses_congeladas += 1
+			var scene: PackedScene = p.get("character_model")
+			var model_name := scene.resource_path.get_base_dir().get_file() if scene else "?"
+			if not modelos_pose_congelada.has(model_name):
+				modelos_pose_congelada.append(model_name)
 	if congelados == 0:
 		ok("os %d clipes avancaram durante 0,25 s" % peds.size())
 	else:
 		fail("%d pedestre(s) com clipe congelado ou sem progresso" % congelados)
+	if poses_congeladas == 0:
+		ok("os %d pedestres mudaram a pose dos membros" % peds.size())
+	else:
+		fail("%d pedestre(s) com relogio ativo mas pose de membros congelada: %s" % [
+			poses_congeladas, ", ".join(modelos_pose_congelada)])
 	_fim["animacao"] = true
 
 ## Altura na RUA. Cada modelo vem numa escala propria no arquivo (de 0,7 a 208

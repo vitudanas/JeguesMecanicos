@@ -4717,3 +4717,23 @@ de rua, não aumentar a quantidade de prédios.
 - O limiar do `audio_test` caiu de 0,35 para 0,02; o valor antigo permitia que a regressão de
   0,241 passasse. O teste completo aprovou 18 eventos/47 arquivos, motor 0,000, chuva 0,000,
   cidade 0,002, vento gravado, eventos, transição cidade/campo e fade da chuva.
+
+## 2026-08-16 — variedade dos NPCs recuperada com locomoção real (Codex)
+
+- A revisão de `15c9811` apontou que remover modelos com pose/idle eliminou o deslizamento, mas
+  derrubou a variedade de 28 para 7. A seleção agora distingue três casos seguros: UAL1 nativa,
+  clipe próprio que declara locomoção e realmente move membros, ou rig Mixamo compatível.
+- Personagens Mixamo sem caminhada própria recebem a caminhada do modelo
+  `low_poly_female`, já presente/licenciado no projeto. O retarget copia apenas rotações para
+  ossos semanticamente equivalentes; não copia posição ou escala entre arquivos que usam
+  unidades diferentes. A rotação absoluta do quadril também não é copiada: o tour real mostrou
+  que ela carregava a conversão de eixo do doador e deitava o soldado inteiro apesar dos membros
+  estarem em movimento. Preservar a pose-base do quadril deixou o NPC ereto e andando nas duas
+  capturas seguintes. Arquivos cujo nome declara caminhada mas trazem timeline longa/congelada
+  são rejeitados — `character_girl_animated_walk`, com 32,9 s, foi pego assim pelo teste.
+- O `npc_test` deixou de aceitar variedade mínima 5: exige pool elegível >=18 e população com
+  >=15 modelos distintos. Também fotografa matematicamente a pose dos membros antes/depois, para
+  reprovar AnimationPlayer cujo relógio avança sem atingir o esqueleto, e inspeciona a animação
+  retargetada para impedir a regressão da rotação de quadril que deita o corpo.
+- Resultado final: 72 pedestres, 23 modelos elegíveis e 23 presentes, zero fallback procedural,
+  72 clipes avançando, 72 poses de membros mudando, todos visíveis e alturas de 1,63 a 1,87 m.

@@ -174,6 +174,109 @@ static func esqueleto_compativel(visual: Node3D) -> bool:
 	var skeleton := find_skeleton(visual)
 	return skeleton != null and skeleton.find_bone("spine_01") >= 0
 
+## Caminhada do proprio acervo usada como doadora para personagens Mixamo que
+## vieram somente com pose/idle. Esses modelos compartilham a nomenclatura e a
+## hierarquia do rig; copiamos apenas ROTACOES dos ossos equivalentes, nunca a
+## translacao/escala do arquivo doador (cada pacote veio numa unidade diferente).
+const MIXAMO_WALK_SCENE := "res://assets/personagens/low_poly_female/scene.gltf"
+static var _mixamo_walk_source: Animation = null
+
+static func tem_rig_mixamo(visual: Node3D) -> bool:
+	var skeleton := find_skeleton(visual)
+	if skeleton == null:
+		return false
+	var bones := _bone_map(skeleton)
+	for required in ["hips", "leftupleg", "leftleg", "rightupleg", "rightleg",
+			"leftarm", "rightarm"]:
+		if not bones.has(required):
+			return false
+	return true
+
+## Retarget deterministico entre rigs Mixamo: o AnimationPlayer novo tem como
+## raiz o visual e cada trilha aponta para o Skeleton3D real do modelo alvo.
+static func animar_com_mixamo(visual: Node3D) -> AnimationPlayer:
+	var target := find_skeleton(visual)
+	if target == null or not tem_rig_mixamo(visual):
+		return null
+	var source := _mixamo_walk_animation()
+	if source == null:
+		return null
+	var target_bones := _bone_map(target)
+	var retargeted := Animation.new()
+	retargeted.length = source.length
+	retargeted.loop_mode = Animation.LOOP_LINEAR
+	var skeleton_path := visual.get_path_to(target)
+	var copied := 0
+	for source_track in range(source.get_track_count()):
+		if source.track_get_type(source_track) != Animation.TYPE_ROTATION_3D:
+			continue
+		var path := source.track_get_path(source_track)
+		if path.get_subname_count() == 0:
+			continue
+		var key := _bone_key(str(path.get_subname(0)))
+		if not target_bones.has(key):
+			continue
+		# A rotacao absoluta do quadril tambem carrega a conversao de eixos do
+		# arquivo doador. Em alguns pacotes Mixamo ela deita o personagem inteiro
+		# mesmo quando todos os membros animam corretamente. O PathFollow ja move
+		# o corpo; preservamos o quadril na pose-base do alvo e retargetamos apenas
+		# tronco e membros.
+		if key == "hips":
+			continue
+		var track := retargeted.add_track(Animation.TYPE_ROTATION_3D)
+		retargeted.track_set_path(track, NodePath("%s:%s" % [skeleton_path,
+			target_bones[key]]))
+		retargeted.track_set_interpolation_type(track,
+			source.track_get_interpolation_type(source_track))
+		retargeted.track_set_interpolation_loop_wrap(track,
+			source.track_get_interpolation_loop_wrap(source_track))
+		for k in range(source.track_get_key_count(source_track)):
+			retargeted.track_insert_key(track, source.track_get_key_time(source_track, k),
+				source.track_get_key_value(source_track, k),
+				source.track_get_key_transition(source_track, k))
+		copied += 1
+	if copied < 12:
+		return null
+	var player := AnimationPlayer.new()
+	player.set_meta("mixamo_retarget", true)
+	player.root_node = NodePath("..")
+	visual.add_child(player)
+	var lib := AnimationLibrary.new()
+	lib.add_animation("walk", retargeted)
+	lib.add_animation("run", retargeted)
+	player.add_animation_library("", lib)
+	return player
+
+static func _mixamo_walk_animation() -> Animation:
+	if _mixamo_walk_source != null:
+		return _mixamo_walk_source
+	var scene := load(MIXAMO_WALK_SCENE) as PackedScene
+	if scene == null:
+		return null
+	var temp := scene.instantiate()
+	var player := _achar_player(temp)
+	if player:
+		for name in player.get_animation_list():
+			if str(name).to_lower().contains("walk"):
+				_mixamo_walk_source = player.get_animation(name)
+				break
+	temp.free()
+	return _mixamo_walk_source
+
+static func _bone_map(skeleton: Skeleton3D) -> Dictionary:
+	var out := {}
+	for i in range(skeleton.get_bone_count()):
+		out[_bone_key(skeleton.get_bone_name(i))] = skeleton.get_bone_name(i)
+	return out
+
+static func _bone_key(bone_name: String) -> String:
+	var value := bone_name.to_lower().replace(":", "_")
+	value = value.replace("mixamorig1_", "").replace("mixamorig_", "")
+	var parts := value.split("_")
+	if parts.size() > 1 and str(parts[-1]).is_valid_int():
+		parts.resize(parts.size() - 1)
+	return "".join(parts)
+
 ## Usa o AnimationPlayer que veio DENTRO do arquivo, apelidando as animacoes de
 ## "idle"/"walk"/"run". Um clipe por estado quando ha mais de um; com um so, o
 ## personagem anda e para com o mesmo, que e melhor que T-pose.
@@ -191,6 +294,8 @@ static func animar_com_o_proprio(visual: Node3D, usar_primeiro_como_fallback := 
 			nomes.append(("%s/%s" % [lib_name, a]) if lib_name != "" else str(a))
 	if nomes.is_empty():
 		return null
+	var declared_locomotion := _scene_declares_locomotion(visual)
+	var moving_clip := _best_moving_animation(player, nomes) if declared_locomotion else ""
 	var lib := player.get_animation_library("")
 	if lib == null:
 		lib = AnimationLibrary.new()
@@ -201,11 +306,63 @@ static func animar_com_o_proprio(visual: Node3D, usar_primeiro_como_fallback := 
 		if lib.has_animation(apelido):
 			continue
 		var escolhido := _melhor_animacao(nomes, pedido[1], usar_primeiro_como_fallback)
+		if escolhido == "" and apelido in ["walk", "run"]:
+			escolhido = moving_clip
 		var anim: Animation = player.get_animation(escolhido) if escolhido != "" else null
 		if anim:
 			anim.loop_mode = Animation.LOOP_LINEAR
 			lib.add_animation(apelido, anim)
 	return player
+
+static func _scene_declares_locomotion(visual: Node3D) -> bool:
+	var path := visual.scene_file_path.to_lower()
+	for word in ["walk", "walking", "run", "running"]:
+		if path.contains(word):
+			return true
+	return false
+
+static func _best_moving_animation(player: AnimationPlayer, names: PackedStringArray) -> String:
+	var best := ""
+	var best_score := 0
+	for name in names:
+		var anim := player.get_animation(name)
+		var score := animation_limb_motion_score(anim)
+		# Clipe generico de dezenas de segundos costuma ser uma timeline/cena,
+		# nao um ciclo de passada. `character_girl_animated_walk` mede 32,9 s e
+		# ficava congelada no intervalo pratico mesmo com o relogio avançando.
+		if anim != null and anim.length >= 0.35 and anim.length <= 5.0 \
+				and score > best_score:
+			best = name
+			best_score = score
+	return best if best_score >= 4 else ""
+
+## Quantas trilhas de membros mudam de rotacao de verdade ao longo do clipe.
+## Um arquivo com 66 ossos e uma pose unica devolve zero; uma caminhada Mixamo
+## do acervo mede 29. Publico para o catalogo/teste usarem o mesmo criterio.
+static func animation_limb_motion_score(anim: Animation) -> int:
+	if anim == null:
+		return 0
+	var score := 0
+	for track in range(anim.get_track_count()):
+		if anim.track_get_type(track) != Animation.TYPE_ROTATION_3D \
+				or anim.track_get_key_count(track) < 2:
+			continue
+		var path := str(anim.track_get_path(track)).to_lower()
+		var is_limb := false
+		for word in ["thigh", "upleg", "leg", "foot", "arm", "shoulder", "hand"]:
+			if path.contains(word):
+				is_limb = true
+				break
+		if not is_limb:
+			continue
+		var first: Quaternion = anim.track_get_key_value(track, 0) as Quaternion
+		var largest := 0.0
+		for key in range(1, anim.track_get_key_count(track)):
+			var value: Quaternion = anim.track_get_key_value(track, key) as Quaternion
+			largest = maxf(largest, first.angle_to(value))
+		if largest > 0.12:
+			score += 1
+	return score
 
 static func _melhor_animacao(nomes: PackedStringArray, palavras: Array,
 		usar_primeiro_como_fallback := true) -> String:

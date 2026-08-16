@@ -97,11 +97,28 @@ func locomotion_kind() -> String:
 		return "animation"
 	return "none"
 
+func is_ragdolled() -> bool:
+	return _is_ragdolled
+
 ## Posicao temporal do clipe que move este pedestre. Exposta para o teste nao
 ## confundir `is_playing()` com animacao realmente avancando (um player pausado
 ## ou com speed_scale zero tambem pode conservar o nome do clipe atual).
 func locomotion_progress() -> float:
 	return _anim_player.current_animation_position if _anim_player != null else -1.0
+
+## Pose real dos quatro membros, usada pelo teste para provar que o clipe nao
+## esta apenas avancando no relogio enquanto nenhuma trilha encontra o esqueleto.
+func locomotion_pose_snapshot() -> Dictionary:
+	var out := {}
+	var skeleton := CharacterVisual.find_skeleton(self)
+	if skeleton == null:
+		return out
+	for i in range(skeleton.get_bone_count()):
+		var name := skeleton.get_bone_name(i).to_lower()
+		if name.contains("upleg") or name.contains("thigh") \
+				or name.contains("upperarm") or name.contains("shoulder"):
+			out[name] = skeleton.get_bone_pose_rotation(i)
+	return out
 
 func _ready() -> void:
 	add_to_group("pedestrian")
@@ -145,6 +162,9 @@ func _setup_animation(visual: Node) -> void:
 		# produziu NPCs deslizando duros. Se o arquivo nao traz locomocao de
 		# verdade, o fallback procedural abaixo move corpo, bracos e pernas.
 		_anim_player = CharacterVisual.animar_com_o_proprio(visual as Node3D, false)
+		if _anim_player == null or (not _anim_player.has_animation("run") \
+				and not _anim_player.has_animation("walk")):
+			_anim_player = CharacterVisual.animar_com_mixamo(visual as Node3D)
 		if _anim_player:
 			# O pedestre esta sempre andando; "run" e o apelido que o resto deste
 			# script toca.
