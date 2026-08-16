@@ -4693,3 +4693,16 @@ de rua, não aumentar a quantidade de prédios.
 - O código desta rodada deve ser enviado ao Claude com o hash para revisão prática independente.
   Builds Windows/macOS, reextração do `.app` e publicação da release continuam bloqueadas até o
   aval dele, conforme a ordem obrigatória do `AGENTS.md`.
+
+## 2026-08-16 — repositório público no GitHub (Codex)
+
+- Por autorização direta do usuário, o repositório `vitudanas/JeguesMecanicos` teve a
+  visibilidade alterada de privada para pública. A página confirmou `PUBLIC` em
+  `https://github.com/vitudanas/JeguesMecanicos`.
+- Antes da mudança, o `HEAD` foi confirmado em sincronia com `origin/main`. A checagem final
+  encontrou zero arquivo rastreado com nome típico de segredo, certificado, `.env`, bytecode ou
+  cache Python; zero formato conhecido de token/chave no conteúdo; zero caminho de conta pessoal
+  no `HEAD`; e apenas e-mails `noreply` nos commits alcançáveis. Os caminhos absolutos preservados
+  são exclusivamente `/Users/Shared` ou marcadores deliberadamente anonimizados.
+- A alteração local que já existia no `CLAUDE.md`, escrita pelo Claude, foi preservada fora deste
+  commit. Esta rodada muda apenas documentação/visibilidade e não exige nova exportação do jogo.
