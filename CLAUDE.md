@@ -3789,6 +3789,179 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     2026-08-08 (árvore destruída com a carga em thread ainda em voo, depois do
     resultado impresso), não defeito de cena.
 
+- **2026-08-13 (Claude — 3ª revisão: `426c45d`, `9c91289`, e a auditoria do
+  git)** — Fechou o ciclo desta rodada: **todos os achados das duas revisões
+  anteriores estão corrigidos e verificados**, cada um pelo mesmo método que
+  tinha exposto o defeito.
+  - **Preço congelado: CORRIGIDO** exatamente como sugerido — `resume()` passou
+    a receber o teto de hoje e reancorar (`current_offer = min(atual, teto)`,
+    sem nunca subir). Medido pelo `rematch_test`: teto cai de R$ 241 pra R$ 97
+    ao perder as 4 gambiarras e a oferta retomada acompanha (R$ 97, era R$ 127).
+    As cinco seções do teste passam.
+  - **Transbordo do prompt: CORRIGIDO, e conferido na FOTO** (não na conta).
+    O `set_prompt` passou a crescer o painel por linha (`text.count("\n") * 20`)
+    e o `CenterPrompt` foi de 510 pra 800 px de largura com a fonte em 16 (o
+    painel, 840). Refotografado: as três linhas cabem dentro da caixa com folga
+    dos dois lados.
+  - **`.app` e release: CORRIGIDOS.** O `.pck` do `.app` bate byte a byte com o
+    do zip publicado, e a v0.3.2 já carrega os consertos.
+  - **Suíte rodada nesta revisão**: `scale`, `obstacles`, `street`, `gaps`,
+    `npc`, `attach`, `yard`, `loading`, `character`, `city` — todas passam. Os
+    commits mexiam em `Town.tscn`, `Junkyard.tscn`, `RuralWorkshop.tscn` e no
+    `mountain.gdshader`, então valia rodar o bloco de mundo inteiro.
+  - **Erro meu de arnês, e é o que este arquivo mais repete**: montei o laço da
+    suíte com `godot ... cena.tscn || godot ... cena_test.tscn`, e **o Godot sai
+    com código 0 mesmo quando a cena não carrega** — então o `||` nunca disparou
+    e `scale`, `obstacles`, `street` e `gaps` **não rodaram**, imprimindo
+    "EXIT=0 | falhas: 0" como se tivessem passado. Só apareceu porque fui
+    conferir se cada log tinha a linha `RESULTADO`. Lição: com Godot, **código
+    de saída não é veredito** — quem diz se rodou é a saída do próprio teste.
+  - **[ACHADO DO ARNÊS] `tools/verify/gaps_test.gd` não tem verificação
+    nenhuma**: zero `check`, zero contador de falha, um `get_tree().quit()` seco.
+    Ele imprime o censo (hoje 93% de borda com fachada, 0 borda vazia) e sai com
+    0 **sempre**. Se a cobertura despencasse pra 40%, ele imprimiria 40% e
+    passaria. É um relatório, não uma trava — vale dar a ele um piso que reprove.
+  - **[ACHADO, e bate direto na regra nova de publicação] Há dois `.pyc`
+    rastreados no repo, e um deles vaza o caminho da conta local.**
+    `tools/__pycache__/expand_world.cpython-314.pyc` e
+    `tools/verify/__pycache__/patch.cpython-314.pyc` estão no HEAD, e o segundo
+    embute um caminho absoluto ligado à conta local — nome de conta **e** o
+    caminho antigo, de antes da mudança pra
+    `/Users/Shared`. Bytecode é saída de build e não deveria estar versionado de
+    todo jeito, e o `.gitignore` **não tem regra de `__pycache__`/`*.pyc`**,
+    então eles voltam sozinhos. Conserto:
+    ```
+    printf '\n# Bytecode do Python (saida de build, e embute caminho local)\n__pycache__/\n*.pyc\n' >> .gitignore
+    git rm -r --cached tools/__pycache__ tools/verify/__pycache__
+    ```
+    O **histórico** também carrega esse caminho (5 commits, achados com
+    `git log -S`), e a regra nova pede auditar o histórico antes de publicar —
+    mas isso só sai com reescrita, que é decisão do usuário, não conserto de
+    rodada.
+  - **Auditoria do git** (pedida pelo usuário): está configurado e em uso de
+    verdade — remoto certo (já apontando pro nome novo `JeguesMecanicos`), 96+
+    commits, 2.101 arquivos, nada pendente nos dois sentidos, `.gitignore`
+    cobrindo `builds/` e os downloads crus, e a reescrita que tirou o blob de
+    195 MB deixou aqueles commits como órfãos, fora do `main`. As regras de COMO
+    usar foram pro `AGENTS.md` ("Regras de git"). **`git gc` rodado**: o repo
+    não tinha um único packfile — 4.488 objetos soltos, 829 MB — e agora está em
+    2 packs, 770 MB. O resto do peso são os órfãos presos pelo reflog; só saem
+    com `reflog expire` + `gc --prune=now`, que descarta pontos de recuperação e
+    ficou pra decisão do usuário.
+  - **Sobra só o cosmético**, sem impacto em jogo: `PersuasionMinigame.changed`
+    continua sendo emitido 4× sem um único `connect`, e `BuyerNPC._offer()`
+    continua sem chamador. E a observação de balanceamento do Abutre (o preço
+    padrão já satura Q e F no piso) segue em aberto como decisão de design.
+
+- **2026-08-13 (Claude — fiscalização contínua: `fb7b78c`, `80ba1e3`,
+  `15c9811`, `3cc38d3`)** — O usuário pediu para eu acompanhar o Codex enquanto
+  ele implementa. Montei um vigia que avisa a cada commit e revisei quatro
+  rodadas conforme entraram. Achei **quatro regressões**; duas já foram
+  corrigidas e verificadas, duas seguem abertas.
+  - **[CORRIGIDO] A serra passou da borda do chão** (`fb7b78c`): pé em 1608
+    contra uma meia-largura de 1550 — antes do commit era 1524. A causa era
+    dupla e eu só tinha visto metade na primeira leitura: o perfil do maciço
+    (`pow(1-d, 1.7)` → `1.22`) **mais** o `radius_max` de 190 → 220 no
+    `Town.tscn`. O `80ba1e3` alargou o chão pra 3300 (meia-largura 1650) e o
+    `city` voltou a passar.
+  - **[CORRIGIDO] Voltou uma parede invisível** (`fb7b78c`): 1 corpo do
+    `NatureScatter` com 6,7 m de colisão para 4,1 m de malha na altura do carro
+    — 2,6 m de ar sólido. Era a `twisted-tree`, que caía do lado errado do
+    limiar `SHRINK_MIN`; o `80ba1e3` baixou de 2,5 pra 2,2. **Conferi o efeito
+    colateral que isso já causou uma vez** (encolher colisão demais deixa prop
+    de telhado sem apoio): `scale_test` com 11.239 objetos, 20 suspensos de
+    propósito, **0 boiando**. Limpo.
+  - **[CORRIGIDO em `6a62c79`] A emenda do laço da chuva degradou 4× e passava
+    raspando.** Medido
+    nos meus próprios runs: 0.060 a 22.050 Hz, **0.241** depois que o `RATE`
+    foi a 44.100 no `fb7b78c`. O limiar de reprovação é 0.35, calibrado quando
+    o valor era 0,06 — ou seja, hoje ele não protege mais nada. Contra um pico
+    de 0,66, um salto de 0,241 é ~36%: estalo audível a cada 2,5 s enquanto
+    chove. Motor gravado dá 0.000 e a cama urbana 0.002, então era a chuva
+    especificamente. **O conserto é elegante e eu medi**: em vez de mexer na
+    síntese, o `_rotate_to_best_seam` rotaciona o buffer para que o par de
+    amostras vizinhas com menor salto vire a fronteira do laço — rotacionar um
+    laço não muda duração nem timbre, só escolhe o ponto mais contínuo para ser
+    a emenda. Chuva foi a **0.000**, e o limiar do teste desceu de 0,35 para
+    **0,02**, ou seja ele voltou a proteger (os três laços passam com margem de
+    10× ou mais). Aqui vale o registro do acerto: quando o teste flagrou o
+    problema, o Codex **apertou** o limiar em vez de afrouxar.
+  - **[CORRIGIDO no estado final `03207f7`; revisão iniciada em `a445a10`] A variedade de pedestres caiu de 28 para 7
+    modelos** (−75%,
+    `15c9811`). O filtro novo é justificado — 23 modelos tinham só um clipe de
+    pose e deslizavam feito estátua — mas o custo não foi medido em lugar
+    nenhum, e o `npc_test` só exige **≥5 modelos**, piso muito abaixo de onde o
+    projeto estava (2026-08-10: 59 aparências distintas em 72 pedestres). O
+    caminho para recuperar é retargetar a UAL1 nos esqueletos descartados, não
+    deixá-los de fora. **Foi o que ele fez, e medi o resultado: 7 → 23 modelos
+    distintos**, com barra mais alta que os 28 originais — modelos que vieram só
+    com pose recebem uma caminhada doadora do próprio acervo, copiando **apenas
+    rotações** (nunca translação/escala, porque cada pacote veio numa unidade
+    diferente). Dois detalhes que valem a lição: o critério de "tem locomoção"
+    virou uma métrica compartilhada (`animation_limb_motion_score` conta quantas
+    trilhas de membro mudam de rotação ao longo do clipe — pose única dá 0, uma
+    caminhada Mixamo dá 29), lida pelo catálogo E pelo teste, que é o princípio
+    de dono único que este arquivo repete; e apareceu um clipe de 32,9 s
+    (`character_girl_animated_walk`) que é timeline de cena, não ciclo de
+    passada, e ficava congelado no intervalo prático mesmo com o relógio
+    andando.
+  - **[CORRIGIDO em `39dbcef`] Duas câmeras do `world_tour`
+    fotografavam outra coisa que não o nome delas.** O `15c9811` atualizou as
+    câmeras da cidade (03-06) para a grade nova de ±360, com comentário
+    explicando que as antigas cobriam só o protótipo — mas deixou duas para
+    trás: `16_cordilheira` fica em (-140, 6, 190) olhando (-40, 60, 330), as
+    duas coordenadas **dentro da cidade**, e sai com telhados no quadro; e
+    `17_transicao_campo_cidade` fica em (150, 30, 150) olhando (0, 8, 0), ou
+    seja **centro para centro**, sem um metro de campo. A serra fica a raio
+    900-1600. Consequência: o Codex citou `world_tour` como validação de um
+    commit cuja mudança principal são os maciços da serra, e **a foto da serra
+    não fotografa a serra**. É a mesma classe de defeito que este arquivo já
+    registrava ("Câmera 04 ficava em (30, 2.2, 30), que com a grade nova cai
+    DENTRO de um quarteirão") — volta a cada vez que o mundo cresce. **O
+    conserto ganhou travas**: as duas câmeras foram levadas ao raio rural e o
+    teste agora reprova se a 16 voltar a apontar para a cidade ou se a 17 não
+    atravessar campo e cidade. Refotografei: a 16 mostra os maciços
+    com a base no quadro e a 17 mostra campo em primeiro plano, skyline no meio
+    e serra ao fundo. Na mesma rodada o `gaps_test` finalmente ganhou veredito
+    (`problems` + `RESULTADO` + saída 1), fechando o outro achado de arnês, e o
+    ferro-velho rural ganhou pátio de cascalho com destroços — era campo vazio
+    com três pinheiros.
+  - **Observações da folha de contato** (montei as 6 fotos não olhadas numa
+    imagem só, que é o jeito de varrer um tour inteiro sem gastar uma leitura
+    por foto): as ruas do centro e da periferia saem **completamente vazias**,
+    sem um carro ou pedestre no quadro; o ferro-velho rural lê como campo vazio
+    com três pinheiros e duas caixas; e a estrada de terra nova, com a textura
+    PBR do Gravel Road, ficou num laranja bem mais saturado que o resto da
+    paleta. Nada disso é defeito de código — é material para decisão de arte.
+  - **O que verifiquei e estava certo**: os ajustes de teste do `15c9811`
+    **apertam** em vez de afrouxar (o `npc_test` agora reprova se algum
+    pedestre depender da locomoção procedural e mede progresso temporal do
+    clipe em 0,25 s); o ajuste do `obstacles_test` no `80ba1e3` é só
+    diagnóstico (passou a imprimir de qual modelo é o corpo, que era
+    `@StaticBody3D@28056`, ilegível); as licenças novas (PolyHaven Gravel Road,
+    OpenGameArt motor e vento) são CC0 com autor, fonte e arquivo, com créditos
+    atualizados no jogo e no `docs/`; e a assinatura de `animar_com_o_proprio`
+    mudou com parâmetro padrão, sem quebrar o `PlayerVisual`.
+  - **Duas hipóteses minhas que se provaram erradas**, e vale registrar as
+    duas: achei que o agrupamento em bosques do `RuralScatter` plantasse sem
+    validar (não — a linha 131 revalida com `_is_valid`), e ia culpar o commit
+    pela árvore atravessando a cerca da fazenda (não é dele — o `FarmCluster`
+    só ganhou fardos, cocho e terra arada; a distribuição de árvore não mudou).
+  - **Auditoria do repositório agora que ele é PÚBLICO** (`3cc38d3`): varri o
+    histórico inteiro e está limpo — só e-mails `noreply`, **0** commits com o
+    caminho da conta local, **0** arquivos sensíveis rastreados (`.env`, `.pem`,
+    `.key`, `.pyc`, credenciais), e **nenhum** padrão real de chave
+    (`sk-…`, `ghp_…`, `AKIA…`, `xox…`, `BEGIN PRIVATE KEY`) em 200 revisões
+    varridas. O bundle de 805 MB com o histórico pré-higienização está em
+    `/Users/Shared/`, **fora** do repo, que é onde deve ficar — ele contém o
+    e-mail e os caminhos removidos e nunca pode ser publicado.
+  - **Erro meu de arnês nesta rodada**: montei o laço da suíte com
+    `godot cena.tscn || godot cena_test.tscn` e, como **o Godot sai com código
+    0 mesmo quando a cena não carrega**, o `||` nunca disparou — quatro testes
+    não rodaram e imprimiram "EXIT=0 | falhas: 0" como se tivessem passado. Só
+    apareceu porque fui conferir se cada log tinha a linha `RESULTADO`. Com
+    Godot, **código de saída não é veredito**.
+
 ### ONDE PAREI (2026-08-13, Codex)
 
 Estado: negociação em rodadas implementada e validada, suíte desta rodada
@@ -4766,3 +4939,23 @@ de rua, não aumentar a quantidade de prédios.
   conhecidos e aparecem depois de `RESULTADO`; os testes encerraram em sucesso.
 - Esta mudança do jogo deve ser enviada ao Claude para revisão prática independente. Builds,
   reextração do `.app` e release pública permanecem como último passo, somente após o aval.
+
+## 2026-08-16 — revisão fechada e artefatos da v0.3.3 (Codex + Claude)
+
+- O Claude atualizou a revisão depois de `03207f7` e `39dbcef` já estarem no `HEAD`, refez as
+  fotos da cordilheira e da transição campo–cidade no estado final e marcou os achados da rodada
+  como corrigidos. A referência antiga `a445a10` foi mantida como início da revisão, mas o hash
+  final dos NPCs é `03207f7`, que inclui a correção visual do quadril.
+- Windows foi reexportado em `builds/windows/JeguesMecanicos.exe` e empacotado como
+  `JeguesMecanicos-Windows.zip`. macOS foi reexportado como `JeguesMecanicos.zip`; o `.app`
+  anterior foi preservado em `previous-apps` e o novo `builds/macos/Jegues Mecanicos.app` foi
+  reextraído do ZIP, conforme a regra que evita o usuário abrir uma versão velha.
+- `pack_audit.py` conferiu pacote de 893 MB, 105 referências diretas, 71 caminhos montados em
+  runtime e o catálogo de personagens, sem problema. `unzip -t` aprovou os dois ZIPs;
+  `codesign --verify --deep --strict` aprovou o `.app`; o binário macOS iniciou em modo headless;
+  e o `.pck` extraído tem o mesmo SHA-256 do arquivo dentro do ZIP.
+- SHA-256: macOS ZIP `1fb96675a5ff531f7ead21fc1be99971bbdd8caecaf0da21a5f1061922341fdc`;
+  Windows ZIP `72a270c66bd3a5654e9cfc8635dbbefe2101dc6fb29ba130d1b4d7fd78510528`;
+  `.pck` macOS `da57c18ba2299dd1ea6d332842963841fe65f2a37908179653164ef1e7057b4f`.
+- A release pública destinada a esses artefatos é `v0.3.3`, contendo as correções da chuva, a
+  variedade/locomoção dos NPCs e a rodada visual do mundo rural aprovada na revisão.
