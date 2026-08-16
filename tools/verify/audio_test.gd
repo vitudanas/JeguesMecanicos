@@ -113,7 +113,11 @@ func _check_synth() -> void:
 			% [nome, dur, s.mix_rate, pico, salto])
 		if pico < 0.2:
 			problems.append("laco '%s' quase mudo (pico %.2f)" % [nome, pico])
-		if salto > 0.35:
+		# 0,35 aceitava a chuva com salto de 0,241 — cerca de 36% do pico —
+		# embora a calibracao antiga fosse 0,060. O novo gerador escolhe a melhor
+		# fronteira entre amostras consecutivas; 0,02 deixa margem de quantizacao
+		# sem voltar a esconder um estalo audivel.
+		if salto > 0.02:
 			problems.append("laco '%s' estala na volta (salto de %.2f)" % [nome, salto])
 	var vento := AudioManager.wind_stream()
 	if vento == null or not vento.loop:

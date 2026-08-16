@@ -109,6 +109,13 @@ static func rain() -> AudioStreamWAV:
 		buf[k] = lerpf(buf[frames + k], buf[k], w)
 	buf.resize(frames)
 
+	# O crossfade impede uma troca brusca de textura, mas ruido ainda pode ter
+	# duas amostras vizinhas muito afastadas exatamente na borda escolhida. Em
+	# 44,1 kHz isso deixou um salto quatro vezes maior que o antigo. Rotacionar o
+	# mesmo sinal nao altera nem duracao nem timbre: apenas escolhe, entre os
+	# milhares de pares consecutivos ja existentes, o ponto mais continuo para
+	# ser a emenda do AudioStreamWAV.
+	_rotate_to_best_seam(buf)
 	_normalize(buf, 0.7)
 	return _to_wav(buf, RATE)
 
@@ -198,6 +205,25 @@ static func _normalize(buf: PackedFloat32Array, peak: float) -> void:
 	var g := peak / top
 	for i in range(buf.size()):
 		buf[i] = buf[i] * g
+
+## Faz do par consecutivo com menor salto a fronteira fim/inicio do laco.
+## A busca ignora as pontas porque o buffer sera rotacionado em seguida.
+static func _rotate_to_best_seam(buf: PackedFloat32Array) -> void:
+	if buf.size() < 3:
+		return
+	var best_after := 1
+	var best_jump := INF
+	for i in range(1, buf.size()):
+		var jump := absf(buf[i] - buf[i - 1])
+		if jump < best_jump:
+			best_jump = jump
+			best_after = i
+	var rotated := PackedFloat32Array()
+	rotated.resize(buf.size())
+	for i in range(buf.size()):
+		rotated[i] = buf[(best_after + i) % buf.size()]
+	for i in range(buf.size()):
+		buf[i] = rotated[i]
 
 ## Empacota em PCM 16 bits e devolve o stream ja em laco.
 static func _to_wav(buf: PackedFloat32Array, rate: int) -> AudioStreamWAV:

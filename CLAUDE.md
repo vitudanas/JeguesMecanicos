@@ -4706,3 +4706,14 @@ de rua, não aumentar a quantidade de prédios.
   são exclusivamente `/Users/Shared` ou marcadores deliberadamente anonimizados.
 - A alteração local que já existia no `CLAUDE.md`, escrita pelo Claude, foi preservada fora deste
   commit. Esta rodada muda apenas documentação/visibilidade e não exige nova exportação do jogo.
+
+## 2026-08-16 — correção da emenda da chuva apontada pelo Claude (Codex)
+
+- A revisão de `15c9811` mediu a emenda da chuva em 0,241 após a migração para 44,1 kHz, cerca
+  de quatro vezes o valor anterior e audível como estalo periódico. O crossfade existente
+  misturava a textura, mas ainda deixava a fronteira do arquivo sobre duas amostras afastadas.
+- O gerador agora rotaciona o mesmo sinal para usar como fronteira o par consecutivo de menor
+  salto. Isso preserva duração e conteúdo e reduziu a emenda medida para 0,000.
+- O limiar do `audio_test` caiu de 0,35 para 0,02; o valor antigo permitia que a regressão de
+  0,241 passasse. O teste completo aprovou 18 eventos/47 arquivos, motor 0,000, chuva 0,000,
+  cidade 0,002, vento gravado, eventos, transição cidade/campo e fade da chuva.
