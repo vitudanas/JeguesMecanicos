@@ -43,8 +43,8 @@ func _ready() -> void:
 		_check_size("configuracoes", settings)
 		var sliders := settings.find_children("*", "HSlider", true, false)
 		print("  sliders de volume: %d" % sliders.size())
-		if sliders.size() != 3:
-			problems.append("esperava 3 sliders de volume, achei %d" % sliders.size())
+		if sliders.size() != 4:
+			problems.append("esperava 4 sliders de volume, achei %d" % sliders.size())
 		# Rola ate o fim, que e onde a secao de Som ficou.
 		for scroll in settings.find_children("*", "ScrollContainer", true, false):
 			(scroll as ScrollContainer).scroll_vertical = 100000

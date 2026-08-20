@@ -5008,3 +5008,28 @@ de rua, não aumentar a quantidade de prédios.
   `a364f07243000e09fb3c7c6dd57c4db8f601d913368dee5ac15ab40e7a2e3485`; `.pck`
   `eba1b8fa5173dd3395bb6a7c83f35f1d713d5f444ab15ca0c14a3b95f5962c99`.
 - A release pública desta rodada é `v0.3.4`, com o minimapa local e as melhorias de orientação.
+
+## 2026-08-20 — música no menu e no mundo (Codex)
+
+- A lacuna seguinte de apresentação sonora foi tratada com duas gravações CC0 reais: `Offline`,
+  de Cleyton Kauffman, no menu; e `Super Wreck Roadway`, de Umplix, durante o jogo. Os arquivos,
+  fontes e licença ficam em `assets/opengameart/music/`; os autores também entraram no gerador,
+  na documentação e na tela de créditos. A faixa de estrada original em WAV foi convertida para
+  Ogg Vorbis para cair de aproximadamente 49 MB para 2 MB sem alterar o conteúdo musical.
+- O `AudioManager` ganhou barramento `Music`, volume salvo independente (padrão 50%) e dois
+  tocadores em laço com transição de 2 s. O menu fica em -16 dB e o mundo em -22 dB antes do
+  controle do barramento, escolha conservadora para preservar motor, batidas, chuva, trânsito e
+  alertas de interface em primeiro plano.
+- A primeira implementação interpolava decibéis diretamente e abria um vale de -48/-51 dB no
+  meio da troca. A segunda passagem de revisão encontrou o defeito antes do commit; o crossfade
+  agora interpola ganho linear, mede -22/-28 dB no meio e tem teste de regressão específico.
+- `audio_test` passou com 18 chaves/47 efeitos, três barramentos, faixas de 33,6 s e 134,4 s,
+  loops ativos, silêncio correto da faixa oposta nos extremos, controle de música zerando o
+  barramento e todos os eventos/ambientes anteriores funcionando. `ui_shot` passou com quatro
+  sliders e 58 linhas de crédito; a captura `03_configuracoes_som` foi aberta e conferida, com
+  os quatro controles e percentuais legíveis sem sobreposição.
+- Limite honesto da sessão: a seleção foi baseada nas páginas/fontes, licença, duração e medições
+  objetivas de RMS/pico; não há audição humana disponível nesta sessão. O usuário ainda deve
+  avaliar subjetivamente estilo, repetição e conforto da mixagem no build. A rodada não altera o
+  mundo, portanto `city` e `obstacles_test` não se aplicam. Builds e release serão registrados no
+  fechamento depois do commit e da validação dos pacotes.
