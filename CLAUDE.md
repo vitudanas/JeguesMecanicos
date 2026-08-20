@@ -4959,3 +4959,12 @@ de rua, não aumentar a quantidade de prédios.
   `.pck` macOS `da57c18ba2299dd1ea6d332842963841fe65f2a37908179653164ef1e7057b4f`.
 - A release pública destinada a esses artefatos é `v0.3.3`, contendo as correções da chuva, a
   variedade/locomoção dos NPCs e a rodada visual do mundo rural aprovada na revisão.
+
+## 2026-08-20 — apoio público ao projeto (Codex)
+
+- Criado `.github/FUNDING.yml` com o endereço público
+  `https://buymeacoffee.com/vitudanas`, fornecido pelo autor, para habilitar o botão de apoio do
+  GitHub. Nenhum dado bancário, e-mail, credencial, token ou caminho local foi incluído.
+- Primeira mudança feita no fluxo novo de branch: `codex/add-buymeacoffee`, separada da `main`
+  para revisão antes da integração. É uma alteração somente de metadados/documentação; não exige
+  testes do jogo, exportação nem nova release.
