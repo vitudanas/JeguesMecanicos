@@ -412,6 +412,23 @@ func _run() -> void:
 		fail("HUD nao mostra a distancia do objetivo: '%s'" % hud.compass_distance.text)
 		return
 	ok("bussola mostra distancia real: %s" % hud.compass_distance.text)
+	if hud.minimap == null or not hud.minimap.visible:
+		fail("HUD nao criou o minimapa")
+		return
+	for i in range(3):
+		await get_tree().process_frame
+	if not hud.minimap.has_street_grid():
+		fail("minimapa nao encontrou a malha viaria real")
+		return
+	if not hud.minimap.has_objective:
+		fail("minimapa nao recebeu o objetivo atual")
+		return
+	var marker: Vector2 = hud.minimap.objective_map_position()
+	if not Rect2(Vector2.ZERO, hud.minimap.size).has_point(marker):
+		fail("marcador do minimapa saiu do painel: %s" % marker)
+		return
+	ok("minimapa mostra ruas, jogador e objetivo em %s" % hud.minimap.district_name(
+		player.global_position))
 
 	# Arrebenta uma gambiarra e cobra que a leitura ACOMPANHE: um indicador que
 	# so acerta no estado inicial nao serve pra nada.

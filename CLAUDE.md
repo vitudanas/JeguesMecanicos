@@ -4969,3 +4969,29 @@ de rua, não aumentar a quantidade de prédios.
 - A busca final em `*.md`, `*.txt`, `*.rst`, `*.adoc`, `*.yml` e `*.yaml` encontrou zero
   ocorrência dos termos explícitos em português ou inglês cobertos pela varredura. Esta rodada
   altera apenas documentação e regras operacionais; não exige teste do jogo, build ou release.
+
+## 2026-08-20 — minimapa local e zonas no HUD (Codex)
+
+- A continuação do desenvolvimento começou pela maior lacuna de usabilidade ainda registrada na
+  análise do mundo aberto: orientação dependia da seta central e não ajudava o jogador a aprender
+  a cidade. O HUD ganhou um minimapa compacto no canto direito, abaixo do estado do mundo.
+- `scenes/ui/Minimap.gd` desenha diretamente no Canvas a grade real de `CityStreets`, o jogador,
+  sua orientação, a direção do objetivo e o marcador limitado à borda quando o destino está fora
+  do alcance local de 190 m. Não usa segunda câmera, viewport ou textura do mundo, evitando
+  duplicar o custo de renderização.
+- O cabeçalho do mapa informa `CENTRO`, `ZONA NORTE`, `ZONA SUL`, `ZONA LESTE` ou `ZONA OESTE`
+  conforme a posição. A bússola e a distância existentes foram preservadas para leitura rápida;
+  o mapa serve para compreender cruzamentos e planejar a próxima curva.
+- `loop_test` passou pelo fluxo completo com input real e agora reprova se o minimapa não achar a
+  malha viária, não receber o objetivo ou deixar o marcador escapar do painel. Na execução final,
+  exibiu as ruas e o destino na Zona Oeste, acompanhou o carro, e o restante do ciclo terminou com
+  compra, quatro instalações, direção, negociação, venda e próxima entrega funcionando.
+- A segunda passagem visual gerou oito capturas reais em `loop_shots`. Foram abertas e conferidas
+  as vistas do ferro-velho, direção no Centro e chegada na Zona Leste: o minimapa não sobrepõe o
+  velocímetro, o objetivo permanece legível perto e longe, o ícone acompanha a orientação e a
+  pista central continua livre. A captura dirigindo permaneceu em 60 FPS; esse valor é evidência
+  da rodada visual, não um benchmark geral do mapa.
+- O README público agora menciona o minimapa e descreve corretamente o fluxo atual somente com o
+  Codex, preservando a participação de outras ferramentas como histórico. Esta é mudança de jogo:
+  depois do fechamento do commit e da segunda validação, exige novas builds Windows/macOS,
+  reextração do `.app`, auditoria dos pacotes e release de correção.

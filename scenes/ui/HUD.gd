@@ -5,6 +5,8 @@ extends CanvasLayer
 ## "hud" para que Player.gd/Workshop.gd/Vehicle.gd/BuyerNPC.gd consigam
 ## atualizar sem referencia direta (ver GameManager.set_objective()).
 
+const MINIMAP_SCRIPT := preload("res://scenes/ui/Minimap.gd")
+
 @onready var money_label: Label = $Margin/VBox/MoneyLabel
 @onready var status_panel: Panel = $StatusPanel
 @onready var prompt_label: Label = $CenterPrompt
@@ -43,6 +45,20 @@ var damage_label: Label = null
 ## Resumo da rodada de negociacao. A barra so mostra quanto a oferta subiu; sem
 ## o numero, ela seria decoracao e o jogador nao saberia quanto [E] aceita.
 var negotiation_label: Label = null
+## Radar local leve: desenhado em Canvas, sem segunda camera renderizando o
+## mundo. Fica publico para os testes de fluxo cobrarem navegacao de verdade.
+var minimap = null
+
+func _build_minimap() -> void:
+	minimap = Control.new()
+	minimap.name = "Minimap"
+	minimap.set_script(MINIMAP_SCRIPT)
+	minimap.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	minimap.offset_left = -198.0
+	minimap.offset_top = 95.0
+	minimap.offset_right = -18.0
+	minimap.offset_bottom = 275.0
+	add_child(minimap)
 
 func _build_damage_label() -> void:
 	damage_label = Label.new()
@@ -97,6 +113,7 @@ func _ready() -> void:
 	add_to_group("hud")
 	_build_damage_label()
 	_build_negotiation_label()
+	_build_minimap()
 	GameManager.money_changed.connect(_on_money_changed)
 	GameManager.reputation_changed.connect(_on_reputation_changed)
 	GameManager.persuasion_updated.connect(_on_persuasion_updated)
@@ -110,6 +127,7 @@ func _ready() -> void:
 	persuasion_bar.visible = false
 	compass_arrow.pivot_offset = compass_arrow.size / 2.0
 	player = get_tree().get_first_node_in_group("player")
+	minimap.set_player(player)
 	_on_objective_changed(GameManager.objective_position, GameManager.objective_label)
 
 func _on_money_changed(amount: int) -> void:
@@ -134,6 +152,8 @@ func _on_objective_changed(position: Vector3, label: String) -> void:
 	objective_label.text = label
 	compass_arrow.visible = has_objective
 	compass_distance.visible = has_objective
+	if minimap != null:
+		minimap.set_objective(position, has_objective)
 	_update_stage(label)
 
 func _on_car_sold(_amount: int) -> void:

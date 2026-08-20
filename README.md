@@ -22,6 +22,7 @@ gestão de oficina e negociação com humor.
 - Instale 12 tipos de gambiarra com preços e resistências diferentes.
 - Faça test-drives em ruas esburacadas, com peças que podem se soltar durante o trajeto.
 - Negocie a venda por rodadas usando oferta, contraproposta e blefe.
+- Oriente-se pelo minimapa local, com ruas, zona atual e destino da etapa.
 - Personalize o personagem e escolha entre diferentes câmeras ao dirigir.
 - Continue o progresso salvo automaticamente após as vendas.
 
@@ -58,8 +59,9 @@ As ações disponíveis também aparecem no HUD conforme o contexto.
 
 **Jegues Mecânicos é criado por Vitor Rodrigues Danas**, responsável pela ideia,
 direção criativa e decisões do projeto. O desenvolvimento é realizado
-majoritariamente com assistência de inteligência artificial. Claude e Codex colaboram
-principalmente em programação, testes, documentação e iteração visual.
+majoritariamente com assistência de inteligência artificial. Atualmente, o Codex
+auxilia principalmente em programação, testes, documentação e iteração visual;
+outras ferramentas de IA também participaram de etapas anteriores.
 
 ## Desenvolvimento
 
