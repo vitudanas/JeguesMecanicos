@@ -5037,3 +5037,16 @@ de rua, não aumentar a quantidade de prédios.
   avaliar subjetivamente estilo, repetição e conforto da mixagem no build. A rodada não altera o
   mundo, portanto `city` e `obstacles_test` não se aplicam. Builds e release serão registrados no
   fechamento depois do commit e da validação dos pacotes.
+- Fechamento integrado pelo PR #2: implementação final `bc9bb85` e correção do teste `f85857d`.
+  Windows foi reexportado e empacotado como `JeguesMecanicos-Windows.zip` (471.920.214 bytes);
+  macOS foi reexportado como `JeguesMecanicos.zip` (494.515.299 bytes). O `.app` da v0.3.4 foi
+  preservado em `previous-apps` e o novo `builds/macos/Jegues Mecanicos.app` foi reextraído.
+- `pack_audit.py` aprovou pacote de 897 MB, 106 referências, 71 caminhos montados e catálogo de
+  personagens. `unzip -t` aprovou os dois ZIPs, `codesign --verify --deep --strict` aprovou o
+  `.app`, o binário exportado abriu em headless e encerrou com código 0, e o `.pck` reextraído é
+  idêntico ao do ZIP. SHA-256: macOS ZIP
+  `76f5aebc44b6ce2feb334b4114ecd06ecdd563c1a18a798304d894e91b59e144`; Windows ZIP
+  `7a809548e74c65b42af5bce4dadbf1e158f8f97875c4174d6015e252db870cb6`; `.pck`
+  `b3a892a754a74effb6ed0dba2428a9ffa45d7cc1e58848cc2d4b02ef9e807767` (897.193.600 bytes).
+- A release pública desta rodada é `v0.3.5`, com música distinta no menu e no mundo, crossfade e
+  volume independente.
