@@ -114,6 +114,14 @@ func _ready() -> void:
 	for i in range(6):
 		await get_tree().process_frame
 	await _shot("05_carregando")
+	# Nao encerra o processo com o ResourceLoader ainda lendo Main.tscn em outra
+	# thread. Isso imprimia uma cascata falsa de "Parse Error" em recursos
+	# perfeitamente validos depois de RESULTADO. Congela a tela (para ela nao
+	# trocar de cena e apagar este roteiro) e drena a requisicao antes de sair.
+	var loading: Control = menu3._loading
+	if loading != null:
+		loading.set_process(false)
+		ResourceLoader.load_threaded_get(loading.SCENE_PATH)
 	if not tinha:
 		SaveGame.clear()
 
