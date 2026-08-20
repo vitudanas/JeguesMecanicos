@@ -1,18 +1,12 @@
-# AGENTS.md — Coordenação Codex + Claude
+# AGENTS.md — Operação do Codex
 
-Olá, Claude. Sou o Codex e, a partir de 2026-08-13, estou trabalhando com você
-no desenvolvimento de **Jegues Mecânicos**. Li o projeto, o histórico e as
-regras registradas no `CLAUDE.md`. A intenção desta divisão é termos uma etapa
-de produção e outra de revisão independentes.
+Desde **2026-08-20**, por ordem direta do usuário, o desenvolvimento de
+**Jegues Mecânicos** segue somente com o Codex. A assinatura do Claude terminou
+e todas as responsabilidades antes divididas entre implementação e revisão
+passaram ao Codex. Registros históricos do trabalho conjunto permanecem no
+`CLAUDE.md`, mas não definem mais o fluxo atual.
 
-## Regra temporária de trabalho
-
-Esta regra vale de **2026-08-13 até 2026-08-31, inclusive**, no fuso
-`America/Sao_Paulo`. Depois dessa data, a divisão deve ser confirmada novamente
-com o usuário; não presumir renovação automática. Uma ordem direta posterior do
-usuário pode substituir esta regra.
-
-### Codex — implementação e primeira validação
+## Responsabilidades do Codex
 
 O Codex é responsável por:
 
@@ -20,67 +14,50 @@ O Codex é responsável por:
 2. fazer os testes iniciais proporcionais à mudança, incluindo verificações
    automatizadas e visuais relevantes;
 3. corrigir os problemas encontrados nessa primeira validação;
-4. documentar cada rodada no `CLAUDE.md`;
-5. quando houver mudança no jogo, reexportar Windows e macOS e conferir o
+4. fazer uma **segunda passagem de revisão** antes de considerar a rodada
+   aprovada: reler o diff/commit integral, procurar regressões de lógica,
+   integração, desempenho, assets e aderência ao pedido, e executar testes
+   adicionais ou repetidos nos pontos de maior risco;
+5. quando a mudança for visual ou comportamental, rodar o jogo de verdade,
+   exercitar o caminho pelo input real quando aplicável, gerar capturas e
+   inspecioná-las; leitura de diff sozinha não conta como validação final;
+6. quando surgir um defeito, escrever teste de regressão quando for viável,
+   corrigir e repetir as duas passagens até não restar problema conhecido no
+   escopo;
+7. documentar implementação, primeira validação, revisão final e ressalvas no
+   `CLAUDE.md`;
+8. quando houver mudança no jogo, reexportar Windows e macOS e conferir o
    binário exportado conforme as regras do `CLAUDE.md`. O usuário autorizou
    expressamente o Codex a substituir/reextrair o
    `builds/macos/Jegues Mecanicos.app`, gerar os ZIPs e publicar os artefatos
    Windows/macOS nas releases do GitHub;
-6. criar o commit e enviar a alteração ao GitHub;
-7. entregar ao Claude o hash do commit, o resumo da mudança, os testes feitos e
-   qualquer ressalva conhecida;
-8. **publicar as builds verificadas na release do GitHub — DEPOIS da revisão do
-   Claude, não antes** (ver "Ordem: revisar antes de publicar"). Push do código
-   sozinho não conclui uma mudança do jogo. Se o usuário não indicar uma versão,
-   criar a próxima release de correção e anexar Windows e macOS com nomes claros.
+9. criar commits por assunto e enviar as alterações autorizadas ao GitHub;
+10. **publicar as builds verificadas na release do GitHub somente depois da
+    segunda passagem de revisão do próprio Codex**. Push do código sozinho não
+    conclui uma mudança do jogo. Se o usuário não indicar uma versão, criar a
+    próxima release de correção e anexar Windows e macOS com nomes claros.
 
-### Claude — revisão e validação adicional
-
-Depois do envio do Codex, o Claude é responsável por:
-
-1. revisar integralmente o diff/commit, procurando regressões, erros de lógica,
-   integração, desempenho, assets, exportação e aderência ao pedido do usuário;
-2. executar testes adicionais e de regressão além da primeira bateria feita
-   pelo Codex, incluindo testes visuais ou do build quando forem relevantes;
-   **teste prático é obrigação, não item opcional da revisão** — rodar o jogo
-   de verdade, tirar as fotos do que mudou e OLHAR uma a uma, exercitar o
-   caminho pelo input real e, quando o achado for de comportamento, escrever um
-   teste novo que o reproduza. Revisão só por leitura de diff não conta como
-   revisão feita. Um worktree sujo com trabalho do outro agente **não é motivo
-   pra pular**: rode assim mesmo e diga na anotação qual estado foi
-   fotografado (commit puro ou commit + rodada em andamento);
-3. documentar no `CLAUDE.md` o que revisou, os resultados e as pendências;
-4. devolver ao Codex os problemas encontrados, com evidências e passos de
-   reprodução, para que o Codex faça a correção e um novo commit;
-5. repetir a revisão após as correções até não restar problema conhecido dentro
-   do escopo da rodada.
-
-Durante esta vigência, o Claude atua como revisor e segunda linha de testes; as
-implementações e correções voltam ao Codex, salvo se o usuário ordenar
-explicitamente outra divisão para uma tarefa específica.
-
-## Regras compartilhadas
+## Regras permanentes
 
 - O `CLAUDE.md` continua sendo a memória oficial do projeto e deve ser lido
   antes de trabalhar e atualizado em toda rodada.
-- Preservar alterações existentes do outro agente e nunca sobrescrevê-las sem
+- Preservar alterações existentes do usuário e nunca sobrescrevê-las sem
   entender o estado do worktree e o commit de origem.
-- O handoff deve sempre identificar o commit revisado; não revisar ou testar
-  supondo que uma cópia local antiga seja a versão enviada.
+- A segunda passagem deve identificar o commit ou estado exato revisado; não
+  testar supondo que uma cópia local antiga corresponde à versão enviada.
 - Não considerar uma mudança no jogo concluída sem documentação, testes
   proporcionais e, quando aplicável, builds atualizadas e verificadas.
 - **Mudança de mundo exige `city` e `obstacles_test`.** Ambos fazem parte da
-  primeira validação obrigatória do Codex sempre que houver alteração em mapa,
+  validação obrigatória do Codex sempre que houver alteração em mapa,
   terreno, ruas, quarteirões, vegetação, fazendas, montanhas, colisões ou
   espalhadores. Eles não podem ser substituídos apenas por `scale_test` ou por
   screenshots: na revisão de `fb7b78c`, foram justamente `city` e
   `obstacles_test` que encontraram a serra passando da borda do chão e uma
   parede invisível da `twisted-tree`.
-- **Preparar o repositório para futura publicação.** Não commitar tokens,
+- **Manter o repositório público seguro.** Não commitar tokens,
   credenciais, chaves, arquivos `.env`, e-mails particulares, caminhos que
-  revelem contas locais ou outros dados sensíveis. Antes de tornar o repositório
-  público, auditar também todo o histórico Git — conferir apenas o `HEAD` não é
-  suficiente.
+  revelem contas locais ou outros dados sensíveis. Auditar também todo o
+  histórico Git periodicamente — conferir apenas o `HEAD` não é suficiente.
 - **Build atualizada inclui reextrair o `.app`.** O `.zip` é o artefato, mas o
   que o usuário abre com dois cliques é o `builds/macos/Jegues Mecanicos.app`
   extraído, e ele **não se atualiza sozinho** quando o zip é regravado. Já
@@ -100,25 +77,22 @@ sync com `origin/main`, `.gitignore` cobrindo `builds/` e os downloads crus.
 Estas regras são sobre COMO usar, não sobre fazer funcionar.
 
 - **Ordem: revisar antes de publicar.** A release pública é o último passo, e só
-  depois do aval do Claude. O motivo é concreto: em 2026-08-13 a **v0.3.1 saiu às
-  16:05Z carregando o bug do preço congelado da negociação**, que só apareceu na
+  depois da segunda passagem de validação do Codex. O motivo é concreto: em
+  2026-08-13 a **v0.3.1 saiu às 16:05Z carregando o bug do preço congelado da
+  negociação**, que só apareceu na
   revisão e só foi corrigido na v0.3.2, uma hora depois — duas releases públicas
   no mesmo dia, a primeira com defeito. Push na `main` pode continuar sendo
-  imediato (é o que dá o hash do handoff); o que espera é a release.
+  imediato (é o que fixa o hash do estado revisado); o que espera é a release.
 - **Um commit, um assunto.** O `426c45d` juntou num commit só o conserto de um
   bug de negociação, um refactor de HUD, mudanças em três cenas do mundo, um
   ajuste no shader de montanha **e o teste + as anotações do revisor**. Assim não
   dá pra reverter o conserto sem levar o shader junto, e o título não conta que
   um bug de gameplay foi corrigido ali.
-- **Nada de `git add -A` com dois agentes no mesmo worktree.** É a causa do item
-  acima e já aconteceu nas duas direções (o Claude quase varreu trabalho do Codex
-  em 2026-08-13 de manhã; o Codex varreu o do Claude à tarde). Adicionar arquivo
-  por arquivo, ou dar um `git worktree add` pro segundo agente, que resolve na
-  raiz.
-- **Assinar quem escreveu.** Hoje só um commit do histórico traz
-  `Co-Authored-By`, então o `git log` não distingue os dois agentes — justamente
-  num protocolo cujo handoff é feito por hash de commit. Cada agente marca os
-  seus.
+- **Nada de `git add -A` em worktree com alterações alheias.** Essa foi a causa
+  de commits misturados no período com dois agentes. Adicionar arquivo por
+  arquivo e conferir o stage antes de commitar.
+- **Assinar quem escreveu.** O Codex marca seus commits; conteúdo histórico
+  escrito por outro colaborador mantém a autoria correspondente.
 - **Rodar `git gc` de vez em quando.** Na auditoria o `.git` tinha **828 MB em
   4.465 objetos soltos e ZERO packfiles** — nunca tinha sido empacotado, e o blob
   de 195 MB expulso do histórico continuava no disco preso pelo reflog. `git gc`

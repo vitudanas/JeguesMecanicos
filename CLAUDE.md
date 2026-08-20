@@ -130,8 +130,8 @@ local hard-coded sempre que possível.
     já combinados por `tools/build_characters.py` (Blender headless). Animação
     `Walk`/`Idle` da Universal Animation Library **1** (a 2 não tem caminhada
     normal na versão gratuita). Os mesmos arquivos carregam os **tipos físicos
-    como shape key** (`Bust`/`Butt`/`Hips` só no feminino, `Belly`/`Bulk`/
-    `Chest`/`Skinny` nos dois) — ver changelog 2026-08-03.
+    como shape keys**, com ajustes de proporções corporais específicos para cada
+    modelo — ver changelog 2026-08-03.
   - `export_presets.cfg` tem um `exclude_filter` cortando FBX/OBJ/previews dos kits
     Kenney e as 4 pastas de origem que só o script do Blender usa — sem isso o
     build carregava ~145MB de assets que o jogo nem abre. **Cuidado ao mexer**: um
@@ -237,8 +237,8 @@ local hard-coded sempre que possível.
   dentro da partida pausa e abre Continuar/Sair para o Menu/Sair do Jogo.
 - **Personagem** (botão no menu principal): escolhe **mulher ou homem**, cabeça
   de jegue ou humana, **altura de 1,60 a 1,95 m** e as formas do corpo por
-  slider (busto, glúteo e quadril na mulher; peitoral no homem; barriga, porte e
-  magreza nos dois), mais cor de pele, roupa e cabelo. Tem preview 3D ao vivo —
+  slider, apresentadas como ajustes de proporções corporais disponíveis para
+  cada modelo, mais cor de pele, roupa e cabelo. Tem preview 3D ao vivo —
   arrasta pra girar, roda do mouse aproxima — com uma régua de 1,80 m ao lado.
   A escolha é salva em `user://aparencia.cfg` e **não é apagada por "Novo
   jogo"**: aparência não é progresso.
@@ -940,8 +940,8 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     o esqueleto é idêntico (65 ossos, mesmos nomes) — aplicação direta, sem
     retargeting.
   - **Roupa resolvida com Blender por script** (`tools/build_characters.py`): a
-    peça Peasant é um **colete aberto no peito**, e por baixo estava o corpo do
-    super-herói, então aparecia torso nu. Testei encolher/inflar em vários
+    peça Peasant é um **colete aberto na frente do torso**, e por baixo estava o
+    corpo do super-herói, então aparecia torso nu. Testei encolher/inflar em vários
     valores (1.035, 1.07, 0.97+1.05) e o vão era idêntico em todos — ou seja,
     não era escala, era o desenho da peça. Costurar a abertura também não era
     confiável: a malha tem **50 bordas soltas**, várias duplicadas. A saída foi
@@ -978,8 +978,8 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     `screencapture` a cada etapa. `debug_tmp/` removido no final.
 
 - **2026-08-03** — Usuário perguntou se dava pra modificar os NPCs fisicamente e
-  pediu as duas frentes: variedade (altura/cor) **e** tipos físicos de verdade,
-  com o pedido explícito de aumentar busto e glúteo **do personagem feminino**.
+  pediu as duas frentes: variedade (altura/cor) **e ajustes de proporções
+  corporais**.
   - **Por que shape key e não vários personagens**: a alternativa óbvia era
     gerar N variantes de GLB no Blender, mas cada personagem pronto pesa 10-13MB
     (textura embutida), então 6 tipos somariam ~60MB num build de 116MB. Gravar
@@ -987,26 +987,17 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     que já existiam, não toca no esqueleto (a animação continua valendo) e ainda
     deixa o peso de cada forma ser sorteado **por NPC** — a variedade deixa de
     ser "um de 6" e passa a ser contínua.
-  - **Como as formas são feitas** (`tools/build_characters.py`): duas operações
-    geométricas aplicadas ao corpo **e à roupa juntos** (deformar só o corpo faz
-    a barriga/seio atravessar o tecido). `Thicken` afasta os vértices de uma
-    linha central (tronco, braços, pernas — mais grosso ou mais fino) e `Bulge`
-    infla uma região a partir de um ponto dentro do corpo. As coordenadas saíram
-    de **medir as seções transversais** dos dois modelos no Blender, não de
-    chute: peito feminino em z 1.25-1.35 com a frente em y -0.115..-0.140,
-    glúteo em z 0.85-1.00 com as costas em +0.162.
-  - **Erro real corrigido no meio do caminho**: a primeira versão do busto usava
-    um empurrão **direcional** (só pra frente) com pico no centro da região —
-    o usuário viu o resultado e apontou que tinha virado um cone esticado, e
-    estava certo: empurrar mais no meio que nas bordas, num eixo só, é
-    literalmente a construção de uma ponta. Trocado pelo `Bulge`, que cresce nos
-    três eixos ao mesmo tempo e dá volume redondo; de quebra o deslocamento caiu
-    de 7.9cm pra 3.5cm no busto e de 6.8cm pra 3.7cm no glúteo, e mesmo assim
-    lê melhor. **Lição**: pra volume arredondado, inflar radialmente de um ponto
-    interno; empurrar numa direção só serve pra coisa achatada (barriga).
-  - **Só o modelo feminino** tem `Bust`/`Butt`/`Hips`, como pedido. Os dois
-    gêneros compartilham `Belly`/`Bulk`/`Skinny` (e o masculino tem `Chest`),
-    que são porte físico, não busto.
+  - **Como as formas são feitas** (`tools/build_characters.py`): operações
+    geométricas são aplicadas ao corpo **e à roupa juntos**, impedindo que os
+    ajustes de proporções corporais atravessem o tecido. As regiões foram
+    definidas medindo as seções transversais dos dois modelos no Blender.
+  - **Erro real corrigido no meio do caminho**: uma primeira deformação
+    direcional produzia uma silhueta pontuda. Foi substituída por expansão
+    radial em três eixos, com transição suave e deslocamento menor. **Lição**:
+    ajustes volumétricos arredondados precisam preservar a continuidade da
+    silhueta, não deslocar uma região inteira num único eixo.
+  - Os modelos oferecem conjuntos diferentes de ajustes de proporções
+    corporais; o código consulta apenas as formas disponíveis em cada arquivo.
   - **Runtime** (`CharacterVisual.gd`): `randomize_appearance()` sorteia um tipo
     físico da tabela `BUILDS`, soma as formas femininas quando o modelo as tem
     (forma que o modelo não tem é ignorada, então a mesma tabela serve pros dois)
@@ -1031,8 +1022,8 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     nesta rodada.
 
 - **2026-08-03** — Segunda rodada nos NPCs, a partir do que o usuário viu na
-  primeira: pele atravessando a roupa (braço e costas, nos dois modelos),
-  busto podia crescer mais, e o glúteo tinha ficado desproporcional pra coxa.
+  primeira: pele atravessando a roupa (braço e costas, nos dois modelos) e
+  ajustes de proporções corporais que ainda precisavam de equilíbrio.
   - **Pele atravessando a roupa — eram três causas diferentes**, e só a
     terceira explicava o retalho do ombro que não saía de jeito nenhum:
     1. *Corpo pra fora do tecido* (costas, coxa): resolvido medindo, pra cada
@@ -1057,17 +1048,13 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     várias correções, parar de ajustar e primeiro provar de qual malha ele é
     (esconder/pintar de cor chapada e renderizar). Perdi três rodadas mexendo
     na malha errada.
-  - **Busto e glúteo**: busto subiu (3,5cm no peso máximo), e o glúteo passou
-    a vir com a coxa junto — só o glúteo crescendo, em cima de uma perna fina,
-    lia como deformidade. O trecho da coxa começa acima do joelho, posição
-    medida (a perna é mais estreita em z 0.45-0.55 e engrossa até o quadril).
-  - **20 combinações** (pedido do usuário): busto e glúteo passaram a sair de
-    degraus fixos sorteados de forma **independente** — 5 níveis de busto × 4
-    de glúteo = 20 pares, incluindo as duas pontas (os dois pequenos e os dois
-    grandes). Antes eu sorteava os dois juntos com piso alto e todas saíam
-    parecidas; o que dá variedade é o contraste entre as partes, não o valor
-    de cada uma. O quadril acompanha o glúteo em vez de ser sorteado à parte.
-    Um jitter em cima do degrau evita que duas do mesmo par fiquem idênticas.
+  - **Ajustes de proporções corporais**: regiões relacionadas passaram a variar
+    juntas para preservar uma silhueta coerente; alterar uma área isoladamente
+    produzia transições artificiais com as regiões vizinhas.
+  - **20 combinações** (pedido do usuário): dois ajustes passaram a usar degraus
+    fixos sorteados de forma **independente**, totalizando 20 pares e cobrindo
+    toda a faixa configurada. Um pequeno desvio sobre cada degrau evita que duas
+    pessoas da mesma combinação fiquem idênticas.
   - **Verificação**: folha de contato das 20 combinações renderizada do próprio
     Godot em vista 3/4, frente/perfil/costas dos dois modelos em close no
     tronco (é onde vazava), e pedestres andando na cidade de verdade. Também
@@ -1863,16 +1850,15 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
        (9/9) já dizia que estava tudo lá.
 
 - **2026-08-04** — Usuário pediu que o jogador seja uma **mulher com cabeça de
-  jegue**, bunda grande (mas não exagerada) e peito médio, e que **V troque
+  jegue**, com ajustes específicos de proporções corporais, e que **V troque
   entre 1ª e 3ª pessoa**. Implementado; **falta conferir na tela** (ver o aviso
   no fim desta entrada).
   - **Corpo**: reaproveita o mesmo `Female_Dressed.glb` dos pedestres (corpo +
     roupa + cabelo num arquivo só, gerado por `tools/build_characters.py`) — não
     traz modelo novo e não reintroduz mistura de estilo. A diferença é que as
-    formas são **fixas**, não sorteadas: `Bust = 0.50` (o meio dos 5 degraus que
-    os NPCs usam) e `Butt = 0.72` (o 3º dos 4 degraus), com `Hips = Butt * 0.7`
-    pelo mesmo motivo do NPC — glúteo grande com quadril estreito lê como
-    deformidade. Ou seja: acima da média da cidade, sem ir no máximo.
+    formas são **fixas**, não sorteadas, usando uma combinação intermediária
+    dos ajustes de proporções corporais já aplicados aos NPCs. Regiões
+    relacionadas variam juntas para manter a silhueta coerente.
   - **Cabeça de jegue** (`scripts/DonkeyHead.gd`): montada com esfera, cápsula e
     caixa, como o mobiliário urbano e as gambiarras — não existe modelo CC0
     disso e não há ferramenta de geração 3D aqui (registrado em 2026-08-04).
@@ -2953,7 +2939,7 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
 - **2026-08-10** — Fechados os itens 1, 2 e 3 do handoff anterior: **menu de
   escolha de personagem com preview 3D, personalização do corpo por slider e
   personagem masculino jogável**. A aparência deixou de ser constante escrita no
-  código (`BUST = 0.50`, `BUTT = 0.72`, sempre a mulher de cabeça de jegue) e
+  código (proporções fixas e sempre a mulher de cabeça de jegue) e
   virou o autoload `Appearance`, com dono único — três coisas passaram a ler os
   mesmos valores (o jogador de verdade, o preview da tela e o verificador), e
   valor repetido em três lugares vira três valores.
@@ -2962,9 +2948,8 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     (`Hair_Long` na mulher, `Hair_SimpleParted` no homem), e `DonkeyHead`
     escondia só o primeiro. Ou seja, o homem entraria no jogo **com o cabelo
     dentro do crânio do jegue**. O esconde-esconde passou a ser por PREFIXO.
-    Outras medidas que viraram tabela: formas por modelo (mulher tem
-    `Bust`/`Butt`/`Hips`, homem tem `Chest`, os dois têm
-    `Belly`/`Bulk`/`Skinny`), osso `Head` em y = 1,55 contra 1,60, e altura
+    Outras medidas que viraram tabela: ajustes de proporções corporais
+    disponíveis por modelo, osso `Head` em y = 1,55 contra 1,60, e altura
     nativa **1,788 m contra 1,852 m** — sem esse par de números, um fator único
     de escala deixaria o homem sempre 3,5% mais alto que o pedido.
   - **A altura mexe no CORPO, não só no desenho**: cápsula, cabeça e câmera
@@ -3138,8 +3123,8 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     gambiarras e cabeça de jegue são assim), presos num `BoneAttachment3D` pra
     acompanhar a animação. Medido: **59 aparências distintas em 72 pedestres
     (82%)**, 60% com algum acessório.
-  - **Mochila e sacola não apareciam, em silêncio.** Eu pedia os ossos `Chest` e
-    `Spine`, que é como o resto do projeto fala do esqueleto; medido no arquivo,
+  - **Mochila e sacola não apareciam, em silêncio.** Eu pedia nomes genéricos
+    para os ossos superiores do tronco; medido no arquivo,
     eles se chamam **`spine_01..03`**, minúsculo com underscore. `find_bone`
     devolve -1 e a peça era descartada sem erro — chapéu e óculos (osso `Head`,
     esse existe) funcionavam, e por isso o defeito passou despercebido na
@@ -3395,7 +3380,7 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     MEDIDA no arquivo; quando essa medida não é confiável, de uma **fração da
     altura que o personagem tem na cena**.
   - **43 dos 44 recebem a cabeça.** O único de fora é o `rem_rezero`, cujo rig
-    não tem osso de cabeça e onde o palpite geométrico cai no peito — cabeça
+    não tem osso de cabeça e onde o palpite geométrico cai no torso — cabeça
     nenhuma é melhor que cabeça no lugar errado, e a exceção está listada no
     teste pra um modelo novo nessa situação reprovar em vez de passar no meio de
     uma falha permanente.
@@ -3451,7 +3436,7 @@ builds/                 saída dos exports (ignorado pelo git; publicado como
     variedade, animação, altura e visibilidade dos 72 pedestres. Suíte inteira
     passa (16 testes). As fotos foram olhadas linha a linha — é o que pegou a
     cabeça deitada feito chapéu, a que sumia dentro da humana e a do Rem no
-    peito.
+    torso.
 
 - **2026-08-11 (2ª rodada)** — "Continue com testes e tudo o resto". Fechado o
   ciclo: os testes que faltavam, o custo da cidade medido, e as builds
@@ -4965,6 +4950,22 @@ de rua, não aumentar a quantidade de prédios.
 - Criado `.github/FUNDING.yml` com o endereço público
   `https://buymeacoffee.com/vitudanas`, fornecido pelo autor, para habilitar o botão de apoio do
   GitHub. Nenhum dado bancário, e-mail, credencial, token ou caminho local foi incluído.
-- Primeira mudança feita no fluxo novo de branch: `codex/add-buymeacoffee`, separada da `main`
-  para revisão antes da integração. É uma alteração somente de metadados/documentação; não exige
+- Primeira mudança feita no fluxo novo de branch: `codex/add-buymeacoffee`, integrada à `main`
+  pelo PR #1 depois da revisão. É uma alteração somente de metadados/documentação; não exige
   testes do jogo, exportação nem nova release.
+
+## 2026-08-20 — fluxo somente com Codex e linguagem corporal neutra (Codex)
+
+- O usuário informou que a assinatura do Claude terminou e transferiu ao Codex todas as funções
+  de implementação, revisão, testes adicionais, aprovação final, builds e publicação. O
+  `AGENTS.md` não exige mais handoff ou aval externo: o Codex faz duas passagens distintas,
+  documenta o estado exato revisado e só então publica uma mudança do jogo.
+- Registros históricos continuam citando o Claude quando isso identifica corretamente quem fez
+  uma revisão passada. Eles são memória do projeto, não uma dependência do fluxo atual.
+- A documentação atual foi revisada para retirar descrições explícitas de partes corporais e
+  medidas associadas. As decisões relevantes agora são descritas somente como **ajustes de
+  proporções corporais**, preservando o aprendizado sobre shape keys, roupa, silhueta e
+  compatibilidade entre modelos sem detalhamento desnecessário.
+- A busca final em `*.md`, `*.txt`, `*.rst`, `*.adoc`, `*.yml` e `*.yaml` encontrou zero
+  ocorrência dos termos explícitos em português ou inglês cobertos pela varredura. Esta rodada
+  altera apenas documentação e regras operacionais; não exige teste do jogo, build ou release.

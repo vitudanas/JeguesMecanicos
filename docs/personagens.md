@@ -71,7 +71,8 @@ que os prédios já cobraram:
    (BoneMap + SkeletonProfileHumanoid). Conferir os nomes ANTES de integrar: foi
    assim que em 2026-08-03 se descobriu que o corpo do Quaternius e a UAL
    compartilhavam esqueleto e o retargeting era desnecessário.
-3. **Formas do corpo.** As sliders de busto/glúteo do menu usam *shape keys*, que
-   só existem nos modelos gerados por `tools/build_characters.py`. Modelo baixado
-   sem shape key aparece no menu **sem** essas sliders (altura e cor continuam
-   valendo) — ou precisa passar pelo mesmo script do Blender pra ganhá-las.
+3. **Formas do corpo.** Os ajustes de proporções corporais do menu usam *shape
+   keys*, que só existem nos modelos gerados por `tools/build_characters.py`.
+   Modelo baixado sem essas formas aparece no menu **sem** os controles
+   correspondentes (altura e cor continuam valendo) — ou precisa passar pelo
+   mesmo script do Blender para ganhá-las.
