@@ -35,6 +35,7 @@ const OPTIONS: Array = [
 const VOLUMES: Array = [
 	["master", "Volume geral"],
 	["sfx", "Efeitos e mundo"],
+	["music", "Música"],
 	["ui", "Interface"],
 ]
 

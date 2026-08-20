@@ -62,9 +62,11 @@ const CC_BY: Array[Dictionary] = [
 
 const CC0: Array[Dictionary] = [
 	{"autor": "Kenney", "site": "https://kenney.nl", "o_que": "kits de rua, cidade, sons de impacto e interface"},
-	{"autor": "Quaternius", "site": "https://quaternius.com", "o_que": "personagens, animacoes, carros, fazenda e natureza"},
+	{"autor": "Quaternius", "site": "https://quaternius.com", "o_que": "personagens, animações, carros, fazenda e natureza"},
 	{"autor": "ambientCG", "site": "https://ambientcg.com", "o_que": "texturas PBR de asfalto, tijolo, concreto, grama e rocha"},
-	{"autor": "Poly Haven / Amal Kumar", "site": "https://polyhaven.com", "o_que": "ceu HDRI e material PBR Gravel Road"},
-	{"autor": "domasx2 / OpenGameArt", "site": "https://opengameart.org/content/racing-car-engine-sound-loops", "o_que": "gravacao CC0 de motor em laco"},
-	{"autor": "IgnasD / OpenGameArt", "site": "https://opengameart.org/content/wind", "o_que": "gravacao CC0 de vento rural"},
+	{"autor": "Poly Haven / Amal Kumar", "site": "https://polyhaven.com", "o_que": "céu HDRI e material PBR Gravel Road"},
+	{"autor": "domasx2 / OpenGameArt", "site": "https://opengameart.org/content/racing-car-engine-sound-loops", "o_que": "gravação CC0 de motor em laço"},
+	{"autor": "IgnasD / OpenGameArt", "site": "https://opengameart.org/content/wind", "o_que": "gravação CC0 de vento rural"},
+	{"autor": "Cleyton Kauffman", "site": "https://opengameart.org/content/pause-menu-music", "o_que": "música Offline do menu"},
+	{"autor": "Umplix", "site": "https://opengameart.org/content/super-wreck-roadway", "o_que": "música Super Wreck Roadway do mundo"},
 ]

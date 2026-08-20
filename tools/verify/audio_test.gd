@@ -4,6 +4,8 @@ extends Node
 ##
 ##   * todo som declarado na biblioteca existe e carrega;
 ##   * os barramentos foram criados e o volume responde;
+##   * as musicas reais carregam, repetem, cruzam sem vale mudo e trocam entre
+##     menu e mundo sem disputar o barramento dos efeitos;
 ##   * os lacos sintetizados (motor e chuva) tem dado, duracao e emenda sem
 ##     estalo — a emenda e MEDIDA, comparando o fim com o comeco;
 ##   * os eventos do jogo realmente disparam som: instala gambiarra, arrebenta
@@ -21,8 +23,10 @@ func _ready() -> void:
 	await get_tree().process_frame
 	_check_library()
 	_check_buses()
+	_check_music_menu()
 	_check_synth()
 	await _check_events()
+	_check_music_world()
 	await _check_ambience()
 	print("")
 	if problems.is_empty():
@@ -56,29 +60,90 @@ func _check_library() -> void:
 		% [AudioManager.LIBRARY.size(), total, faltando])
 
 func _check_buses() -> void:
-	for bus_name in [AudioManager.BUS_SFX, AudioManager.BUS_UI]:
+	for bus_name in [AudioManager.BUS_SFX, AudioManager.BUS_UI, AudioManager.BUS_MUSIC]:
 		if AudioServer.get_bus_index(bus_name) < 0:
 			problems.append("barramento '%s' nao foi criado" % bus_name)
 	# O volume tem que CHEGAR na mesa: guardar o campo e nao aplicar ja seria um
 	# controle que nao controla nada.
 	var idx := AudioServer.get_bus_index(AudioManager.BUS_SFX)
 	if idx >= 0:
-		var antes := AudioManager.sfx
-		AudioManager.set_levels(AudioManager.master, 0.25, AudioManager.ui)
+		var sfx_antes := AudioManager.sfx
+		AudioManager.set_levels(AudioManager.master, 0.25, AudioManager.ui, AudioManager.music)
 		var db_baixo := AudioServer.get_bus_volume_db(idx)
-		AudioManager.set_levels(AudioManager.master, 1.0, AudioManager.ui)
+		AudioManager.set_levels(AudioManager.master, 1.0, AudioManager.ui, AudioManager.music)
 		var db_alto := AudioServer.get_bus_volume_db(idx)
 		if db_alto <= db_baixo:
 			problems.append("volume de efeitos nao muda o barramento (%.1f -> %.1f dB)"
 				% [db_baixo, db_alto])
-		AudioManager.set_levels(AudioManager.master, antes, AudioManager.ui)
+		AudioManager.set_levels(AudioManager.master, sfx_antes, AudioManager.ui, AudioManager.music)
 		print("[2] barramentos ok | SFX a 25%% = %.1f dB, a 100%% = %.1f dB"
 			% [db_baixo, db_alto])
 	# Zero tem que MUDAR, nao so abaixar.
-	AudioManager.set_levels(0.0, AudioManager.sfx, AudioManager.ui)
+	var levels_antes := [AudioManager.master, AudioManager.sfx, AudioManager.ui, AudioManager.music]
+	AudioManager.set_levels(0.0, AudioManager.sfx, AudioManager.ui, AudioManager.music)
 	if not AudioServer.is_bus_mute(AudioServer.get_bus_index("Master")):
 		problems.append("volume geral em zero nao muda o barramento")
-	AudioManager.set_levels(0.85, 0.9, 0.7)
+	var music_idx := AudioServer.get_bus_index(AudioManager.BUS_MUSIC)
+	if music_idx >= 0:
+		AudioManager.set_levels(1.0, AudioManager.sfx, AudioManager.ui, 0.0)
+		if not AudioServer.is_bus_mute(music_idx):
+			problems.append("volume de musica em zero nao muda seu barramento")
+	AudioManager.set_levels(levels_antes[0], levels_antes[1], levels_antes[2], levels_antes[3])
+
+# --------------------------------------------------------------------- musica
+
+func _check_music_menu() -> void:
+	if AudioManager._menu_music == null or AudioManager._world_music == null:
+		problems.append("tocadores de musica nao foram criados")
+		return
+	for entry in [["menu", AudioManager._menu_music], ["mundo", AudioManager._world_music]]:
+		var nome: String = entry[0]
+		var player: AudioStreamPlayer = entry[1]
+		var stream := player.stream as AudioStreamOggVorbis
+		if stream == null or stream.get_length() < 20.0:
+			problems.append("musica de %s ausente ou curta demais" % nome)
+			continue
+		if not stream.loop:
+			problems.append("musica de %s nao esta em laco" % nome)
+		if not player.playing:
+			problems.append("musica de %s nao comecou a tocar" % nome)
+		if player.bus != AudioManager.BUS_MUSIC:
+			problems.append("musica de %s saiu pelo barramento '%s'" % [nome, player.bus])
+	# Sem jogador, o menu deve estar presente e a faixa do mundo inaudivel.
+	AudioManager._update_music(AudioManager.MUSIC_FADE * 2.0)
+	print("[3] musica menu %.1f dB | mundo %.1f dB | faixas %.1f/%.1f s" % [
+		AudioManager._menu_music.volume_db, AudioManager._world_music.volume_db,
+		AudioManager._menu_music.stream.get_length(), AudioManager._world_music.stream.get_length()])
+	if AudioManager._menu_music.volume_db < AudioManager.MENU_MUSIC_DB - 0.1:
+		problems.append("musica do menu nao assumiu (%.1f dB)" % AudioManager._menu_music.volume_db)
+	if AudioManager._world_music.volume_db > -70.0:
+		problems.append("musica do mundo vazou no menu (%.1f dB)" % AudioManager._world_music.volume_db)
+	# A trilha de estrada e deliberadamente mais baixa: chuva, motor, batidas e
+	# avisos precisam continuar na frente da mixagem.
+	if AudioManager.WORLD_MUSIC_DB > -18.0:
+		problems.append("musica do mundo alta demais para preservar efeitos (%.1f dB)"
+			% AudioManager.WORLD_MUSIC_DB)
+
+func _check_music_world() -> void:
+	# Mede tambem o MEIO do crossfade: interpolar dB diretamente deixava as duas
+	# faixas quase mudas por um instante, embora os extremos estivessem certos.
+	AudioManager._music_world_level = 0.0
+	AudioManager._update_music(AudioManager.MUSIC_FADE * 0.5)
+	var meio_menu := AudioManager._menu_music.volume_db
+	var meio_mundo := AudioManager._world_music.volume_db
+	if maxf(meio_menu, meio_mundo) < -30.0:
+		problems.append("crossfade abre um buraco sonoro (menu %.1f, mundo %.1f dB)"
+			% [meio_menu, meio_mundo])
+	AudioManager._update_music(AudioManager.MUSIC_FADE * 2.0)
+	print("[5] crossfade meio %.1f/%.1f dB | apos entrar: menu %.1f | mundo %.1f dB" % [
+		meio_menu, meio_mundo, AudioManager._menu_music.volume_db,
+		AudioManager._world_music.volume_db])
+	if AudioManager._menu_music.volume_db > -70.0:
+		problems.append("musica do menu nao cedeu ao entrar no mundo (%.1f dB)"
+			% AudioManager._menu_music.volume_db)
+	if AudioManager._world_music.volume_db < AudioManager.WORLD_MUSIC_DB - 0.1:
+		problems.append("musica do mundo nao assumiu (%.1f dB)"
+			% AudioManager._world_music.volume_db)
 
 # ------------------------------------------------------------------ sintetico
 

@@ -1,0 +1,16 @@
+Music assets in this directory are dedicated to the public domain under CC0.
+
+Offline [Pause Menu Music I]
+Author: Cleyton Kauffman
+Source: https://opengameart.org/content/pause-menu-music
+License: CC0 1.0 Universal
+File used: Offline [Pause Menu Music I].ogg, renamed to offline_menu.ogg
+
+Super Wreck Roadway
+Author: Umplix
+Source: https://opengameart.org/content/super-wreck-roadway
+License: CC0 1.0 Universal
+File used: super_wreck_roadway_loop.wav, converted to Ogg Vorbis as
+super_wreck_roadway_loop.ogg without altering the musical content.
+
+CC0 legal text: https://creativecommons.org/publicdomain/zero/1.0/

@@ -23,6 +23,7 @@ gestão de oficina e negociação com humor.
 - Faça test-drives em ruas esburacadas, com peças que podem se soltar durante o trajeto.
 - Negocie a venda por rodadas usando oferta, contraproposta e blefe.
 - Oriente-se pelo minimapa local, com ruas, zona atual e destino da etapa.
+- Ouça trilhas distintas no menu e na estrada, com volume de música independente.
 - Personalize o personagem e escolha entre diferentes câmeras ao dirigir.
 - Continue o progresso salvo automaticamente após as vendas.
 

@@ -22,9 +22,12 @@ const PATH := "user://audio.cfg"
 ## e licenca ao lado dos assets.
 const ENGINE_RECORDING: AudioStreamWAV = preload("res://assets/opengameart/audio/racing_engine_loop.wav")
 const WIND_RECORDING: AudioStreamOggVorbis = preload("res://assets/opengameart/audio/rural_wind.ogg")
+const MENU_MUSIC: AudioStreamOggVorbis = preload("res://assets/opengameart/music/offline_menu.ogg")
+const WORLD_MUSIC: AudioStreamOggVorbis = preload("res://assets/opengameart/music/super_wreck_roadway_loop.ogg")
 
 const BUS_SFX := "SFX"
 const BUS_UI := "UI"
+const BUS_MUSIC := "Music"
 
 ## Vozes 3D simultaneas. Passou disso, o som mais antigo cede o lugar — e
 ## melhor perder o mais velho que engolir a batida que acabou de acontecer.
@@ -76,6 +79,7 @@ signal changed
 var master := 0.85
 var sfx := 0.9
 var ui := 0.7
+var music := 0.5
 
 var _sounds: Dictionary = {}          ## chave -> Array[AudioStream]
 var _voices_3d: Array[AudioStreamPlayer3D] = []
@@ -95,6 +99,7 @@ func _ready() -> void:
 	_build_voices()
 	_build_rain()
 	_build_ambience()
+	_build_music()
 	load_settings()
 	apply()
 	# Som de interface e ligado SOZINHO em todo controle que entra na arvore, em
@@ -168,6 +173,52 @@ var _wind: AudioStreamPlayer = null
 var _city_level := 0.0
 var _traffic: Array[AudioStreamPlayer3D] = []
 var _traffic_wait := 0.0
+
+# --------------------------------------------------------------------- musica
+
+## Duas faixas CC0 cruzam sem corte entre a tela de titulo e o mundo. Elas
+## ficam num barramento proprio para o jogador silenciar a trilha sem perder
+## motor, chuva, interface ou alertas de gameplay.
+const MENU_MUSIC_DB := -16.0
+const WORLD_MUSIC_DB := -22.0
+const MUSIC_FADE := 2.0
+
+var _menu_music: AudioStreamPlayer = null
+var _world_music: AudioStreamPlayer = null
+var _music_world_level := 0.0
+
+func _build_music() -> void:
+	_menu_music = _music_player(MENU_MUSIC)
+	_world_music = _music_player(WORLD_MUSIC)
+
+func _music_player(source: AudioStreamOggVorbis) -> AudioStreamPlayer:
+	var p := AudioStreamPlayer.new()
+	var stream := source.duplicate() as AudioStreamOggVorbis
+	stream.loop = true
+	p.stream = stream
+	p.bus = BUS_MUSIC
+	p.volume_db = -80.0
+	p.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(p)
+	p.play()
+	return p
+
+func _update_music(delta: float) -> void:
+	if _menu_music == null or _world_music == null:
+		return
+	var in_world := get_tree().get_first_node_in_group("player") != null
+	var wanted := 1.0 if in_world else 0.0
+	_music_world_level = move_toward(_music_world_level, wanted, delta / MUSIC_FADE)
+	# Cruzar os DECIBEIS diretamente criava um vale quase mudo no meio
+	# (-48/-51 dB). O fade precisa acontecer no ganho linear e so depois voltar
+	# a dB, mantendo uma das duas faixas presente durante toda a troca.
+	_menu_music.volume_db = _music_db(MENU_MUSIC_DB, 1.0 - _music_world_level)
+	_world_music.volume_db = _music_db(WORLD_MUSIC_DB, _music_world_level)
+
+func _music_db(base_db: float, gain: float) -> float:
+	if gain <= 0.001:
+		return -80.0
+	return base_db + linear_to_db(gain)
 
 func _build_ambience() -> void:
 	_city = _bed_player(ProceduralAudio.city_hum())
@@ -263,6 +314,7 @@ func _build_rain() -> void:
 	_rain_player.play()
 
 func _process(delta: float) -> void:
+	_update_music(delta)
 	if _rain_player == null:
 		return
 	# So chove onde existe mundo: o menu principal tambem carrega os autoloads,
@@ -279,7 +331,7 @@ func _process(delta: float) -> void:
 # ---------------------------------------------------------------- barramentos
 
 func _setup_buses() -> void:
-	for bus_name in [BUS_SFX, BUS_UI]:
+	for bus_name in [BUS_SFX, BUS_UI, BUS_MUSIC]:
 		if AudioServer.get_bus_index(bus_name) >= 0:
 			continue
 		var idx := AudioServer.bus_count
@@ -291,6 +343,7 @@ func apply() -> void:
 	_set_bus("Master", master)
 	_set_bus(BUS_SFX, sfx)
 	_set_bus(BUS_UI, ui)
+	_set_bus(BUS_MUSIC, music)
 	changed.emit()
 
 func _set_bus(bus_name: String, value: float) -> void:
@@ -416,10 +469,11 @@ func rain_stream() -> AudioStreamWAV:
 
 # ------------------------------------------------------------------ ajustes
 
-func set_levels(new_master: float, new_sfx: float, new_ui: float) -> void:
+func set_levels(new_master: float, new_sfx: float, new_ui: float, new_music: float) -> void:
 	master = clampf(new_master, 0.0, 1.0)
 	sfx = clampf(new_sfx, 0.0, 1.0)
 	ui = clampf(new_ui, 0.0, 1.0)
+	music = clampf(new_music, 0.0, 1.0)
 	apply()
 	save_settings()
 
@@ -428,6 +482,7 @@ func save_settings() -> void:
 	cfg.set_value("audio", "master", master)
 	cfg.set_value("audio", "sfx", sfx)
 	cfg.set_value("audio", "ui", ui)
+	cfg.set_value("audio", "music", music)
 	cfg.save(PATH)
 
 func load_settings() -> void:
@@ -437,3 +492,4 @@ func load_settings() -> void:
 	master = cfg.get_value("audio", "master", master)
 	sfx = cfg.get_value("audio", "sfx", sfx)
 	ui = cfg.get_value("audio", "ui", ui)
+	music = cfg.get_value("audio", "music", music)

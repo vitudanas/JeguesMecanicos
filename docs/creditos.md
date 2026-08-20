@@ -65,8 +65,10 @@ Só entra o que de fato viaja no build.
 ## Pacotes CC0 (domínio público)
 
 - **Kenney** (https://kenney.nl) — kits de rua, cidade, sons de impacto e interface
-- **Quaternius** (https://quaternius.com) — personagens, animacoes, carros, fazenda e natureza
+- **Quaternius** (https://quaternius.com) — personagens, animações, carros, fazenda e natureza
 - **ambientCG** (https://ambientcg.com) — texturas PBR de asfalto, tijolo, concreto, grama e rocha
-- **Poly Haven** (https://polyhaven.com) — céu HDRI e material PBR Gravel Road, de Amal Kumar
+- **Poly Haven / Amal Kumar** (https://polyhaven.com) — céu HDRI e material PBR Gravel Road
 - **domasx2 / OpenGameArt** (https://opengameart.org/content/racing-car-engine-sound-loops) — gravação CC0 de motor em laço
 - **IgnasD / OpenGameArt** (https://opengameart.org/content/wind) — gravação CC0 de vento rural
+- **Cleyton Kauffman** (https://opengameart.org/content/pause-menu-music) — música Offline do menu
+- **Umplix** (https://opengameart.org/content/super-wreck-roadway) — música Super Wreck Roadway do mundo
