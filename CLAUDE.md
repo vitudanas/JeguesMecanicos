@@ -5026,8 +5026,12 @@ de rua, não aumentar a quantidade de prédios.
 - `audio_test` passou com 18 chaves/47 efeitos, três barramentos, faixas de 33,6 s e 134,4 s,
   loops ativos, silêncio correto da faixa oposta nos extremos, controle de música zerando o
   barramento e todos os eventos/ambientes anteriores funcionando. `ui_shot` passou com quatro
-  sliders e 58 linhas de crédito; a captura `03_configuracoes_som` foi aberta e conferida, com
+  sliders e 60 linhas de crédito; a captura `03_configuracoes_som` foi aberta e conferida, com
   os quatro controles e percentuais legíveis sem sobreposição.
+- A repetição do `ui_shot` sobre o commit revelou falsos erros de parsing depois do resultado:
+  o teste encerrava o processo enquanto `Main.tscn` ainda era lido em outra thread para a foto
+  de carregamento. O roteiro agora congela a tela e drena a requisição antes de sair; repetiu as
+  seis capturas, quatro sliders e 60 linhas de crédito sem a cascata falsa de erros.
 - Limite honesto da sessão: a seleção foi baseada nas páginas/fontes, licença, duração e medições
   objetivas de RMS/pico; não há audição humana disponível nesta sessão. O usuário ainda deve
   avaliar subjetivamente estilo, repetição e conforto da mixagem no build. A rodada não altera o
