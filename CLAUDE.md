@@ -4995,3 +4995,16 @@ de rua, não aumentar a quantidade de prédios.
   Codex, preservando a participação de outras ferramentas como histórico. Esta é mudança de jogo:
   depois do fechamento do commit e da segunda validação, exige novas builds Windows/macOS,
   reextração do `.app`, auditoria dos pacotes e release de correção.
+- Fechamento no commit de jogo `374e232`: Windows foi reexportado e empacotado como
+  `JeguesMecanicos-Windows.zip` (464.832.684 bytes); macOS foi reexportado como
+  `JeguesMecanicos.zip` (490.736.410 bytes). O aplicativo anterior foi preservado em
+  `builds/macos/previous-apps/Jegues Mecanicos-20260820-before-v0.3.4.app` e o novo
+  `builds/macos/Jegues Mecanicos.app` foi reextraído do ZIP.
+- `pack_audit.py` aprovou o pacote de 893 MB, 106 referências, 71 caminhos montados e o catálogo
+  de personagens. `unzip -t` aprovou os dois ZIPs, `codesign --verify --deep --strict` aprovou o
+  `.app`, o `.pck` extraído é idêntico ao do ZIP e o binário macOS abriu em headless e encerrou
+  com código 0. SHA-256: macOS
+  `f8937b99951cacacf75f26c9182ad73286f8dd64dfdeeb0eb431fc41154d04b0`; Windows
+  `a364f07243000e09fb3c7c6dd57c4db8f601d913368dee5ac15ab40e7a2e3485`; `.pck`
+  `eba1b8fa5173dd3395bb6a7c83f35f1d713d5f444ab15ca0c14a3b95f5962c99`.
+- A release pública desta rodada é `v0.3.4`, com o minimapa local e as melhorias de orientação.
