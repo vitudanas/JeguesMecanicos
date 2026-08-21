@@ -5050,3 +5050,14 @@ de rua, não aumentar a quantidade de prédios.
   `b3a892a754a74effb6ed0dba2428a9ffa45d7cc1e58848cc2d4b02ef9e807767` (897.193.600 bytes).
 - A release pública desta rodada é `v0.3.5`, com música distinta no menu e no mundo, crossfade e
   volume independente.
+
+## 2026-08-20 — limpeza do histórico da descrição do PR #2 (Codex)
+
+- Ao criar o PR #2, marcadores de código foram interpretados pelo shell e a primeira descrição
+  incorporou saída de testes, incluindo um caminho da máquina local. A descrição visível foi
+  corrigida imediatamente, mas o GitHub preservava a versão anterior no histórico de edições.
+- Depois de autorização expressa do usuário, a revisão antiga foi excluída pelo controle de
+  histórico do próprio GitHub. A conferência autenticada final mostra a entrada como `deleted` e
+  não permite mais abrir seu conteúdo; a descrição atual do PR permaneceu limpa e intacta.
+- Nenhum token, credencial, chave ou conteúdo do jogo foi afetado. Esta rodada altera apenas a
+  memória operacional e metadados do GitHub; não exige testes do jogo, builds ou nova release.
